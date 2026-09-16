@@ -1,0 +1,98 @@
+﻿@page "/login"
+@rendermode InteractiveServer
+@inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager Nav
+@inject EduPlatform.Web.Services.AuthStateService AuthState
+
+<div class="login-container">
+    <div class="auth-context">
+        <span class="eyebrow">EDUPLATFORM</span>
+        <h1>Reprenez votre parcours là où vous l'avez laissé.</h1>
+        <p>Retrouvez vos cours, votre progression et vos certificats dans un seul espace.</p>
+    </div>
+    <div class="login-card">
+        <h3>Connexion</h3>
+
+        @if (!string.IsNullOrEmpty(ErrorMessage))
+        {
+            <div class="alert-error">@ErrorMessage</div>
+        }
+
+        <div class="form-group">
+            <label>Email</label>
+            <input type="email" @bind="Email" placeholder="votre@email.com" />
+        </div>
+
+        <div class="form-group">
+            <label>Mot de passe</label>
+            <input type="password" @bind="Password" placeholder="••••••••" />
+        </div>
+
+        <button class="btn-primary" @onclick="HandleLogin" disabled="@(IsLoading ? "disabled" : null)">
+            @(IsLoading ? "Connexion..." : "Se connecter")
+        </button>
+
+        <p>Pas de compte ? <a href="/register">S'inscrire</a></p>
+    </div>
+</div>
+
+@code {
+    private string Email = string.Empty;
+    private string Password = string.Empty;
+    private string ErrorMessage = string.Empty;
+    private bool IsLoading = false;
+
+    private async Task HandleLogin()
+    {
+        IsLoading = true;
+        ErrorMessage = string.Empty;
+
+        try
+        {
+            var httpClient = HttpClientFactory.CreateClient("EduPlatformAPI");
+            var response = await httpClient.PostAsJsonAsync("api/Auth/login", new
+            {
+                email = Email,
+                password = Password
+            });
+
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content
+                    .ReadFromJsonAsync<LoginResponse>();
+                if (result != null)
+                {
+                    var role = result.Role switch
+                    {
+                        1 => "Instructor",
+                        2 => "Admin",
+                        _ => "Student"
+                    };
+                    await AuthState.LoginAsync(result.Token, result.UserId.ToString(), result.FirstName, Email, role);
+                }
+                Nav.NavigateTo("/courses");
+            }
+            else
+            {
+                var body = await response.Content.ReadFromJsonAsync<Dictionary<string, string>>();
+                ErrorMessage = body?.GetValueOrDefault("message") ?? "Email ou mot de passe incorrect.";
+            }
+        }
+        catch (Exception)
+        {
+            ErrorMessage = "Erreur de connexion. Réessayez.";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private class LoginResponse
+    {
+        public string Token { get; set; } = string.Empty;
+        public Guid UserId { get; set; }
+        public string FirstName { get; set; } = string.Empty;
+        public int Role { get; set; }
+    }
+}

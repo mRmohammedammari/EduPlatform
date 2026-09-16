@@ -1,0 +1,77 @@
+name: EduPlatform CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    env:
+      SQLSERVER_SA_PASSWORD: EduPlatformCi!Sql2026Strong
+      JWT_SECRET_KEY: EduPlatformCi!JwtSecretKey2026LongEnough
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore
+        run: dotnet restore EduPlatform.sln
+
+      - name: Build
+        run: dotnet build EduPlatform.sln --configuration Release --no-restore
+
+      - name: Unit tests
+        run: dotnet test EduPlatform.Tests/EduPlatform.Tests.csproj --configuration Release --no-build --no-restore
+
+      - name: Validate Docker Compose
+        run: docker compose config --quiet
+
+      - name: Build API image
+        run: docker build -f Dockerfile.api -t eduplatform-api:ci .
+
+      - name: Build Web image
+        run: docker build -f Dockerfile.web -t eduplatform-web:ci .
+
+  compose-integration:
+    runs-on: ubuntu-latest
+    env:
+      SQLSERVER_SA_PASSWORD: EduPlatformCi!Sql2026Strong
+      JWT_SECRET_KEY: EduPlatformCi!JwtSecretKey2026LongEnough
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Start ephemeral stack
+        run: docker compose up -d --build
+
+      - name: Wait for API and Web
+        shell: bash
+        run: |
+          for attempt in {1..40}; do
+            api_status=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5053/health || true)
+            web_status=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5297/ || true)
+            if [ "$api_status" = "200" ] && [ "$web_status" = "200" ]; then
+              echo "API and Web are ready"
+              exit 0
+            fi
+            echo "Waiting for stack: API=$api_status Web=$web_status"
+            sleep 5
+          done
+          docker compose ps
+          exit 1
+
+      - name: Show service status
+        run: docker compose ps
+
+      - name: Stop ephemeral stack
+        if: always()
+        run: docker compose down -v

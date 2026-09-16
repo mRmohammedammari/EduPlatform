@@ -1,0 +1,111 @@
+@page "/admin"
+@rendermode InteractiveServer
+@inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager Nav
+@inject EduPlatform.Web.Services.AuthStateService AuthState
+@inject IJSRuntime JS
+
+@if (!IsAdmin)
+{
+    <div class="profile-container">
+        <div class="alert-error">Cette page est réservée aux administrateurs.</div>
+        <button class="btn-primary" @onclick="GoToHome">Retour à l'accueil</button>
+    </div>
+}
+else
+{
+    <div class="page-header">
+        <h1>Tableau de bord administrateur</h1>
+        <p>Vue globale de l'activité de la plateforme.</p>
+    </div>
+
+    @if (IsLoading)
+    {
+        <p>Chargement...</p>
+    }
+    else if (!string.IsNullOrWhiteSpace(ErrorMessage))
+    {
+        <div class="alert-error">@ErrorMessage</div>
+    }
+    else if (Overview != null)
+    {
+        <div class="stats-grid">
+            <div class="stat-card"><span class="stat-value">@Overview.Users</span><span class="stat-label">Utilisateurs</span></div>
+            <div class="stat-card"><span class="stat-value">@Overview.Students</span><span class="stat-label">Étudiants</span></div>
+            <div class="stat-card"><span class="stat-value">@Overview.Instructors</span><span class="stat-label">Enseignants</span></div>
+            <div class="stat-card"><span class="stat-value">@Overview.Courses</span><span class="stat-label">Cours</span></div>
+            <div class="stat-card"><span class="stat-value">@Overview.PublishedCourses</span><span class="stat-label">Cours publiés</span></div>
+            <div class="stat-card"><span class="stat-value">@Overview.Modules</span><span class="stat-label">Modules</span></div>
+            <div class="stat-card"><span class="stat-value">@Overview.Enrollments</span><span class="stat-label">Inscriptions</span></div>
+            <div class="stat-card"><span class="stat-value">@Overview.Questions</span><span class="stat-label">Questions</span></div>
+        </div>
+
+        <button class="btn-primary" @onclick="GoToUsers">Gérer les utilisateurs</button>
+        <button class="btn-secondary" @onclick="DownloadReport">Télécharger le rapport CSV</button>
+    }
+}
+
+@code {
+    private bool IsLoading = true;
+    private string ErrorMessage = string.Empty;
+    private OverviewDto? Overview;
+    private bool IsAdmin => AuthState.IsAuthenticated && AuthState.Role == "Admin";
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!IsAdmin)
+        {
+            IsLoading = false;
+            return;
+        }
+
+        try
+        {
+            var client = HttpClientFactory.CreateClient("EduPlatformAPI");
+            client.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", AuthState.Token);
+            Overview = await client.GetFromJsonAsync<OverviewDto>("api/admin/overview");
+        }
+        catch
+        {
+            ErrorMessage = "Impossible de charger les statistiques.";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private void GoToHome() => Nav.NavigateTo("/");
+    private void GoToUsers() => Nav.NavigateTo("/admin/users");
+
+    private async Task DownloadReport()
+    {
+        var response = await CreateAuthorizedClient().GetAsync("api/admin/reports/courses.csv");
+        if (!response.IsSuccessStatusCode)
+            return;
+
+        var content = await response.Content.ReadAsByteArrayAsync();
+        await JS.InvokeVoidAsync("eduPlatformSession.download", "eduplatform-courses.csv", content);
+    }
+
+    private HttpClient CreateAuthorizedClient()
+    {
+        var client = HttpClientFactory.CreateClient("EduPlatformAPI");
+        client.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", AuthState.Token);
+        return client;
+    }
+
+    private sealed class OverviewDto
+    {
+        public int Users { get; set; }
+        public int Students { get; set; }
+        public int Instructors { get; set; }
+        public int Courses { get; set; }
+        public int PublishedCourses { get; set; }
+        public int Modules { get; set; }
+        public int Enrollments { get; set; }
+        public int Questions { get; set; }
+    }
+}

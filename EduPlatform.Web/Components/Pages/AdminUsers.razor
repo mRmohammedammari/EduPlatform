@@ -1,0 +1,121 @@
+@page "/admin/users"
+@rendermode InteractiveServer
+@inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager Nav
+@inject EduPlatform.Web.Services.AuthStateService AuthState
+
+@if (!IsAdmin)
+{
+    <div class="profile-container">
+        <div class="alert-error">Cette page est réservée aux administrateurs.</div>
+        <button class="btn-primary" @onclick="GoToHome">Retour à l'accueil</button>
+    </div>
+}
+else
+{
+    <div class="page-header">
+        <h1>Gestion des utilisateurs</h1>
+        <p>Attribuez les rôles nécessaires aux membres de la plateforme.</p>
+    </div>
+
+    @if (IsLoading)
+    {
+        <p>Chargement...</p>
+    }
+    else if (!string.IsNullOrWhiteSpace(ErrorMessage))
+    {
+        <div class="alert-error">@ErrorMessage</div>
+    }
+    else
+    {
+        <div class="course-section">
+            @foreach (var user in Users)
+            {
+                <div class="activity-row">
+                    <div>
+                        <strong>@user.FirstName @user.LastName</strong>
+                        <p>@user.Email</p>
+                    </div>
+                    <div class="activity-meta">
+                        <select value="@user.Role" @onchange="eventArgs => UpdateRole(user.Id, eventArgs.Value?.ToString())">
+                            <option value="Student">Étudiant</option>
+                            <option value="Instructor">Enseignant</option>
+                            <option value="Admin">Administrateur</option>
+                        </select>
+                        <small>@user.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")</small>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+}
+
+@code {
+    private bool IsLoading = true;
+    private string ErrorMessage = string.Empty;
+    private List<UserDto> Users = new();
+    private bool IsAdmin => AuthState.IsAuthenticated && AuthState.Role == "Admin";
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!IsAdmin)
+        {
+            IsLoading = false;
+            return;
+        }
+
+        try
+        {
+            Users = await CreateAuthorizedClient().GetFromJsonAsync<List<UserDto>>(
+                "api/admin/users") ?? new();
+        }
+        catch
+        {
+            ErrorMessage = "Impossible de charger les utilisateurs.";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private async Task UpdateRole(Guid userId, string? role)
+    {
+        if (string.IsNullOrWhiteSpace(role))
+            return;
+
+        try
+        {
+            var response = await CreateAuthorizedClient().PutAsJsonAsync(
+                $"api/admin/users/{userId}/role", new { role });
+            if (!response.IsSuccessStatusCode)
+                ErrorMessage = "La modification du rôle a échoué.";
+            else
+                ErrorMessage = string.Empty;
+        }
+        catch
+        {
+            ErrorMessage = "Erreur de connexion.";
+        }
+    }
+
+    private HttpClient CreateAuthorizedClient()
+    {
+        var client = HttpClientFactory.CreateClient("EduPlatformAPI");
+        client.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", AuthState.Token);
+        return client;
+    }
+
+    private void GoToHome() => Nav.NavigateTo("/");
+
+    private sealed class UserDto
+    {
+        public Guid Id { get; set; }
+        public string Email { get; set; } = string.Empty;
+        public string FirstName { get; set; } = string.Empty;
+        public string LastName { get; set; } = string.Empty;
+        public string Role { get; set; } = string.Empty;
+        public DateTime CreatedAt { get; set; }
+    }
+}

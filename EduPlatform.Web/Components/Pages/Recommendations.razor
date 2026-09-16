@@ -1,0 +1,129 @@
+@page "/recommendations"
+@rendermode InteractiveServer
+@inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager Nav
+@inject EduPlatform.Web.Services.AuthStateService AuthState
+
+@if (!AuthState.IsAuthenticated)
+{
+    <div class="profile-container">
+        <div class="alert-error">Connectez-vous pour obtenir des recommandations personnalisées.</div>
+        <button class="btn-primary" @onclick="GoToLogin">Se connecter</button>
+    </div>
+}
+else
+{
+    <div class="explore-page">
+        <section class="explore-hero">
+            <div class="explore-copy">
+                <span class="eyebrow dark">RECOMMANDÉ POUR VOUS</span>
+                <h1>Des cours choisis pour votre parcours.</h1>
+                <p>Basées sur votre activité et votre progression, voici les formations qui vous feront avancer.</p>
+            </div>
+
+            <div class="explore-metrics">
+                <div class="mini-stat">
+                    <strong>@Courses.Count</strong>
+                    <span>recommandation(s)</span>
+                </div>
+                <button class="market-button explore-recommendations" @onclick="GoToCourses">Voir tout le catalogue</button>
+            </div>
+        </section>
+
+        @if (IsLoading)
+        {
+            <p class="explore-empty">Chargement des recommandations...</p>
+        }
+        else if (!string.IsNullOrWhiteSpace(ErrorMessage))
+        {
+            <div class="alert-error">@ErrorMessage</div>
+        }
+        else if (Courses.Count == 0)
+        {
+            <div class="course-section">
+                <h2>Explorez le catalogue</h2>
+                <p>Aucune recommandation n'est disponible pour le moment.</p>
+                <button class="btn-primary" @onclick="GoToCourses">Voir tous les cours</button>
+            </div>
+        }
+        else
+        {
+            <div class="CourseList-grid">
+                @foreach (var course in Courses)
+                {
+                    <article class="course-card" @onclick="() => GoToCourse(course.Id)">
+                        <div class="course-card-image" style="@GetCoverStyle(course.Category)">
+                            <span class="course-cover-tag">@course.Category</span>
+                        </div>
+                        <div class="course-info">
+                            <div class="course-card-topline">
+                                <span class="badge">@course.Level</span>
+                                <span class="course-duration">? @course.DurationMinutes min</span>
+                            </div>
+                            <h3>@course.Title</h3>
+                            <p>@course.Description</p>
+                            <button class="btn-primary">Voir le cours ?</button>
+                        </div>
+                    </article>
+                }
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private bool IsLoading = true;
+    private string ErrorMessage = string.Empty;
+    private List<CourseDto> Courses = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!AuthState.IsAuthenticated)
+        {
+            IsLoading = false;
+            return;
+        }
+
+        try
+        {
+            var client = HttpClientFactory.CreateClient("EduPlatformAPI");
+            client.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", AuthState.Token);
+            Courses = await client.GetFromJsonAsync<List<CourseDto>>("api/recommendations") ?? new();
+        }
+        catch
+        {
+            ErrorMessage = "Impossible de charger les recommandations. Réessayez plus tard.";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private void GoToLogin() => Nav.NavigateTo("/login");
+    private void GoToCourses() => Nav.NavigateTo("/courses");
+    private void GoToCourse(Guid courseId) => Nav.NavigateTo($"/courses/{courseId}");
+
+    private string GetCoverStyle(string category)
+    {
+        return category switch
+        {
+            "Informatique" => "background: linear-gradient(135deg, #5b5df6 0%, #8b5cf6 100%);",
+            "Economie" => "background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%);",
+            "Physique" => "background: linear-gradient(135deg, #10b981 0%, #14b8a6 100%);",
+            "Langues" => "background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);",
+            _ => "background: linear-gradient(135deg, #1f2937 0%, #6d28d9 100%);"
+        };
+    }
+
+    private sealed class CourseDto
+    {
+        public Guid Id { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string Category { get; set; } = string.Empty;
+        public string Level { get; set; } = string.Empty;
+        public int DurationMinutes { get; set; }
+    }
+}

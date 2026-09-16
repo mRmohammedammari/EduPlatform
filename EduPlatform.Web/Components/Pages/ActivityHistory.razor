@@ -1,0 +1,120 @@
+@page "/activity"
+@rendermode InteractiveServer
+@inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager Nav
+@inject EduPlatform.Web.Services.AuthStateService AuthState
+
+@if (!AuthState.IsAuthenticated)
+{
+    <div class="profile-container">
+        <div class="alert-error">Connectez-vous pour consulter votre activité.</div>
+        <button class="btn-primary" @onclick="GoToLogin">Se connecter</button>
+    </div>
+}
+else
+{
+    <div class="page-header">
+        <h1>Mon activité</h1>
+        <p>Historique de vos actions sur la plateforme.</p>
+    </div>
+
+    @if (IsLoading)
+    {
+        <p>Chargement de l'activité...</p>
+    }
+    else if (!string.IsNullOrWhiteSpace(ErrorMessage))
+    {
+        <div class="alert-error">@ErrorMessage</div>
+    }
+    else if (Activities.Count == 0)
+    {
+        <div class="course-section">
+            <p>Aucune activité enregistrée pour le moment.</p>
+        </div>
+    }
+    else
+    {
+        <div class="course-section">
+            <div class="activity-summary">
+                <strong>@Activities.Count</strong> actions récentes
+                <span>Session actuelle : @AuthState.SessionId</span>
+            </div>
+
+            <div class="activity-list">
+                @foreach (var activity in Activities)
+                {
+                    <div class="activity-row">
+                        <div>
+                            <strong>@FormatAction(activity.ActionType)</strong>
+                            <p>@activity.PageUrl</p>
+                        </div>
+                        <div class="activity-meta">
+                            <span>@activity.EventTime.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</span>
+                            <span>@activity.DurationSec sec</span>
+                            <small>Session @activity.SessionId</small>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+}
+
+@code {
+    private bool IsLoading = true;
+    private string ErrorMessage = string.Empty;
+    private List<ActivityDto> Activities = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!AuthState.IsAuthenticated)
+        {
+            IsLoading = false;
+            return;
+        }
+
+        try
+        {
+            Activities = await CreateAuthorizedClient().GetFromJsonAsync<List<ActivityDto>>(
+                "api/progress/history") ?? new();
+        }
+        catch
+        {
+            ErrorMessage = "Impossible de charger votre activité.";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private HttpClient CreateAuthorizedClient()
+    {
+        var client = HttpClientFactory.CreateClient("EduPlatformAPI");
+        client.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", AuthState.Token);
+        return client;
+    }
+
+    private static string FormatAction(string actionType) => actionType switch
+    {
+        "module_opened" => "Module ouvert",
+        "module_completed" => "Module terminé",
+        "video_view" => "Vidéo consultée",
+        "course_start" => "Cours commencé",
+        "quiz_attempt" => "Test commencé",
+        _ => actionType
+    };
+
+    private void GoToLogin() => Nav.NavigateTo("/login");
+
+    private sealed class ActivityDto
+    {
+        public Guid SessionId { get; set; }
+        public DateTime EventTime { get; set; }
+        public Guid CourseId { get; set; }
+        public string ActionType { get; set; } = string.Empty;
+        public int DurationSec { get; set; }
+        public string PageUrl { get; set; } = string.Empty;
+    }
+}

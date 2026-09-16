@@ -1,0 +1,130 @@
+@page "/profile"
+@rendermode InteractiveServer
+@inject EduPlatform.Web.Services.AuthStateService AuthState
+@inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager Nav
+
+<div class="profile-container">
+    @if (!AuthState.IsAuthenticated)
+    {
+        <div class="alert-error">Vous devez être connecté pour accéder à cette page.</div>
+        <button class="btn-primary" @onclick='() => Nav.NavigateTo("/login")'>Se connecter</button>
+    }
+    else
+    {
+        <div class="profile-header">
+            <div class="profile-avatar">@(AuthState.FirstName.Length > 0 ? AuthState.FirstName[0].ToString().ToUpper() : "U")</div>
+            <h1>@AuthState.FirstName</h1>
+            <p class="profile-email">@AuthState.Email</p>
+            <span class="badge">@AuthState.Role</span>
+        </div>
+
+        <div class="profile-section">
+            <h2>Mes inscriptions aux cours</h2>
+            @if (Enrollments == null)
+            {
+                <p>Chargement...</p>
+            }
+            else if (!Enrollments.Any())
+            {
+                <p>Vous n'êtes inscrit à aucun cours pour le moment.</p>
+                <button class="btn-primary" @onclick='() => Nav.NavigateTo("/courses")'>Découvrir les cours</button>
+            }
+            else
+            {
+                <div class="enrollments-list">
+                    @foreach (var enrollment in Enrollments)
+                    {
+                        <div class="enrollment-card">
+                            <div class="enrollment-info">
+                                <h3>@enrollment.CourseTitle</h3>
+                                <p>Inscrit le : @enrollment.EnrolledAt.ToString("dd/MM/yyyy HH:mm")</p>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: @(enrollment.ProgressPercent)%"></div>
+                                </div>
+                                <span>@enrollment.ProgressPercent% complété</span>
+                            </div>
+                            <button class="btn-secondary" @onclick="() => GoToCourse(enrollment.CourseId)">
+                                Continuer ?
+                            </button>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
+        <div class="profile-section">
+            <h2>Statistiques</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <span class="stat-value">@(Enrollments?.Count ?? 0)</span>
+                    <span class="stat-label">Cours inscrits</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-value">@(Enrollments?.Count(e => e.ProgressPercent == 100) ?? 0)</span>
+                    <span class="stat-label">Cours terminés</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-value">@(Enrollments?.Count(e => e.ProgressPercent > 0 && e.ProgressPercent < 100) ?? 0)</span>
+                    <span class="stat-label">En cours</span>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private List<EnrollmentDto>? Enrollments;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!AuthState.IsAuthenticated)
+        {
+            Nav.NavigateTo("/login");
+            return;
+        }
+
+        await LoadEnrollments();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!AuthState.IsAuthenticated)
+        {
+            Nav.NavigateTo("/login");
+        }
+        else if (firstRender)
+        {
+            await LoadEnrollments();
+        }
+    }
+
+    private async Task LoadEnrollments()
+    {
+        try
+        {
+            var httpClient = HttpClientFactory.CreateClient("EduPlatformAPI");
+            httpClient.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", AuthState.Token);
+            Enrollments = await httpClient.GetFromJsonAsync<List<EnrollmentDto>>(
+                "api/progress/enrollments") ?? new();
+        }
+        catch
+        {
+            Enrollments = new();
+        }
+    }
+
+    private void GoToCourse(Guid courseId)
+    {
+        Nav.NavigateTo($"/courses/{courseId}");
+    }
+
+    private class EnrollmentDto
+    {
+        public Guid CourseId { get; set; }
+        public string CourseTitle { get; set; } = string.Empty;
+        public DateTime EnrolledAt { get; set; }
+        public int ProgressPercent { get; set; }
+    }
+}

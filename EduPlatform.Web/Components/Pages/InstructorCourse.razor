@@ -1,0 +1,782 @@
+@page "/instructor/courses/{CourseId:guid}"
+@rendermode InteractiveServer
+@inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager Nav
+@inject EduPlatform.Web.Services.AuthStateService AuthState
+
+@if (!IsInstructor)
+{
+    <div class="profile-container">
+        <div class="alert-error">Cette page est réservée aux enseignants et administrateurs.</div>
+        <button class="btn-primary" @onclick="GoToDashboard">Retour à l'espace enseignant</button>
+    </div>
+}
+else if (IsLoading)
+{
+    <p>Chargement du cours...</p>
+}
+else if (Course == null)
+{
+    <div class="alert-error">Cours introuvable ou inaccessible.</div>
+}
+else
+{
+    <div class="page-header">
+        <h1>@Course.Title</h1>
+        <p>Gestion des modules et du contenu pédagogique.</p>
+        <button class="btn-primary" @onclick="TogglePublication">
+            @(Course.IsPublished ? "Dépublier le cours" : "Publier le cours")
+        </button>
+        <button class="btn-secondary" @onclick="ToggleArchive">
+            @(Course.IsArchived ? "Restaurer le cours" : "Archiver le cours")
+        </button>
+    </div>
+
+    <div class="course-section">
+        <h2>Informations du cours</h2>
+        <div class="form-group">
+            <label>Titre</label>
+            <input @bind="Course.Title" />
+        </div>
+        <div class="form-group">
+            <label>Description</label>
+            <textarea @bind="Course.Description" rows="4"></textarea>
+        </div>
+        <div class="form-row">
+            <input @bind="Course.Category" placeholder="Catégorie" />
+            <select @bind="Course.Level">
+                <option value="Debutant">Débutant</option>
+                <option value="Intermediaire">Intermédiaire</option>
+                <option value="Avance">Avancé</option>
+            </select>
+            <input type="number" min="1" @bind="Course.DurationMinutes" />
+            <input type="number" min="0" step="0.01" @bind="Course.Price" />
+        </div>
+        <button class="btn-secondary" @onclick="SaveCourse" disabled="@IsSaving">Enregistrer les informations</button>
+    </div>
+
+    <div class="course-section">
+        <h2>Ajouter un module</h2>
+        <div class="form-group">
+            <label>Titre du module</label>
+            <input @bind="NewModule.Title" placeholder="Introduction" />
+        </div>
+        <div class="form-group">
+            <label>Contenu écrit</label>
+            <textarea @bind="NewModule.Description" rows="8" placeholder="Rédigez le contenu pédagogique du module"></textarea>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>URL de la vidéo</label>
+                <input @bind="NewModule.VideoUrl" placeholder="https://.../video.mp4" />
+            </div>
+            <div class="form-group">
+                <label>Durée (minutes)</label>
+                <input type="number" min="1" @bind="NewModule.DurationMinutes" />
+            </div>
+            <div class="form-group">
+                <label>Ordre</label>
+                <input type="number" min="1" @bind="NewModule.Order" />
+            </div>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+        {
+            <div class="alert-error">@ErrorMessage</div>
+        }
+        @if (!string.IsNullOrWhiteSpace(SuccessMessage))
+        {
+            <div class="alert-success">@SuccessMessage</div>
+        }
+        <button class="btn-primary" @onclick="CreateModule" disabled="@IsSaving">
+            @(IsSaving ? "Enregistrement..." : "Ajouter le module")
+        </button>
+    </div>
+
+    <div class="course-section">
+        <h2>Modules (@Course.Modules.Count)</h2>
+        @if (Course.Modules.Count == 0)
+        {
+            <p>Aucun module n'est encore créé.</p>
+        }
+        else
+        {
+            <div class="modules-list">
+                @foreach (var module in Course.Modules.OrderBy(m => m.Order))
+                {
+                    <div class="module-item">
+                        @if (EditingModuleId == module.Id)
+                        {
+                            <div class="form-group">
+                                <label>Titre</label>
+                                <input @bind="EditingModule.Title" />
+                            </div>
+                            <div class="form-group">
+                                <label>Contenu</label>
+                                <textarea @bind="EditingModule.Description" rows="5"></textarea>
+                            </div>
+                            <div class="form-row">
+                                <input @bind="EditingModule.VideoUrl" placeholder="URL vidéo" />
+                                <input type="number" min="1" @bind="EditingModule.DurationMinutes" />
+                                <input type="number" min="1" @bind="EditingModule.Order" />
+                            </div>
+                            <div class="form-group">
+                                <label>Ou téléverser une vidéo</label>
+                                <InputFile OnChange="SelectVideo" accept="video/mp4,video/webm,video/ogg" />
+                                @if (SelectedVideo != null)
+                                {
+                                    <span>@SelectedVideo.Name</span>
+                                    <button class="btn-secondary" @onclick="UploadVideo" disabled="@IsSaving">Téléverser</button>
+                                }
+                            </div>
+                            <button class="btn-primary" @onclick="SaveModule" disabled="@IsSaving">Enregistrer</button>
+                            <button class="btn-secondary" @onclick="CancelEdit">Annuler</button>
+                        }
+                        else
+                        {
+                            <div>
+                                <strong>@module.Order. @module.Title</strong>
+                                <p>@module.DurationMinutes minutes</p>
+                            </div>
+                            <div>
+                                <span>@(string.IsNullOrWhiteSpace(module.VideoUrl) ? "Texte uniquement" : "Vidéo liée")</span>
+                                <button class="btn-secondary" @onclick="() => BeginEdit(module)">Modifier</button>
+                                <button class="btn-secondary" @onclick="() => DeleteModule(module.Id)">Supprimer</button>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+    <div class="course-section">
+        <h2>Questions du test (@Questions.Count)</h2>
+        <div class="form-group">
+            <label>Question</label>
+            <textarea @bind="NewQuestion.Text" rows="3" placeholder="Écrivez la question"></textarea>
+        </div>
+        <div class="form-group">
+            <label>Options, une par ligne</label>
+            <textarea @bind="OptionsText" rows="4" placeholder="Option A&#10;Option B&#10;Option C"></textarea>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Bonne réponse</label>
+                <input @bind="NewQuestion.CorrectAnswer" placeholder="Copiez une option exacte" />
+            </div>
+            <div class="form-group">
+                <label>Points</label>
+                <input type="number" min="1" @bind="NewQuestion.Points" />
+            </div>
+        </div>
+        <button class="btn-primary" @onclick="CreateQuestion" disabled="@IsSaving">Ajouter la question</button>
+
+        @foreach (var question in Questions)
+        {
+            <div class="module-item">
+                @if (EditingQuestionId == question.Id)
+                {
+                    <div class="form-group">
+                        <label>Question</label>
+                        <textarea @bind="EditingQuestion.Text" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Options, une par ligne</label>
+                        <textarea @bind="EditingOptionsText" rows="4"></textarea>
+                    </div>
+                    <div class="form-row">
+                        <input @bind="EditingQuestion.CorrectAnswer" placeholder="Bonne réponse" />
+                        <input type="number" min="1" @bind="EditingQuestion.Points" />
+                    </div>
+                    <button class="btn-primary" @onclick="SaveQuestion" disabled="@IsSaving">Enregistrer</button>
+                    <button class="btn-secondary" @onclick="CancelQuestionEdit">Annuler</button>
+                }
+                else
+                {
+                    <div>
+                        <strong>@question.Text</strong>
+                        <p>@question.Options.Count options, @question.Points point(s)</p>
+                    </div>
+                    <div>
+                        <button class="btn-secondary" @onclick="() => BeginQuestionEdit(question)">Modifier</button>
+                        <button class="btn-secondary" @onclick="() => DeleteQuestion(question.Id)">Supprimer</button>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+    <div class="course-section">
+        <h2>Statistiques du test</h2>
+        @if (Analytics == null)
+        {
+            <p>Aucune statistique disponible pour le moment.</p>
+        }
+        else
+        {
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <span class="stat-value">@Analytics.TotalAttempts</span>
+                    <span class="stat-label">Tentatives</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-value">@Analytics.AverageScore.ToString("0.0")%</span>
+                    <span class="stat-label">Score moyen</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-value">@Analytics.PassRate.ToString("0.0")%</span>
+                    <span class="stat-label">Taux de réussite</span>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public Guid CourseId { get; set; }
+
+    private bool IsLoading = true;
+    private bool IsSaving;
+    private string ErrorMessage = string.Empty;
+    private string SuccessMessage = string.Empty;
+    private CourseDto? Course;
+    private CreateModuleDto NewModule = new() { DurationMinutes = 10, Order = 1 };
+    private Guid? EditingModuleId;
+    private CreateModuleDto EditingModule = new();
+    private IBrowserFile? SelectedVideo;
+    private List<QuestionDto> Questions = new();
+    private AnalyticsDto? Analytics;
+    private QuestionDto NewQuestion = new() { Points = 1 };
+    private string OptionsText = string.Empty;
+    private Guid? EditingQuestionId;
+    private QuestionDto EditingQuestion = new();
+    private string EditingOptionsText = string.Empty;
+    private bool IsInstructor => AuthState.IsAuthenticated &&
+        (AuthState.Role == "Instructor" || AuthState.Role == "Admin");
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!IsInstructor)
+        {
+            IsLoading = false;
+            return;
+        }
+
+        try
+        {
+            var client = CreateAuthorizedClient();
+            Course = await client.GetFromJsonAsync<CourseDto>($"api/courses/{CourseId}");
+            Questions = await client.GetFromJsonAsync<List<QuestionDto>>(
+                $"api/tests/{CourseId}/manage") ?? new();
+            Analytics = await client.GetFromJsonAsync<AnalyticsDto>(
+                $"api/tests/{CourseId}/analytics");
+        }
+        catch
+        {
+            Course = null;
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private async Task CreateModule()
+    {
+        ErrorMessage = string.Empty;
+        SuccessMessage = string.Empty;
+        if (Course == null || string.IsNullOrWhiteSpace(NewModule.Title) || string.IsNullOrWhiteSpace(NewModule.Description))
+        {
+            ErrorMessage = "Le titre et le contenu écrit sont obligatoires.";
+            return;
+        }
+
+        IsSaving = true;
+        try
+        {
+            var response = await CreateAuthorizedClient().PostAsJsonAsync(
+                $"api/courses/{CourseId}/modules", NewModule);
+            if (!response.IsSuccessStatusCode)
+            {
+                ErrorMessage = "La création du module a échoué.";
+                return;
+            }
+
+            var module = await response.Content.ReadFromJsonAsync<ModuleDto>();
+            if (module != null)
+                Course.Modules.Add(module);
+            SuccessMessage = "Module ajouté avec succès.";
+            NewModule = new CreateModuleDto { DurationMinutes = 10, Order = Course.Modules.Count + 1 };
+        }
+        catch
+        {
+            ErrorMessage = "Erreur de connexion.";
+        }
+        finally
+        {
+            IsSaving = false;
+        }
+    }
+
+    private async Task PublishCourse()
+    {
+        if (Course == null || Course.IsPublished)
+            return;
+
+        ErrorMessage = string.Empty;
+        SuccessMessage = string.Empty;
+        try
+        {
+            var response = await CreateAuthorizedClient().PostAsync(
+                $"api/courses/{CourseId}/publish", null);
+            if (!response.IsSuccessStatusCode)
+            {
+                ErrorMessage = "Ajoutez au moins un module avant de publier le cours.";
+                return;
+            }
+
+            Course.IsPublished = true;
+            SuccessMessage = "Cours publié avec succès.";
+        }
+        catch
+        {
+            ErrorMessage = "Erreur de connexion.";
+        }
+    }
+
+    private async Task TogglePublication()
+    {
+        if (Course == null)
+            return;
+
+        if (Course.IsPublished)
+        {
+            try
+            {
+                var response = await CreateAuthorizedClient().PostAsync(
+                    $"api/courses/{CourseId}/unpublish", null);
+                if (!response.IsSuccessStatusCode)
+                {
+                    ErrorMessage = "La dépublication du cours a échoué.";
+                    return;
+                }
+
+                Course.IsPublished = false;
+                SuccessMessage = "Cours dépublié.";
+            }
+            catch
+            {
+                ErrorMessage = "Erreur de connexion.";
+            }
+        }
+        else
+        {
+            await PublishCourse();
+        }
+    }
+
+    private async Task ArchiveCourse()
+    {
+        if (Course == null || Course.IsArchived)
+            return;
+
+        try
+        {
+            var response = await CreateAuthorizedClient().PostAsync(
+                $"api/courses/{CourseId}/archive", null);
+            if (!response.IsSuccessStatusCode)
+            {
+                ErrorMessage = "L'archivage du cours a échoué.";
+                return;
+            }
+
+            Course.IsArchived = true;
+            Course.IsPublished = false;
+            SuccessMessage = "Cours archivé.";
+        }
+        catch
+        {
+            ErrorMessage = "Erreur de connexion.";
+        }
+    }
+
+    private async Task ToggleArchive()
+    {
+        if (Course == null)
+            return;
+
+        var action = Course.IsArchived ? "restore" : "archive";
+        try
+        {
+            var response = await CreateAuthorizedClient().PostAsync(
+                $"api/courses/{CourseId}/{action}", null);
+            if (!response.IsSuccessStatusCode)
+            {
+                ErrorMessage = "La modification de l'archivage a échoué.";
+                return;
+            }
+
+            Course.IsArchived = !Course.IsArchived;
+            Course.IsPublished = false;
+            SuccessMessage = Course.IsArchived ? "Cours archivé." : "Cours restauré en brouillon.";
+        }
+        catch
+        {
+            ErrorMessage = "Erreur de connexion.";
+        }
+    }
+
+    private async Task SaveCourse()
+    {
+        if (Course == null)
+            return;
+
+        IsSaving = true;
+        ErrorMessage = string.Empty;
+        try
+        {
+            var response = await CreateAuthorizedClient().PutAsJsonAsync(
+                $"api/courses/{CourseId}", new
+                {
+                    title = Course.Title,
+                    description = Course.Description,
+                    category = Course.Category,
+                    level = Course.Level,
+                    durationMinutes = Course.DurationMinutes,
+                    thumbnailUrl = Course.ThumbnailUrl,
+                    price = Course.Price
+                });
+            if (!response.IsSuccessStatusCode)
+            {
+                ErrorMessage = "La modification du cours a échoué.";
+                return;
+            }
+
+            SuccessMessage = "Informations du cours enregistrées.";
+        }
+        catch
+        {
+            ErrorMessage = "Erreur de connexion.";
+        }
+        finally
+        {
+            IsSaving = false;
+        }
+    }
+
+    private async Task DeleteModule(Guid moduleId)
+    {
+        ErrorMessage = string.Empty;
+        try
+        {
+            var response = await CreateAuthorizedClient().DeleteAsync(
+                $"api/courses/{CourseId}/modules/{moduleId}");
+            if (!response.IsSuccessStatusCode)
+            {
+                ErrorMessage = "La suppression du module a échoué.";
+                return;
+            }
+
+            Course?.Modules.RemoveAll(module => module.Id == moduleId);
+        }
+        catch
+        {
+            ErrorMessage = "Erreur de connexion.";
+        }
+    }
+
+    private async Task CreateQuestion()
+    {
+        ErrorMessage = string.Empty;
+        var options = OptionsText.Split('\n', StringSplitOptions.RemoveEmptyEntries)
+            .Select(option => option.Trim()).Where(option => option.Length > 0).Distinct().ToList();
+        if (string.IsNullOrWhiteSpace(NewQuestion.Text) || options.Count < 2 ||
+            !options.Contains(NewQuestion.CorrectAnswer.Trim()))
+        {
+            ErrorMessage = "Ajoutez au moins deux options et indiquez une bonne réponse exacte.";
+            return;
+        }
+
+        IsSaving = true;
+        try
+        {
+            NewQuestion.Options = options;
+            NewQuestion.CorrectAnswer = NewQuestion.CorrectAnswer.Trim();
+            var response = await CreateAuthorizedClient().PostAsJsonAsync(
+                $"api/tests/{CourseId}/questions", NewQuestion);
+            if (!response.IsSuccessStatusCode)
+            {
+                ErrorMessage = "La création de la question a échoué.";
+                return;
+            }
+
+            var question = await response.Content.ReadFromJsonAsync<QuestionDto>();
+            if (question != null)
+                Questions.Add(question);
+            NewQuestion = new QuestionDto { Points = 1 };
+            OptionsText = string.Empty;
+            SuccessMessage = "Question ajoutée avec succès.";
+        }
+        catch
+        {
+            ErrorMessage = "Erreur de connexion.";
+        }
+        finally
+        {
+            IsSaving = false;
+        }
+    }
+
+    private async Task DeleteQuestion(Guid questionId)
+    {
+        try
+        {
+            var response = await CreateAuthorizedClient().DeleteAsync(
+                $"api/tests/{CourseId}/questions/{questionId}");
+            if (response.IsSuccessStatusCode)
+                Questions.RemoveAll(question => question.Id == questionId);
+            else
+                ErrorMessage = "La suppression de la question a échoué.";
+        }
+        catch
+        {
+            ErrorMessage = "Erreur de connexion.";
+        }
+    }
+
+    private void BeginQuestionEdit(QuestionDto question)
+    {
+        EditingQuestionId = question.Id;
+        EditingQuestion = new QuestionDto
+        {
+            Id = question.Id,
+            Text = question.Text,
+            Options = question.Options.ToList(),
+            CorrectAnswer = question.CorrectAnswer,
+            Points = question.Points
+        };
+        EditingOptionsText = string.Join(Environment.NewLine, question.Options);
+    }
+
+    private void CancelQuestionEdit()
+    {
+        EditingQuestionId = null;
+        EditingQuestion = new QuestionDto();
+        EditingOptionsText = string.Empty;
+    }
+
+    private async Task SaveQuestion()
+    {
+        if (EditingQuestionId == null)
+            return;
+
+        var options = EditingOptionsText.Split('\n', StringSplitOptions.RemoveEmptyEntries)
+            .Select(option => option.Trim()).Where(option => option.Length > 0).Distinct().ToList();
+        EditingQuestion.CorrectAnswer = EditingQuestion.CorrectAnswer.Trim();
+        if (options.Count < 2 || !options.Contains(EditingQuestion.CorrectAnswer))
+        {
+            ErrorMessage = "Ajoutez au moins deux options et une bonne réponse exacte.";
+            return;
+        }
+
+        IsSaving = true;
+        ErrorMessage = string.Empty;
+        try
+        {
+            EditingQuestion.Options = options;
+            var response = await CreateAuthorizedClient().PutAsJsonAsync(
+                $"api/tests/{CourseId}/questions/{EditingQuestionId}", EditingQuestion);
+            if (!response.IsSuccessStatusCode)
+            {
+                ErrorMessage = "La modification de la question a échoué.";
+                return;
+            }
+
+            var updated = await response.Content.ReadFromJsonAsync<QuestionDto>();
+            var existing = Questions.FirstOrDefault(question => question.Id == EditingQuestionId);
+            if (existing != null && updated != null)
+            {
+                existing.Text = updated.Text;
+                existing.Options = updated.Options;
+                existing.CorrectAnswer = updated.CorrectAnswer;
+                existing.Points = updated.Points;
+            }
+
+            SuccessMessage = "Question modifiée avec succès.";
+            CancelQuestionEdit();
+        }
+        catch
+        {
+            ErrorMessage = "Erreur de connexion.";
+        }
+        finally
+        {
+            IsSaving = false;
+        }
+    }
+
+    private void BeginEdit(ModuleDto module)
+    {
+        EditingModuleId = module.Id;
+        EditingModule = new CreateModuleDto
+        {
+            Title = module.Title,
+            Description = module.Description,
+            VideoUrl = module.VideoUrl,
+            DurationMinutes = module.DurationMinutes,
+            Order = module.Order
+        };
+    }
+
+    private void CancelEdit()
+    {
+        EditingModuleId = null;
+        EditingModule = new CreateModuleDto();
+        SelectedVideo = null;
+    }
+
+    private void SelectVideo(InputFileChangeEventArgs args)
+    {
+        SelectedVideo = args.File;
+    }
+
+    private async Task UploadVideo()
+    {
+        if (Course == null || EditingModuleId == null || SelectedVideo == null)
+            return;
+
+        IsSaving = true;
+        ErrorMessage = string.Empty;
+        try
+        {
+            using var content = new MultipartFormDataContent();
+            await using var stream = SelectedVideo.OpenReadStream(100_000_000);
+            using var fileContent = new StreamContent(stream);
+            fileContent.Headers.ContentType =
+                new System.Net.Http.Headers.MediaTypeHeaderValue(SelectedVideo.ContentType);
+            content.Add(fileContent, "video", SelectedVideo.Name);
+
+            var response = await CreateAuthorizedClient().PostAsync(
+                $"api/courses/{CourseId}/modules/{EditingModuleId}/video", content);
+            if (!response.IsSuccessStatusCode)
+            {
+                ErrorMessage = "Le téléversement de la vidéo a échoué.";
+                return;
+            }
+
+            var updated = await response.Content.ReadFromJsonAsync<ModuleDto>();
+            var existing = Course.Modules.FirstOrDefault(module => module.Id == EditingModuleId);
+            if (existing != null && updated != null)
+                existing.VideoUrl = updated.VideoUrl;
+
+            EditingModule.VideoUrl = updated?.VideoUrl ?? EditingModule.VideoUrl;
+            SuccessMessage = "Vidéo téléversée avec succès.";
+            SelectedVideo = null;
+        }
+        catch
+        {
+            ErrorMessage = "Erreur lors du téléversement de la vidéo.";
+        }
+        finally
+        {
+            IsSaving = false;
+        }
+    }
+
+    private async Task SaveModule()
+    {
+        if (Course == null || EditingModuleId == null)
+            return;
+
+        IsSaving = true;
+        ErrorMessage = string.Empty;
+        try
+        {
+            var response = await CreateAuthorizedClient().PutAsJsonAsync(
+                $"api/courses/{CourseId}/modules/{EditingModuleId}", EditingModule);
+            if (!response.IsSuccessStatusCode)
+            {
+                ErrorMessage = "La modification du module a échoué.";
+                return;
+            }
+
+            var updated = await response.Content.ReadFromJsonAsync<ModuleDto>();
+            var existing = Course.Modules.FirstOrDefault(module => module.Id == EditingModuleId);
+            if (existing != null && updated != null)
+            {
+                existing.Title = updated.Title;
+                existing.Description = updated.Description;
+                existing.VideoUrl = updated.VideoUrl;
+                existing.DurationMinutes = updated.DurationMinutes;
+                existing.Order = updated.Order;
+            }
+
+            SuccessMessage = "Module modifié avec succès.";
+            CancelEdit();
+        }
+        catch
+        {
+            ErrorMessage = "Erreur de connexion.";
+        }
+        finally
+        {
+            IsSaving = false;
+        }
+    }
+
+    private HttpClient CreateAuthorizedClient()
+    {
+        var client = HttpClientFactory.CreateClient("EduPlatformAPI");
+        client.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", AuthState.Token);
+        return client;
+    }
+
+    private void GoToDashboard() => Nav.NavigateTo("/instructor");
+
+    private sealed class CourseDto
+    {
+        public Guid Id { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string Category { get; set; } = string.Empty;
+        public string Level { get; set; } = string.Empty;
+        public int DurationMinutes { get; set; }
+        public decimal Price { get; set; }
+        public string ThumbnailUrl { get; set; } = string.Empty;
+        public bool IsPublished { get; set; }
+        public bool IsArchived { get; set; }
+        public List<ModuleDto> Modules { get; set; } = new();
+    }
+
+    private class CreateModuleDto
+    {
+        public string Title { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string VideoUrl { get; set; } = string.Empty;
+        public int DurationMinutes { get; set; }
+        public int Order { get; set; }
+    }
+
+    private sealed class ModuleDto : CreateModuleDto
+    {
+        public Guid Id { get; set; }
+    }
+
+    private sealed class QuestionDto
+    {
+        public Guid Id { get; set; }
+        public string Text { get; set; } = string.Empty;
+        public List<string> Options { get; set; } = new();
+        public string CorrectAnswer { get; set; } = string.Empty;
+        public int Points { get; set; }
+    }
+
+    private sealed class AnalyticsDto
+    {
+        public int TotalAttempts { get; set; }
+        public double AverageScore { get; set; }
+        public double PassRate { get; set; }
+    }
+}

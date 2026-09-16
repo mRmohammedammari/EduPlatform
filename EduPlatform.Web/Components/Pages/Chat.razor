@@ -1,0 +1,145 @@
+@page "/chat"
+@rendermode InteractiveServer
+@inject IHttpClientFactory HttpClientFactory
+@inject EduPlatform.Web.Services.AuthStateService AuthState
+@inject NavigationManager Nav
+
+@if (!AuthState.IsAuthenticated)
+{
+    <div class="profile-container">
+        <div class="alert-error">Connectez-vous pour utiliser l'assistant pédagogique.</div>
+        <button class="btn-primary" @onclick="GoToLogin">Se connecter</button>
+    </div>
+}
+else
+{
+    <div class="chat-container">
+        <div class="page-header">
+            <h1>Assistant pédagogique</h1>
+            <p>Posez vos questions sur vos cours.</p>
+        </div>
+
+        <div class="chat-messages">
+            @if (Messages.Count == 0)
+            {
+                <div class="chat-empty">Commencez la conversation avec une question sur votre apprentissage.</div>
+            }
+            else
+            {
+                @foreach (var message in Messages)
+                {
+                    <div class="chat-message @(message.Role == "user" ? "chat-message-user" : "chat-message-assistant")">
+                        <strong>@(message.Role == "user" ? "Vous" : "Assistant")</strong>
+                        <p>@message.Content</p>
+                    </div>
+                }
+            }
+
+            @if (IsSending)
+            {
+                <div class="chat-message chat-message-assistant">
+                    <strong>Assistant</strong>
+                    <p>Réflexion en cours...</p>
+                </div>
+            }
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+        {
+            <div class="alert-error">@ErrorMessage</div>
+        }
+
+        <div class="chat-composer">
+            <textarea @bind="DraftMessage" @bind:event="oninput" placeholder="Écrivez votre question..." rows="3"></textarea>
+            <button class="btn-primary" @onclick="SendMessage" disabled="@(IsSending || string.IsNullOrWhiteSpace(DraftMessage))">
+                @(IsSending ? "Envoi..." : "Envoyer")
+            </button>
+        </div>
+    </div>
+}
+
+@code {
+    private readonly Guid SessionId = Guid.NewGuid();
+    private readonly List<ChatMessageDto> Messages = new();
+    private string DraftMessage = string.Empty;
+    private string ErrorMessage = string.Empty;
+    private bool IsSending;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!AuthState.IsAuthenticated)
+            return;
+
+        try
+        {
+            var history = await CreateAuthorizedClient().GetFromJsonAsync<List<ChatMessageDto>>(
+                $"api/chatbot/history/{SessionId}");
+            if (history != null)
+                Messages.AddRange(history);
+        }
+        catch
+        {
+            // An empty history is a valid first-session state.
+        }
+    }
+
+    private async Task SendMessage()
+    {
+        var message = DraftMessage.Trim();
+        if (string.IsNullOrWhiteSpace(message) || IsSending)
+            return;
+
+        ErrorMessage = string.Empty;
+        DraftMessage = string.Empty;
+        Messages.Add(new ChatMessageDto { Role = "user", Content = message });
+        IsSending = true;
+
+        try
+        {
+            var response = await CreateAuthorizedClient().PostAsJsonAsync("api/chatbot/message", new
+            {
+                sessionId = SessionId,
+                message
+            });
+
+            if (!response.IsSuccessStatusCode)
+            {
+                ErrorMessage = "L'assistant est momentanément indisponible.";
+                return;
+            }
+
+            var result = await response.Content.ReadFromJsonAsync<ChatResponseDto>();
+            if (!string.IsNullOrWhiteSpace(result?.Message))
+                Messages.Add(new ChatMessageDto { Role = "assistant", Content = result.Message });
+        }
+        catch
+        {
+            ErrorMessage = "Erreur de connexion. Réessayez.";
+        }
+        finally
+        {
+            IsSending = false;
+        }
+    }
+
+    private HttpClient CreateAuthorizedClient()
+    {
+        var client = HttpClientFactory.CreateClient("EduPlatformAPI");
+        client.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", AuthState.Token);
+        return client;
+    }
+
+    private void GoToLogin() => Nav.NavigateTo("/login");
+
+    private sealed class ChatMessageDto
+    {
+        public string Role { get; set; } = string.Empty;
+        public string Content { get; set; } = string.Empty;
+    }
+
+    private sealed class ChatResponseDto
+    {
+        public string Message { get; set; } = string.Empty;
+    }
+}

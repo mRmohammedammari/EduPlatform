@@ -1,0 +1,204 @@
+@page "/instructor"
+@rendermode InteractiveServer
+@inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager Nav
+@inject EduPlatform.Web.Services.AuthStateService AuthState
+
+@if (!AuthState.IsAuthenticated || (AuthState.Role != "Instructor" && AuthState.Role != "Admin"))
+{
+    <div class="profile-container">
+        <div class="alert-error">Cette page est réservée aux enseignants et administrateurs.</div>
+        <button class="btn-primary" @onclick="GoToHome">Retour à l'accueil</button>
+    </div>
+}
+else
+{
+    <div class="page-header">
+        <h1>Espace enseignant</h1>
+        <p>Gérez vos cours et préparez vos contenus pédagogiques.</p>
+    </div>
+
+    <div class="course-section">
+        <h2>Créer un cours</h2>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Titre</label>
+                <input @bind="NewCourse.Title" placeholder="Titre du cours" />
+            </div>
+            <div class="form-group">
+                <label>Catégorie</label>
+                <input @bind="NewCourse.Category" placeholder="Informatique" />
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Niveau</label>
+                <select @bind="NewCourse.Level">
+                    <option value="Debutant">Débutant</option>
+                    <option value="Intermediaire">Intermédiaire</option>
+                    <option value="Avance">Avancé</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Durée (minutes)</label>
+                <input type="number" min="1" @bind="NewCourse.DurationMinutes" />
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Description</label>
+            <textarea @bind="NewCourse.Description" rows="4" placeholder="Présentez le contenu du cours"></textarea>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Prix</label>
+                <input type="number" min="0" step="0.01" @bind="NewCourse.Price" />
+            </div>
+            <div class="form-group">
+                <label>Image de couverture</label>
+                <input @bind="NewCourse.ThumbnailUrl" placeholder="https://..." />
+            </div>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+        {
+            <div class="alert-error">@ErrorMessage</div>
+        }
+        @if (!string.IsNullOrWhiteSpace(SuccessMessage))
+        {
+            <div class="alert-success">@SuccessMessage</div>
+        }
+        <button class="btn-primary" @onclick="CreateCourse" disabled="@IsSaving">
+            @(IsSaving ? "Création..." : "Créer le cours")
+        </button>
+    </div>
+
+    <div class="course-section">
+        <h2>Mes cours</h2>
+        @if (IsLoading)
+        {
+            <p>Chargement...</p>
+        }
+        else if (Courses.Count == 0)
+        {
+            <p>Vous n'avez encore créé aucun cours.</p>
+        }
+        else
+        {
+            <div class="CourseList-grid">
+                @foreach (var course in Courses)
+                {
+                    <div class="course-card">
+                        <div class="course-info">
+                            <span class="badge">@(course.IsPublished ? "Publié" : "Brouillon")</span>
+                            <h3>@course.Title</h3>
+                            <p>@course.Description</p>
+                            <span>@course.Modules.Count module(s)</span>
+                            <button class="btn-secondary" @onclick="() => EditCourse(course.Id)">Gérer le contenu</button>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private bool IsLoading = true;
+    private bool IsSaving;
+    private string ErrorMessage = string.Empty;
+    private string SuccessMessage = string.Empty;
+    private List<CourseDto> Courses = new();
+    private CreateCourseDto NewCourse = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (AuthState.IsAuthenticated && (AuthState.Role == "Instructor" || AuthState.Role == "Admin"))
+            await LoadCourses();
+        else
+            IsLoading = false;
+    }
+
+    private async Task LoadCourses()
+    {
+        try
+        {
+            Courses = await CreateAuthorizedClient().GetFromJsonAsync<List<CourseDto>>("api/courses/mine") ?? new();
+        }
+        catch
+        {
+            ErrorMessage = "Impossible de charger vos cours.";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private async Task CreateCourse()
+    {
+        ErrorMessage = string.Empty;
+        SuccessMessage = string.Empty;
+        if (string.IsNullOrWhiteSpace(NewCourse.Title) || string.IsNullOrWhiteSpace(NewCourse.Description))
+        {
+            ErrorMessage = "Le titre et la description sont obligatoires.";
+            return;
+        }
+
+        IsSaving = true;
+        try
+        {
+            var response = await CreateAuthorizedClient().PostAsJsonAsync("api/courses", NewCourse);
+            if (!response.IsSuccessStatusCode)
+            {
+                ErrorMessage = "La création du cours a échoué.";
+                return;
+            }
+
+            SuccessMessage = "Cours créé en brouillon.";
+            NewCourse = new CreateCourseDto();
+            await LoadCourses();
+        }
+        catch
+        {
+            ErrorMessage = "Erreur de connexion.";
+        }
+        finally
+        {
+            IsSaving = false;
+        }
+    }
+
+    private HttpClient CreateAuthorizedClient()
+    {
+        var client = HttpClientFactory.CreateClient("EduPlatformAPI");
+        client.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", AuthState.Token);
+        return client;
+    }
+
+    private void GoToHome() => Nav.NavigateTo("/");
+    private void EditCourse(Guid courseId) => Nav.NavigateTo($"/instructor/courses/{courseId}");
+
+    private class CreateCourseDto
+    {
+        public string Title { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string Category { get; set; } = string.Empty;
+        public string Level { get; set; } = "Debutant";
+        public int DurationMinutes { get; set; }
+        public string ThumbnailUrl { get; set; } = string.Empty;
+        public decimal Price { get; set; }
+    }
+
+    private sealed class CourseDto : CreateCourseDto
+    {
+        public Guid Id { get; set; }
+        public bool IsPublished { get; set; }
+        public List<ModuleDto> Modules { get; set; } = new();
+    }
+
+    private sealed class ModuleDto
+    {
+        public Guid Id { get; set; }
+    }
+}

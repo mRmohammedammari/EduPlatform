@@ -1,0 +1,173 @@
+﻿@page "/courses"
+@page "/explore"
+@rendermode InteractiveServer
+@inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager Nav
+
+@using Microsoft.AspNetCore.Components
+
+<div class="explore-page">
+    <section class="explore-hero">
+        <div class="explore-copy">
+            <span class="eyebrow dark">EXPLORER EDUPlatform</span>
+            <h1>Un nouveau sujet à portée de clic.</h1>
+            <p>Parcourez les formations publiées, filtrez par niveau et trouvez le prochain cours qui vous fera progresser.</p>
+        </div>
+
+        <div class="explore-metrics">
+            <div class="mini-stat">
+                <strong>@FormatStat(Stats?.PublishedCourses)</strong>
+                <span>formations</span>
+            </div>
+            <div class="mini-stat">
+                <strong>@FormatStat(Stats?.Categories)</strong>
+                <span>catégories</span>
+            </div>
+            <button class="market-button explore-recommendations" @onclick='() => Nav.NavigateTo("/recommendations")'>Mes recommandations</button>
+        </div>
+    </section>
+
+    <div class="explore-toolbar">
+        <strong>@VisibleCourses.Count() cours disponibles</strong>
+        <div class="filters">
+            <select class="explore-select" @bind="SelectedCategory" @bind:after="LoadCourseList">
+                <option value="">Toutes les catégories</option>
+                <option value="Informatique">Informatique</option>
+                <option value="Economie">Economie</option>
+                <option value="Physique">Physique</option>
+                <option value="Langues">Langues</option>
+            </select>
+
+            <select class="explore-select" @bind="SelectedLevel" @bind:after="LoadCourseList">
+                <option value="">Tous les niveaux</option>
+                <option value="Debutant">Débutant</option>
+                <option value="Intermediaire">Intermédiaire</option>
+                <option value="Avance">Avancé</option>
+            </select>
+        </div>
+    </div>
+
+    @if (IsLoading)
+    {
+        <p class="explore-empty">⏳ Chargement des cours...</p>
+    }
+    else if (VisibleCourses.Any())
+    {
+        <div class="CourseList-grid">
+            @foreach (var course in VisibleCourses)
+            {
+                <article class="course-card" @onclick="() => GoToCourse(course.Id)">
+                    <div class="course-card-image" style="@GetCoverStyle(course.Category)">
+                        <span class="course-cover-tag">@course.Category</span>
+                    </div>
+                    <div class="course-info">
+                        <div class="course-card-topline">
+                            <span class="badge">@course.Level</span>
+                            <span class="course-duration">⏱ @course.DurationMinutes min</span>
+                        </div>
+                        <h3>@course.Title</h3>
+                        <p>@course.Description</p>
+                        <div class="course-meta">
+                            <span>@course.Category</span>
+                            <span class="meta-separator">•</span>
+                            <span>@course.DurationMinutes min</span>
+                        </div>
+                        <button class="btn-primary">Voir le cours →</button>
+                    </div>
+                </article>
+            }
+        </div>
+    }
+    else
+    {
+        <p class="explore-empty">Aucun cours disponible pour le moment.</p>
+    }
+</div>
+
+@code {
+    private List<CourseDto>? CourseList;
+    private CourseStatsDto? Stats;
+    private bool IsLoading = true;
+    private string SelectedCategory = string.Empty;
+    private string SelectedLevel = string.Empty;
+
+    [SupplyParameterFromQuery(Name = "search")]
+    public string SearchTerm { get; set; } = string.Empty;
+
+    private IEnumerable<CourseDto> VisibleCourses => (CourseList ?? new List<CourseDto>())
+        .Where(course => string.IsNullOrWhiteSpace(SearchTerm)
+            || course.Title.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase)
+            || course.Description.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase)
+            || course.Category.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase));
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCourseList();
+
+        try
+        {
+            var httpClient = HttpClientFactory.CreateClient("EduPlatformAPI");
+            Stats = await httpClient.GetFromJsonAsync<CourseStatsDto>("api/courses/stats");
+        }
+        catch (Exception)
+        {
+            Stats = null;
+        }
+    }
+
+    private static string FormatStat(int? value) => value is null ? "—" : value.Value.ToString();
+
+    private async Task LoadCourseList()
+    {
+        IsLoading = true;
+        try
+        {
+            var httpClient = HttpClientFactory.CreateClient("EduPlatformAPI");
+            var url = $"api/courses?category={SelectedCategory}&level={SelectedLevel}";
+            CourseList = await httpClient.GetFromJsonAsync<List<CourseDto>>(url);
+        }
+        catch (Exception)
+        {
+            CourseList = new List<CourseDto>();
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private string GetCoverStyle(string category)
+    {
+        return category switch
+        {
+            "Informatique" => "background: linear-gradient(135deg, #5b5df6 0%, #8b5cf6 100%);",
+            "Economie" => "background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%);",
+            "Physique" => "background: linear-gradient(135deg, #10b981 0%, #14b8a6 100%);",
+            "Langues" => "background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);",
+            _ => "background: linear-gradient(135deg, #1f2937 0%, #6d28d9 100%);"
+        };
+    }
+
+    private void GoToCourse(Guid id)
+    {
+        Nav.NavigateTo($"/courses/{id}");
+    }
+
+    private class CourseDto
+    {
+        public Guid Id { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string Category { get; set; } = string.Empty;
+        public string Level { get; set; } = string.Empty;
+        public int DurationMinutes { get; set; }
+    }
+
+    private class CourseStatsDto
+    {
+        public int PublishedCourses { get; set; }
+        public int Categories { get; set; }
+        public int Modules { get; set; }
+        public int ActiveLearners { get; set; }
+    }
+}

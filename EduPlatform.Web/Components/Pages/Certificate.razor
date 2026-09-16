@@ -1,0 +1,95 @@
+@page "/courses/{CourseId:guid}/certificate"
+@rendermode InteractiveServer
+@inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager Nav
+@inject EduPlatform.Web.Services.AuthStateService AuthState
+
+@if (!AuthState.IsAuthenticated)
+{
+    <div class="profile-container">
+        <div class="alert-error">Connectez-vous pour consulter votre certificat.</div>
+        <button class="btn-primary" @onclick="GoToLogin">Se connecter</button>
+    </div>
+}
+else if (IsLoading)
+{
+    <p>Vérification de votre certificat...</p>
+}
+else if (!string.IsNullOrWhiteSpace(ErrorMessage))
+{
+    <div class="profile-container">
+        <div class="alert-error">@ErrorMessage</div>
+        <button class="btn-secondary" @onclick="GoToCourse">Retour au cours</button>
+    </div>
+}
+else if (CertificateData != null)
+{
+    <div class="certificate-container">
+        <div class="certificate-card">
+            <span class="badge">EduPlatform</span>
+            <h1>Certificat de réussite</h1>
+            <p>Ce certificat est décerné à</p>
+            <h2>@CertificateData.StudentName</h2>
+            <p>pour avoir réussi le cours</p>
+            <h3>@CertificateData.CourseTitle</h3>
+            <p>Score obtenu : @CertificateData.Score / @CertificateData.MaxScore</p>
+            <p>Délivré le @CertificateData.IssuedAt.ToLocalTime().ToString("dd/MM/yyyy")</p>
+            <small>Identifiant : @CertificateData.CertificateId</small>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public Guid CourseId { get; set; }
+
+    private bool IsLoading = true;
+    private string ErrorMessage = string.Empty;
+    private CertificateDto? CertificateData;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var response = await CreateAuthorizedClient().GetAsync($"api/certificates/{CourseId}");
+            if (response.IsSuccessStatusCode)
+            {
+                CertificateData = await response.Content.ReadFromJsonAsync<CertificateDto>();
+            }
+            else
+            {
+                var body = await response.Content.ReadFromJsonAsync<Dictionary<string, string>>();
+                ErrorMessage = body?.GetValueOrDefault("message") ??
+                    "Vous n'êtes pas encore éligible au certificat.";
+            }
+        }
+        catch
+        {
+            ErrorMessage = "Impossible de vérifier le certificat.";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private HttpClient CreateAuthorizedClient()
+    {
+        var client = HttpClientFactory.CreateClient("EduPlatformAPI");
+        client.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", AuthState.Token);
+        return client;
+    }
+
+    private void GoToLogin() => Nav.NavigateTo("/login");
+    private void GoToCourse() => Nav.NavigateTo($"/courses/{CourseId}");
+
+    private sealed class CertificateDto
+    {
+        public string CertificateId { get; set; } = string.Empty;
+        public string StudentName { get; set; } = string.Empty;
+        public string CourseTitle { get; set; } = string.Empty;
+        public DateTime IssuedAt { get; set; }
+        public decimal Score { get; set; }
+        public decimal MaxScore { get; set; }
+    }
+}

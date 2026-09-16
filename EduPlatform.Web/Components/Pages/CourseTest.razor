@@ -1,0 +1,199 @@
+@page "/courses/{CourseId:guid}/test"
+@rendermode InteractiveServer
+@inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager Nav
+@inject EduPlatform.Web.Services.AuthStateService AuthState
+
+@if (!AuthState.IsAuthenticated)
+{
+    <div class="profile-container">
+        <div class="alert-error">Vous devez être connecté pour passer ce test.</div>
+        <button class="btn-primary" @onclick="GoToLogin">Se connecter</button>
+    </div>
+}
+else if (IsLoading)
+{
+    <p>Chargement du test...</p>
+}
+else if (!string.IsNullOrWhiteSpace(ErrorMessage))
+{
+    <div class="alert-error">@ErrorMessage</div>
+}
+else if (Result != null)
+{
+    <div class="course-detail-container">
+        <div class="course-section test-result">
+            <h1>Résultat du test</h1>
+            <p class="test-score">@Result.Score / @Result.MaxScore points</p>
+            <p>Score : @Result.Percentage%</p>
+            <div class="@(Result.Passed ? "alert-success" : "alert-error")">
+                @(Result.Passed ? "Félicitations, test réussi !" : "Test non réussi. Vous pouvez réessayer.")
+            </div>
+            <div class="payment-actions">
+                <button class="btn-secondary" @onclick="GoToCourse">Retour au cours</button>
+                <button class="btn-primary" @onclick="ResetTest">Recommencer</button>
+            </div>
+        </div>
+    </div>
+}
+else if (Questions.Count == 0)
+{
+    <div class="course-detail-container">
+        <div class="course-section">
+            <h1>Test du cours</h1>
+            <p>Aucune question n'est disponible pour ce cours.</p>
+            <button class="btn-secondary" @onclick="GoToCourse">Retour au cours</button>
+        </div>
+    </div>
+}
+else
+{
+    <div class="course-detail-container">
+        <div class="page-header">
+            <h1>Test du cours</h1>
+            <p>@Questions.Count question(s)</p>
+        </div>
+
+        <div class="course-section">
+            @foreach (var question in Questions.Select((value, index) => new { value, index }))
+            {
+                <div class="test-question">
+                    <h2>@(question.index + 1). @question.value.Text</h2>
+                    @foreach (var option in question.value.Options)
+                    {
+                        <label class="test-option">
+                            <input type="radio"
+                                   name="question-@question.value.Id"
+                                   value="@option"
+                                   checked="@(GetAnswer(question.value.Id) == option)"
+                                   @onchange="eventArgs => SetAnswer(question.value.Id, eventArgs.Value?.ToString())" />
+                            <span>@option</span>
+                        </label>
+                    }
+                </div>
+            }
+
+            @if (!string.IsNullOrWhiteSpace(SubmitError))
+            {
+                <div class="alert-error">@SubmitError</div>
+            }
+
+            <button class="btn-primary btn-large" @onclick="SubmitTest" disabled="@IsSubmitting">
+                @(IsSubmitting ? "Correction..." : "Soumettre le test")
+            </button>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public Guid CourseId { get; set; }
+
+    private bool IsLoading = true;
+    private bool IsSubmitting;
+    private string ErrorMessage = string.Empty;
+    private string SubmitError = string.Empty;
+    private List<QuestionDto> Questions = new();
+    private Dictionary<Guid, string> Answers = new();
+    private TestResultDto? Result;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!AuthState.IsAuthenticated)
+        {
+            IsLoading = false;
+            return;
+        }
+
+        try
+        {
+            var client = CreateAuthorizedClient();
+            Questions = await client.GetFromJsonAsync<List<QuestionDto>>($"api/tests/{CourseId}") ?? new();
+        }
+        catch
+        {
+            ErrorMessage = "Impossible de charger le test. Réessayez plus tard.";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private HttpClient CreateAuthorizedClient()
+    {
+        var client = HttpClientFactory.CreateClient("EduPlatformAPI");
+        client.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", AuthState.Token);
+        return client;
+    }
+
+    private string? GetAnswer(Guid questionId)
+    {
+        return Answers.TryGetValue(questionId, out var answer) ? answer : null;
+    }
+
+    private void SetAnswer(Guid questionId, string? answer)
+    {
+        if (!string.IsNullOrWhiteSpace(answer))
+            Answers[questionId] = answer;
+    }
+
+    private async Task SubmitTest()
+    {
+        SubmitError = string.Empty;
+        IsSubmitting = true;
+
+        try
+        {
+            var response = await CreateAuthorizedClient().PostAsJsonAsync(
+                $"api/tests/{CourseId}/submit",
+                new
+                {
+                    sessionId = AuthState.SessionId,
+                    answers = Answers.ToDictionary(pair => pair.Key.ToString(), pair => pair.Value)
+                });
+
+            if (!response.IsSuccessStatusCode)
+            {
+                SubmitError = "La correction du test a échoué. Réessayez.";
+                return;
+            }
+
+            Result = await response.Content.ReadFromJsonAsync<TestResultDto>();
+        }
+        catch
+        {
+            SubmitError = "Erreur de connexion. Réessayez.";
+        }
+        finally
+        {
+            IsSubmitting = false;
+        }
+    }
+
+    private void ResetTest()
+    {
+        Answers.Clear();
+        Result = null;
+        SubmitError = string.Empty;
+    }
+
+    private void GoToCourse() => Nav.NavigateTo($"/courses/{CourseId}");
+    private void GoToLogin() => Nav.NavigateTo("/login");
+
+    private sealed class QuestionDto
+    {
+        public Guid Id { get; set; }
+        public string Text { get; set; } = string.Empty;
+        public List<string> Options { get; set; } = new();
+        public int Points { get; set; }
+    }
+
+    private sealed class TestResultDto
+    {
+        public decimal Score { get; set; }
+        public decimal MaxScore { get; set; }
+        public bool Passed { get; set; }
+        public decimal Percentage { get; set; }
+    }
+}

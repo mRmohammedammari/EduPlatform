@@ -1,0 +1,142 @@
+@page "/progress"
+@rendermode InteractiveServer
+@inject IHttpClientFactory HttpClientFactory
+@inject EduPlatform.Web.Services.AuthStateService AuthState
+@inject NavigationManager Nav
+
+@if (!AuthState.IsAuthenticated)
+{
+    <div class="profile-container">
+        <div class="alert-error">Vous devez être connecté pour voir votre progression.</div>
+        <button class="btn-primary" @onclick="GoToLogin">Se connecter</button>
+    </div>
+}
+else
+{
+    <div class="page-header">
+        <h1>?? Ma progression</h1>
+    </div>
+
+    @if (IsLoading)
+    {
+        <p>Chargement de votre progression...</p>
+    }
+    else if (Summary == null)
+    {
+        <p>Aucune donnée disponible pour le moment.</p>
+    }
+    else
+    {
+        <div class="stats-grid">
+            <div class="stat-card">
+                <span class="stat-value">@Summary.TotalCourses</span>
+                <span class="stat-label">Cours inscrits</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-value">@Summary.CompletedCourses</span>
+                <span class="stat-label">Cours terminés</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-value">@Summary.AverageProgress%</span>
+                <span class="stat-label">Progression moyenne</span>
+            </div>
+        </div>
+
+        @if (Enrollments.Any())
+        {
+            <div class="course-section">
+                <h2>Suivi détaillé</h2>
+                <div class="enrollments-list">
+                    @foreach (var item in Enrollments)
+                    {
+                        <div class="enrollment-card">
+                            <div class="enrollment-info">
+                                <h3>@item.CourseTitle</h3>
+                                <p>Inscrit le : @item.EnrolledAt.ToString("dd/MM/yyyy")</p>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: @(item.ProgressPercent)%"></div>
+                                </div>
+                                <span>@item.ProgressPercent% complété</span>
+                            </div>
+                            <button class="btn-secondary" @onclick="() => GoToCourse(item.CourseId)">Voir le cours</button>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    }
+}
+
+@code {
+    private bool IsLoading = true;
+    private ProgressSummary? Summary;
+    private List<EnrollmentProgressDto> Enrollments = new();
+
+    private void GoToLogin()
+    {
+        Nav.NavigateTo("/login");
+    }
+
+    private void GoToCourse(Guid courseId)
+    {
+        Nav.NavigateTo($"/courses/{courseId}");
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && AuthState.IsAuthenticated)
+        {
+            await LoadProgressAsync();
+        }
+    }
+
+    private async Task LoadProgressAsync()
+    {
+        IsLoading = true;
+        try
+        {
+            var httpClient = HttpClientFactory.CreateClient("EduPlatformAPI");
+            httpClient.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", AuthState.Token);
+
+            Enrollments = await httpClient.GetFromJsonAsync<List<EnrollmentProgressDto>>(
+                "api/progress/enrollments") ?? new();
+
+            Summary = new ProgressSummary
+            {
+                TotalCourses = Enrollments.Count,
+                CompletedCourses = Enrollments.Count(e => e.ProgressPercent >= 100),
+                AverageProgress = Enrollments.Any() ? (int)Math.Round(Enrollments.Average(e => e.ProgressPercent)) : 0
+            };
+        }
+        catch
+        {
+            Enrollments = new();
+            Summary = new ProgressSummary
+            {
+                TotalCourses = 0,
+                CompletedCourses = 0,
+                AverageProgress = 0
+            };
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private class EnrollmentProgressDto
+    {
+        public Guid CourseId { get; set; }
+        public string CourseTitle { get; set; } = string.Empty;
+        public DateTime EnrolledAt { get; set; }
+        public int ProgressPercent { get; set; }
+    }
+
+    private class ProgressSummary
+    {
+        public int TotalCourses { get; set; }
+        public int CompletedCourses { get; set; }
+        public int AverageProgress { get; set; }
+    }
+}

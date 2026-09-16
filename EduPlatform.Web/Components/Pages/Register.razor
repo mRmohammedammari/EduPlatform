@@ -1,0 +1,104 @@
+﻿@page "/register"
+@rendermode InteractiveServer
+@inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager Nav
+@inject EduPlatform.Web.Services.AuthStateService AuthState
+
+<div class="login-container">
+    <div class="auth-context">
+        <span class="eyebrow">COMMENCEZ ICI</span>
+        <h1>Construisez la prochaine étape de votre avenir.</h1>
+        <p>Créez votre compte et découvrez des formations pensées pour apprendre en faisant.</p>
+    </div>
+    <div class="login-card">
+        <h3>Créer un compte</h3>
+
+        @if (!string.IsNullOrEmpty(ErrorMessage))
+        {
+            <div class="alert-error">@ErrorMessage</div>
+        }
+
+        <div class="form-group">
+            <label>Prénom</label>
+            <input type="text" @bind="FirstName" placeholder="Votre prénom" />
+        </div>
+
+        <div class="form-group">
+            <label>Nom</label>
+            <input type="text" @bind="LastName" placeholder="Votre nom" />
+        </div>
+
+        <div class="form-group">
+            <label>Email</label>
+            <input type="email" @bind="Email" placeholder="votre@email.com" />
+        </div>
+
+        <div class="form-group">
+            <label>Mot de passe</label>
+            <input type="password" @bind="Password" placeholder="••••••••" />
+        </div>
+
+        <button class="btn-primary" @onclick="HandleRegister">
+            @(IsLoading ? "Inscription..." : "S'inscrire")
+        </button>
+
+        <p>Déjà un compte ? <a href="/login">Se connecter</a></p>
+    </div>
+</div>
+
+@code {
+    private string FirstName = string.Empty;
+    private string LastName = string.Empty;
+    private string Email = string.Empty;
+    private string Password = string.Empty;
+    private string ErrorMessage = string.Empty;
+    private bool IsLoading = false;
+
+    private async Task HandleRegister()
+    {
+        IsLoading = true;
+        ErrorMessage = string.Empty;
+
+        try
+        {
+            var httpClient = HttpClientFactory.CreateClient("EduPlatformAPI");
+            var response = await httpClient.PostAsJsonAsync("api/Auth/register", new
+            {
+                email = Email,
+                password = Password,
+                firstName = FirstName,
+                lastName = LastName
+            });
+
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<RegisterResponse>();
+                if (result != null)
+                {
+                    await AuthState.LoginAsync(result.Token, result.UserId.ToString(), FirstName, Email, "Student");
+                }
+                Nav.NavigateTo("/courses");
+            }
+            else
+            {
+                var body = await response.Content.ReadFromJsonAsync<Dictionary<string, string>>();
+                ErrorMessage = body?.GetValueOrDefault("message") ?? "Erreur lors de l'inscription.";
+            }
+        }
+        catch (Exception)
+        {
+            ErrorMessage = "Erreur de connexion. Réessayez.";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private class RegisterResponse
+    {
+        public string Token { get; set; } = string.Empty;
+        public Guid UserId { get; set; }
+        public int Role { get; set; }
+    }
+}

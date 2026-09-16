@@ -1,0 +1,26 @@
+window.eduPlatformSession = {
+    cookieOptions: function () {
+        return "; path=/; max-age=86400; SameSite=Lax" +
+            (window.location.protocol === "https:" ? "; Secure" : "");
+    },
+    get: function () {
+        const prefix = "eduplatform-session-id=";
+        const cookie = document.cookie.split(";").map(value => value.trim()).find(value => value.startsWith(prefix));
+        return cookie ? decodeURIComponent(cookie.substring(prefix.length)) : "";
+    },
+    set: function (value) {
+        document.cookie = "eduplatform-session-id=" + encodeURIComponent(value) + this.cookieOptions();
+    },
+    clear: function () {
+        document.cookie = "eduplatform-session-id=; max-age=0" + this.cookieOptions();
+    },
+    download: function (fileName, bytes) {
+        const blob = new Blob([new Uint8Array(bytes)], { type: "text/csv;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement("a");
+        anchor.href = url;
+        anchor.download = fileName;
+        anchor.click();
+        URL.revokeObjectURL(url);
+    }
+};

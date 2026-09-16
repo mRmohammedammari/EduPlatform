@@ -1,0 +1,101 @@
+@page "/notifications"
+@rendermode InteractiveServer
+@inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager Nav
+@inject EduPlatform.Web.Services.AuthStateService AuthState
+
+@if (!AuthState.IsAuthenticated)
+{
+    <div class="profile-container">
+        <div class="alert-error">Connectez-vous pour voir vos notifications.</div>
+        <button class="btn-primary" @onclick="GoToLogin">Se connecter</button>
+    </div>
+}
+else
+{
+    <div class="page-header">
+        <h1>Notifications</h1>
+        <p>Retrouvez les événements importants de votre parcours.</p>
+    </div>
+
+    @if (IsLoading)
+    {
+        <p>Chargement...</p>
+    }
+    else if (NotificationsList.Count == 0)
+    {
+        <div class="course-section"><p>Aucune notification.</p></div>
+    }
+    else
+    {
+        <div class="course-section">
+            @foreach (var notification in NotificationsList)
+            {
+                <div class="activity-row @(notification.IsRead ? "" : "unread")">
+                    <div>
+                        <strong>@notification.Title</strong>
+                        <p>@notification.Message</p>
+                    </div>
+                    <div class="activity-meta">
+                        <span>@notification.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</span>
+                        @if (!notification.IsRead)
+                        {
+                            <button class="btn-secondary" @onclick="() => MarkAsRead(notification)">Marquer lu</button>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    }
+}
+
+@code {
+    private bool IsLoading = true;
+    private List<NotificationDto> NotificationsList = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!AuthState.IsAuthenticated)
+        {
+            IsLoading = false;
+            return;
+        }
+
+        try
+        {
+            NotificationsList = await CreateAuthorizedClient()
+                .GetFromJsonAsync<List<NotificationDto>>("api/notifications") ?? new();
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private async Task MarkAsRead(NotificationDto notification)
+    {
+        var response = await CreateAuthorizedClient().PostAsync(
+            $"api/notifications/{notification.Id}/read", null);
+        if (response.IsSuccessStatusCode)
+            notification.IsRead = true;
+    }
+
+    private HttpClient CreateAuthorizedClient()
+    {
+        var client = HttpClientFactory.CreateClient("EduPlatformAPI");
+        client.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", AuthState.Token);
+        return client;
+    }
+
+    private void GoToLogin() => Nav.NavigateTo("/login");
+
+    private sealed class NotificationDto
+    {
+        public Guid Id { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string Message { get; set; } = string.Empty;
+        public bool IsRead { get; set; }
+        public DateTime CreatedAt { get; set; }
+    }
+}

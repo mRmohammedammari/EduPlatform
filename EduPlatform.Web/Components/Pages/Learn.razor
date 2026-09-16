@@ -1,0 +1,232 @@
+@page "/courses/{CourseId:guid}/learn"
+@rendermode InteractiveServer
+@inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager Nav
+@inject EduPlatform.Web.Services.AuthStateService AuthState
+
+@if (!AuthState.IsAuthenticated)
+{
+    <div class="profile-container">
+        <div class="alert-error">Connectez-vous pour accéder au contenu du cours.</div>
+        <button class="btn-primary" @onclick="GoToLogin">Se connecter</button>
+    </div>
+}
+else if (IsLoading)
+{
+    <p>Chargement du cours...</p>
+}
+else if (!IsEnrolled)
+{
+    <div class="profile-container">
+        <div class="alert-error">Vous devez être inscrit à ce cours pour accéder au contenu.</div>
+        <button class="btn-primary" @onclick="GoToCourse">Voir le cours</button>
+    </div>
+}
+else if (Course == null)
+{
+    <div class="alert-error">Cours introuvable.</div>
+}
+else
+{
+    <div class="learning-layout">
+        <aside class="learning-sidebar">
+            <h2>@Course.Title</h2>
+            @foreach (var module in Course.Modules.OrderBy(m => m.Order))
+            {
+                <button class="module-link @(SelectedModule?.Id == module.Id ? "active" : "")"
+                        @onclick="() => SelectModule(module)">
+                    <span>@module.Order. @module.Title</span>
+                    <small>@module.DurationMinutes min</small>
+                </button>
+            }
+        </aside>
+
+        <main class="learning-content">
+            @if (SelectedModule == null)
+            {
+                <h1>Bienvenue dans le cours</h1>
+                <p>Sélectionnez un module pour commencer.</p>
+            }
+            else
+            {
+                <div class="page-header">
+                    <span class="badge">Module @SelectedModule.Order</span>
+                    <h1>@SelectedModule.Title</h1>
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(SelectedModule.VideoUrl))
+                {
+                    <div class="video-container">
+                        @if (IsYouTubeUrl(SelectedModule.VideoUrl))
+                        {
+                            <iframe src="@GetYouTubeEmbedUrl(SelectedModule.VideoUrl)"
+                                    title="Vidéo du module"
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                    allowfullscreen></iframe>
+                        }
+                        else
+                        {
+                            <video controls preload="metadata" src="@SelectedModule.VideoUrl"></video>
+                        }
+                    </div>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(SelectedModule.Description))
+                {
+                    <article class="course-text">
+                        @((MarkupString)SelectedModule.Description)
+                    </article>
+                }
+                else if (string.IsNullOrWhiteSpace(SelectedModule.VideoUrl))
+                {
+                    <p>Le contenu de ce module sera bientôt disponible.</p>
+                }
+
+                <button class="btn-primary" @onclick="MarkModuleCompleted" disabled="@IsSavingActivity">
+                    @(IsSavingActivity ? "Enregistrement..." : "Marquer le module comme terminé")
+                </button>
+
+                @if (!string.IsNullOrWhiteSpace(ActivityMessage))
+                {
+                    <div class="alert-success">@ActivityMessage</div>
+                }
+            }
+        </main>
+    </div>
+}
+
+@code {
+    [Parameter] public Guid CourseId { get; set; }
+
+    private CourseDto? Course;
+    private ModuleDto? SelectedModule;
+    private bool IsLoading = true;
+    private bool IsEnrolled;
+    private bool IsSavingActivity;
+    private string ActivityMessage = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!AuthState.IsAuthenticated)
+        {
+            IsLoading = false;
+            return;
+        }
+
+        try
+        {
+            var client = CreateAuthorizedClient();
+            IsEnrolled = await client.GetFromJsonAsync<bool>($"api/courses/{CourseId}/enrollment-status");
+            if (!IsEnrolled)
+                return;
+
+            Course = await client.GetFromJsonAsync<CourseDto>($"api/courses/{CourseId}");
+            SelectedModule = Course?.Modules.OrderBy(m => m.Order).FirstOrDefault();
+            if (SelectedModule != null)
+                await LogActivityAsync("module_opened", 0);
+        }
+        catch
+        {
+            Course = null;
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private async Task SelectModule(ModuleDto module)
+    {
+        SelectedModule = module;
+        ActivityMessage = string.Empty;
+        await LogActivityAsync("module_opened", 0);
+    }
+
+    private async Task MarkModuleCompleted()
+    {
+        if (SelectedModule == null)
+            return;
+
+        await LogActivityAsync("module_completed", SelectedModule.DurationMinutes * 60);
+        ActivityMessage = "Votre progression a été enregistrée.";
+    }
+
+    private async Task LogActivityAsync(string actionType, int durationSeconds)
+    {
+        IsSavingActivity = true;
+        try
+        {
+            await CreateAuthorizedClient().PostAsJsonAsync("api/progress/log", new
+            {
+                courseId = CourseId,
+                sessionId = AuthState.SessionId,
+                actionType,
+                durationSec = durationSeconds,
+                pageUrl = Nav.Uri,
+                deviceType = "web"
+            });
+        }
+        catch
+        {
+            ActivityMessage = "L'activité n'a pas pu être enregistrée.";
+        }
+        finally
+        {
+            IsSavingActivity = false;
+        }
+    }
+
+    private HttpClient CreateAuthorizedClient()
+    {
+        var client = HttpClientFactory.CreateClient("EduPlatformAPI");
+        client.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", AuthState.Token);
+        return client;
+    }
+
+    private void GoToLogin() => Nav.NavigateTo("/login");
+    private void GoToCourse() => Nav.NavigateTo($"/courses/{CourseId}");
+
+    private static bool IsYouTubeUrl(string url)
+    {
+        return url.Contains("youtube.com/watch", StringComparison.OrdinalIgnoreCase)
+            || url.Contains("youtu.be/", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string GetYouTubeEmbedUrl(string url)
+    {
+        if (url.Contains("youtu.be/", StringComparison.OrdinalIgnoreCase))
+        {
+            var videoId = url[(url.IndexOf("youtu.be/", StringComparison.OrdinalIgnoreCase) + 9)..]
+                .Split('?', '&')[0];
+            return $"https://www.youtube.com/embed/{videoId}";
+        }
+
+        var marker = "v=";
+        var start = url.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
+        if (start >= 0)
+        {
+            var videoId = url[(start + marker.Length)..].Split('&')[0];
+            return $"https://www.youtube.com/embed/{videoId}";
+        }
+
+        return url;
+    }
+
+    private sealed class CourseDto
+    {
+        public Guid Id { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public List<ModuleDto> Modules { get; set; } = new();
+    }
+
+    private sealed class ModuleDto
+    {
+        public Guid Id { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string VideoUrl { get; set; } = string.Empty;
+        public int DurationMinutes { get; set; }
+        public int Order { get; set; }
+    }
+}

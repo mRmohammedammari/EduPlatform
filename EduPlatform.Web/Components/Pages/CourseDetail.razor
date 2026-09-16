@@ -1,0 +1,309 @@
+﻿@page "/courses/{CourseId:guid}"
+@rendermode InteractiveServer
+@inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager Nav
+@inject EduPlatform.Web.Services.AuthStateService AuthState
+
+@if (Course != null)
+{
+    <div class="course-detail-container">
+        <div class="course-hero-card">
+            <span class="badge">@Course.Level</span>
+            <h1>@Course.Title</h1>
+            <p>@Course.Description</p>
+            <div class="course-meta">
+                <span>@Course.DurationMinutes min</span>
+                <span>@Course.Category</span>
+            </div>
+        </div>
+
+        @if (IsEnrolled)
+        {
+            <div class="enrolled-banner">
+                Vous êtes inscrit à ce cours (Plan : @EnrolledPlan)
+            </div>
+
+            <div class="course-section">
+                <h2>Modules du cours</h2>
+                @if (Course.Modules != null && Course.Modules.Any())
+                {
+                    <ul class="modules-list">
+                        @foreach (var module in Course.Modules)
+                        {
+                            <li class="module-item">
+                                <span>@module.Title</span>
+                                <span>@module.DurationMinutes min</span>
+                            </li>
+                        }
+                    </ul>
+                }
+                else
+                {
+                    <p>Aucun module disponible.</p>
+                }
+            </div>
+
+            <div class="course-section">
+                <button class="btn-primary" @onclick="GoToLearning">Commencer le cours</button>
+                <button class="btn-primary" @onclick="GoToTest">Passer le test</button>
+                <button class="btn-secondary" @onclick="GoToCertificate">Certificat</button>
+            </div>
+        }
+        else
+        {
+            @if (!ShowPayment)
+            {
+                <div class="course-section">
+                    <h2>Choisissez votre plan</h2>
+                    <div class="pricing-grid">
+                        <div class="pricing-card @(SelectedPlan == "Free" ? "selected" : "")" @onclick='() => SelectPlan("Free")'>
+                            <h3>Gratuit</h3>
+                            <div class="pricing-price">0 DA</div>
+                            <ul class="pricing-features">
+                                <li>Accès aux 2 premiers modules</li>
+                                <li>Quiz de base</li>
+                                <li class="disabled">Certificat</li>
+                                <li class="disabled">Exercices avancés</li>
+                                <li class="disabled">Support instructeur</li>
+                            </ul>
+                            <button class="btn-secondary" @onclick='() => SelectPlan("Free")'>Sélectionner</button>
+                        </div>
+
+                        <div class="pricing-card recommended @(SelectedPlan == "Standard" ? "selected" : "")" @onclick='() => SelectPlan("Standard")'>
+                            <span class="pricing-badge">Recommandé</span>
+                            <h3>Standard</h3>
+                            <div class="pricing-price">@Course.Price.ToString("N2") DA</div>
+                            <ul class="pricing-features">
+                                <li>Accès à tous les modules</li>
+                                <li>Tous les quiz</li>
+                                <li>Certificat de complétion</li>
+                                <li>Exercices avancés</li>
+                                <li class="disabled">Support instructeur</li>
+                            </ul>
+                            <button class="btn-primary" @onclick='() => SelectPlan("Standard")'>Sélectionner</button>
+                        </div>
+
+                        <div class="pricing-card @(SelectedPlan == "Premium" ? "selected" : "")" @onclick='() => SelectPlan("Premium")'>
+                            <h3>Premium</h3>
+                            <div class="pricing-price">@((Course.Price * 1.5m).ToString("N2")) DA</div>
+                            <ul class="pricing-features">
+                                <li>Accès à tous les modules</li>
+                                <li>Tous les quiz</li>
+                                <li>Certificat de complétion</li>
+                                <li>Exercices avancés</li>
+                                <li>Support instructeur 1-on-1</li>
+                            </ul>
+                            <button class="btn-secondary" @onclick='() => SelectPlan("Premium")'>Sélectionner</button>
+                        </div>
+                    </div>
+                    <div class="pricing-action">
+                        <button class="btn-primary btn-large" @onclick="ProceedToPayment" disabled="@(string.IsNullOrEmpty(SelectedPlan))">
+                            Continuer vers le paiement
+                        </button>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="course-section">
+                    <h2>Paiement - Plan @SelectedPlan</h2>
+                    <div class="payment-summary">
+                        <div class="payment-row">
+                            <span>Cours</span>
+                            <span>@Course.Title</span>
+                        </div>
+                        <div class="payment-row">
+                            <span>Plan</span>
+                            <span>@SelectedPlan</span>
+                        </div>
+                        <div class="payment-row total">
+                            <span>Total</span>
+                            <span>@GetPlanPrice().ToString("N2") DA</span>
+                        </div>
+                    </div>
+
+                    @if (SelectedPlan != "Free")
+                    {
+                        <div class="payment-form">
+                            <h3>Informations de paiement</h3>
+                            <div class="form-group">
+                                <label>Nom sur la carte</label>
+                                <input type="text" @bind="CardName" placeholder="Nom complet" />
+                            </div>
+                            <div class="form-group">
+                                <label>Numéro de carte</label>
+                                <input type="text" @bind="CardNumber" placeholder="1234 5678 9012 3456" maxlength="19" />
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Expiration</label>
+                                    <input type="text" @bind="CardExpiry" placeholder="MM/AA" maxlength="5" />
+                                </div>
+                                <div class="form-group">
+                                    <label>CVV</label>
+                                    <input type="text" @bind="CardCvv" placeholder="123" maxlength="3" />
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(PaymentError))
+                    {
+                        <div class="alert-error">@PaymentError</div>
+                    }
+
+                    <div class="payment-actions">
+                        <button class="btn-secondary" @onclick="GoBack">Retour</button>
+                        <button class="btn-primary btn-large" @onclick="ProcessPayment" disabled="@IsProcessing">
+                            @(IsProcessing ? "Traitement en cours..." : (SelectedPlan == "Free" ? "S'inscrire gratuitement" : "Payer et s'inscrire"))
+                        </button>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+}
+else if (IsLoading)
+{
+    <p>Chargement...</p>
+}
+else
+{
+    <p>Cours introuvable.</p>
+}
+
+@code {
+    [Parameter] public Guid CourseId { get; set; }
+    private CourseDto? Course;
+    private bool IsLoading = true;
+    private bool IsEnrolled = false;
+    private string EnrolledPlan = "";
+    private string SelectedPlan = "";
+    private bool ShowPayment = false;
+    private bool IsProcessing = false;
+    private string PaymentError = "";
+    private string CardName = "";
+    private string CardNumber = "";
+    private string CardExpiry = "";
+    private string CardCvv = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var httpClient = HttpClientFactory.CreateClient("EduPlatformAPI");
+            Course = await httpClient.GetFromJsonAsync<CourseDto>($"api/Courses/{CourseId}");
+
+            if (AuthState.IsAuthenticated)
+            {
+                httpClient.DefaultRequestHeaders.Authorization =
+                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", AuthState.Token);
+                IsEnrolled = await httpClient.GetFromJsonAsync<bool>(
+                    $"api/Courses/{CourseId}/enrollment-status");
+            }
+        }
+        catch { Course = null; }
+        finally { IsLoading = false; }
+    }
+
+    private void SelectPlan(string plan) => SelectedPlan = plan;
+    private void GoBack() => ShowPayment = false;
+
+    private void ProceedToPayment()
+    {
+        if (!AuthState.IsAuthenticated)
+        {
+            Nav.NavigateTo("/login");
+            return;
+        }
+        ShowPayment = true;
+    }
+
+    private decimal GetPlanPrice()
+    {
+        if (Course == null) return 0;
+        return SelectedPlan switch
+        {
+            "Free" => 0,
+            "Standard" => Course.Price,
+            "Premium" => Course.Price * 1.5m,
+            _ => 0
+        };
+    }
+
+    private async Task ProcessPayment()
+    {
+        if (!AuthState.IsAuthenticated)
+        {
+            Nav.NavigateTo("/login");
+            return;
+        }
+
+        if (SelectedPlan != "Free" && (string.IsNullOrWhiteSpace(CardNumber) || CardNumber.Replace(" ", "").Length < 16))
+        {
+            PaymentError = "Veuillez entrer un numéro de carte valide.";
+            return;
+        }
+
+        IsProcessing = true;
+        PaymentError = "";
+
+        try
+        {
+            var httpClient = HttpClientFactory.CreateClient("EduPlatformAPI");
+            httpClient.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", AuthState.Token);
+
+            var response = await httpClient.PostAsJsonAsync("api/progress/enroll", new
+            {
+                courseId = CourseId,
+                sessionId = AuthState.SessionId,
+                plan = SelectedPlan,
+                amountPaid = GetPlanPrice()
+            });
+
+            if (response.IsSuccessStatusCode)
+            {
+                IsEnrolled = true;
+                EnrolledPlan = SelectedPlan;
+                ShowPayment = false;
+            }
+            else
+            {
+                var body = await response.Content.ReadFromJsonAsync<Dictionary<string, string>>();
+                PaymentError = body?.GetValueOrDefault("message") ?? "Erreur lors du paiement.";
+            }
+        }
+        catch
+        {
+            PaymentError = "Erreur de connexion. Réessayez.";
+        }
+        finally
+        {
+            IsProcessing = false;
+        }
+    }
+
+    private void GoToTest() => Nav.NavigateTo($"/courses/{CourseId}/test");
+    private void GoToLearning() => Nav.NavigateTo($"/courses/{CourseId}/learn");
+    private void GoToCertificate() => Nav.NavigateTo($"/courses/{CourseId}/certificate");
+
+    private class CourseDto
+    {
+        public Guid Id { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string Category { get; set; } = string.Empty;
+        public string Level { get; set; } = string.Empty;
+        public int DurationMinutes { get; set; }
+        public decimal Price { get; set; }
+        public List<ModuleDto> Modules { get; set; } = new();
+    }
+
+    private class ModuleDto
+    {
+        public Guid Id { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public int DurationMinutes { get; set; }
+    }
+}

@@ -1,0 +1,40 @@
+﻿@inherits LayoutComponentBase
+@inject EduPlatform.Web.Services.AuthStateService AuthState
+
+<div class="app-layout">
+    @if (IsPublicRoute)
+    {
+        <PublicHeader @rendermode="new InteractiveServerRenderMode(prerender: false)" />
+    }
+    else
+    {
+        <NavSidebar @rendermode="new InteractiveServerRenderMode(prerender: false)" />
+    }
+    <main class="main-content">
+        @Body
+    </main>
+</div>
+
+@code {
+    private bool IsPublicRoute
+    {
+        get
+        {
+            var path = new Uri(Navigation.Uri).AbsolutePath.Trim('/');
+            return string.IsNullOrEmpty(path)
+                || path is "courses" or "explore" or "login" or "register" or "recommendations" or "profile"
+                || path.StartsWith("courses/", StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    [Inject] private NavigationManager Navigation { get; set; } = default!;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await AuthState.InitializeAsync();
+            StateHasChanged();
+        }
+    }
+}

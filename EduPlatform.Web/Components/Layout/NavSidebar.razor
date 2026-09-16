@@ -1,0 +1,71 @@
+@inject EduPlatform.Web.Services.AuthStateService AuthState
+@inject NavigationManager Nav
+@implements IDisposable
+
+<nav class="sidebar">
+    <div class="sidebar-brand">
+        <a href="/">EduPlatform</a>
+    </div>
+
+    @if (AuthState.IsAuthenticated)
+    {
+        <div class="user-profile">
+            <div class="avatar">@(AuthState.FirstName.Length > 0 ? AuthState.FirstName[0].ToString().ToUpper() : "U")</div>
+            <span class="user-name">@AuthState.FirstName</span>
+            <span class="user-email">@AuthState.Email</span>
+        </div>
+    }
+
+    <ul class="nav-links">
+        <li><NavLink href="/" Match="NavLinkMatch.All">Accueil</NavLink></li>
+        <li><NavLink href="/explore">Explorer</NavLink></li>
+
+        @if (!AuthState.IsAuthenticated)
+        {
+            <li><NavLink href="/login">Connexion</NavLink></li>
+            <li><NavLink href="/register">Inscription</NavLink></li>
+        }
+        else
+        {
+            <li><NavLink href="/profile">Mon Profil</NavLink></li>
+            <li><NavLink href="/progress">Progression</NavLink></li>
+            <li><NavLink href="/recommendations">Recommandations</NavLink></li>
+            <li><NavLink href="/chat">Assistant</NavLink></li>
+            <li><NavLink href="/activity">Mon activité</NavLink></li>
+            <li><NavLink href="/notifications">Notifications</NavLink></li>
+            @if (AuthState.Role == "Instructor" || AuthState.Role == "Admin")
+            {
+                <li><NavLink href="/instructor">Espace enseignant</NavLink></li>
+            }
+            @if (AuthState.Role == "Admin")
+            {
+                <li><NavLink href="/admin">Dashboard admin</NavLink></li>
+                <li><NavLink href="/admin/users">Utilisateurs</NavLink></li>
+            }
+            <li><a href="javascript:void(0)" @onclick="HandleLogout">Déconnexion</a></li>
+        }
+    </ul>
+</nav>
+
+@code {
+    protected override void OnInitialized()
+    {
+        AuthState.OnChange += OnAuthStateChanged;
+    }
+
+    private async void OnAuthStateChanged()
+    {
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task HandleLogout()
+    {
+        await AuthState.LogoutAsync();
+        Nav.NavigateTo("/");
+    }
+
+    public void Dispose()
+    {
+        AuthState.OnChange -= OnAuthStateChanged;
+    }
+}
