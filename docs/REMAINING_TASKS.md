@@ -41,7 +41,7 @@
 - [x] Retirer les secrets de `appsettings.json`
 - [x] Remplacer les cles JWT de developpement en production
 - [x] Cookie de session Secure en HTTPS
-- [ ] HTTPS complet pour le déploiement public
+- [x] HTTPS complet pour le déploiement public (reverse proxy Nginx + TLS)
 - [x] Gerer proprement les erreurs 401 et 403
 
 ## Priorite 5 - Mise en production

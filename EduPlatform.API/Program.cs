@@ -7,6 +7,7 @@ using EduPlatform.Data.Cassandra.Repositories;
 using EduPlatform.Data.SqlServer;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -162,6 +163,22 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 var app = builder.Build();
+
+// Trust reverse-proxy headers (X-Forwarded-Proto/For) when behind Nginx/Traefik in production.
+var forwardedHeadersOptions = new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+};
+// The reverse proxy runs on the internal Docker network, not loopback, so the default
+// KnownProxies/KnownNetworks (loopback-only) would reject its forwarded headers.
+forwardedHeadersOptions.KnownNetworks.Clear();
+forwardedHeadersOptions.KnownProxies.Clear();
+app.UseForwardedHeaders(forwardedHeadersOptions);
+
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHsts();
+}
 
 if (builder.Configuration.GetValue<bool>("Database:ApplyMigrations"))
 {

@@ -7,7 +7,7 @@
 @if (!AuthState.IsAuthenticated)
 {
     <div class="profile-container">
-        <div class="alert-error">Vous devez être connecté pour voir votre progression.</div>
+        <div class="alert-error">Vous devez Ãªtre connectÃ© pour voir votre progression.</div>
         <button class="btn-primary" @onclick="GoToLogin">Se connecter</button>
     </div>
 }
@@ -23,7 +23,7 @@ else
     }
     else if (Summary == null)
     {
-        <p>Aucune donnée disponible pour le moment.</p>
+        <p>Aucune donnÃ©e disponible pour le moment.</p>
     }
     else
     {
@@ -34,7 +34,7 @@ else
             </div>
             <div class="stat-card">
                 <span class="stat-value">@Summary.CompletedCourses</span>
-                <span class="stat-label">Cours terminés</span>
+                <span class="stat-label">Cours terminÃ©s</span>
             </div>
             <div class="stat-card">
                 <span class="stat-value">@Summary.AverageProgress%</span>
@@ -45,7 +45,7 @@ else
         @if (Enrollments.Any())
         {
             <div class="course-section">
-                <h2>Suivi détaillé</h2>
+                <h2>Suivi dÃ©taillÃ©</h2>
                 <div class="enrollments-list">
                     @foreach (var item in Enrollments)
                     {
@@ -56,7 +56,7 @@ else
                                 <div class="progress-bar">
                                     <div class="progress-fill" style="width: @(item.ProgressPercent)%"></div>
                                 </div>
-                                <span>@item.ProgressPercent% complété</span>
+                                <span>@item.ProgressPercent% complÃ©tÃ©</span>
                             </div>
                             <button class="btn-secondary" @onclick="() => GoToCourse(item.CourseId)">Voir le cours</button>
                         </div>

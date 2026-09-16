@@ -7,26 +7,26 @@
 @if (!AuthState.IsAuthenticated || (AuthState.Role != "Instructor" && AuthState.Role != "Admin"))
 {
     <div class="profile-container">
-        <div class="alert-error">Cette page est réservée aux enseignants et administrateurs.</div>
-        <button class="btn-primary" @onclick="GoToHome">Retour à l'accueil</button>
+        <div class="alert-error">Cette page est rÃ©servÃ©e aux enseignants et administrateurs.</div>
+        <button class="btn-primary" @onclick="GoToHome">Retour Ã  l'accueil</button>
     </div>
 }
 else
 {
     <div class="page-header">
         <h1>Espace enseignant</h1>
-        <p>Gérez vos cours et préparez vos contenus pédagogiques.</p>
+        <p>GÃ©rez vos cours et prÃ©parez vos contenus pÃ©dagogiques.</p>
     </div>
 
     <div class="course-section">
-        <h2>Créer un cours</h2>
+        <h2>CrÃ©er un cours</h2>
         <div class="form-row">
             <div class="form-group">
                 <label>Titre</label>
                 <input @bind="NewCourse.Title" placeholder="Titre du cours" />
             </div>
             <div class="form-group">
-                <label>Catégorie</label>
+                <label>CatÃ©gorie</label>
                 <input @bind="NewCourse.Category" placeholder="Informatique" />
             </div>
         </div>
@@ -34,19 +34,19 @@ else
             <div class="form-group">
                 <label>Niveau</label>
                 <select @bind="NewCourse.Level">
-                    <option value="Debutant">Débutant</option>
-                    <option value="Intermediaire">Intermédiaire</option>
-                    <option value="Avance">Avancé</option>
+                    <option value="Debutant">DÃ©butant</option>
+                    <option value="Intermediaire">IntermÃ©diaire</option>
+                    <option value="Avance">AvancÃ©</option>
                 </select>
             </div>
             <div class="form-group">
-                <label>Durée (minutes)</label>
+                <label>DurÃ©e (minutes)</label>
                 <input type="number" min="1" @bind="NewCourse.DurationMinutes" />
             </div>
         </div>
         <div class="form-group">
             <label>Description</label>
-            <textarea @bind="NewCourse.Description" rows="4" placeholder="Présentez le contenu du cours"></textarea>
+            <textarea @bind="NewCourse.Description" rows="4" placeholder="PrÃ©sentez le contenu du cours"></textarea>
         </div>
         <div class="form-row">
             <div class="form-group">
@@ -68,7 +68,7 @@ else
             <div class="alert-success">@SuccessMessage</div>
         }
         <button class="btn-primary" @onclick="CreateCourse" disabled="@IsSaving">
-            @(IsSaving ? "Création..." : "Créer le cours")
+            @(IsSaving ? "CrÃ©ation..." : "CrÃ©er le cours")
         </button>
     </div>
 
@@ -80,7 +80,7 @@ else
         }
         else if (Courses.Count == 0)
         {
-            <p>Vous n'avez encore créé aucun cours.</p>
+            <p>Vous n'avez encore crÃ©Ã© aucun cours.</p>
         }
         else
         {
@@ -89,11 +89,11 @@ else
                 {
                     <div class="course-card">
                         <div class="course-info">
-                            <span class="badge">@(course.IsPublished ? "Publié" : "Brouillon")</span>
+                            <span class="badge">@(course.IsPublished ? "PubliÃ©" : "Brouillon")</span>
                             <h3>@course.Title</h3>
                             <p>@course.Description</p>
                             <span>@course.Modules.Count module(s)</span>
-                            <button class="btn-secondary" @onclick="() => EditCourse(course.Id)">Gérer le contenu</button>
+                            <button class="btn-secondary" @onclick="() => EditCourse(course.Id)">GÃ©rer le contenu</button>
                         </div>
                     </div>
                 }
@@ -150,11 +150,11 @@ else
             var response = await CreateAuthorizedClient().PostAsJsonAsync("api/courses", NewCourse);
             if (!response.IsSuccessStatusCode)
             {
-                ErrorMessage = "La création du cours a échoué.";
+                ErrorMessage = "La crÃ©ation du cours a Ã©chouÃ©.";
                 return;
             }
 
-            SuccessMessage = "Cours créé en brouillon.";
+            SuccessMessage = "Cours crÃ©Ã© en brouillon.";
             NewCourse = new CreateCourseDto();
             await LoadCourses();
         }

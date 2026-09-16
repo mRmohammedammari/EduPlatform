@@ -7,7 +7,7 @@
 @if (!AuthState.IsAuthenticated)
 {
     <div class="profile-container">
-        <div class="alert-error">Vous devez être connecté pour passer ce test.</div>
+        <div class="alert-error">Vous devez Ãªtre connectÃ© pour passer ce test.</div>
         <button class="btn-primary" @onclick="GoToLogin">Se connecter</button>
     </div>
 }
@@ -23,11 +23,11 @@ else if (Result != null)
 {
     <div class="course-detail-container">
         <div class="course-section test-result">
-            <h1>Résultat du test</h1>
+            <h1>RÃ©sultat du test</h1>
             <p class="test-score">@Result.Score / @Result.MaxScore points</p>
             <p>Score : @Result.Percentage%</p>
             <div class="@(Result.Passed ? "alert-success" : "alert-error")">
-                @(Result.Passed ? "Félicitations, test réussi !" : "Test non réussi. Vous pouvez réessayer.")
+                @(Result.Passed ? "FÃ©licitations, test rÃ©ussi !" : "Test non rÃ©ussi. Vous pouvez rÃ©essayer.")
             </div>
             <div class="payment-actions">
                 <button class="btn-secondary" @onclick="GoToCourse">Retour au cours</button>
@@ -111,7 +111,7 @@ else
         }
         catch
         {
-            ErrorMessage = "Impossible de charger le test. Réessayez plus tard.";
+            ErrorMessage = "Impossible de charger le test. RÃ©essayez plus tard.";
         }
         finally
         {
@@ -155,7 +155,7 @@ else
 
             if (!response.IsSuccessStatusCode)
             {
-                SubmitError = "La correction du test a échoué. Réessayez.";
+                SubmitError = "La correction du test a Ã©chouÃ©. RÃ©essayez.";
                 return;
             }
 
@@ -163,7 +163,7 @@ else
         }
         catch
         {
-            SubmitError = "Erreur de connexion. Réessayez.";
+            SubmitError = "Erreur de connexion. RÃ©essayez.";
         }
         finally
         {

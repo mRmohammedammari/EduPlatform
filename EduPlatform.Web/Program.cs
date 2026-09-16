@@ -1,5 +1,6 @@
 ﻿using EduPlatform.Web.Services;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.HttpOverrides;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,6 +23,20 @@ builder.Services.AddHttpClient("EduPlatformAPI", client =>
 });
 
 var app = builder.Build();
+
+// Trust reverse-proxy headers (X-Forwarded-Proto/For) when behind Nginx/Traefik in production.
+var forwardedHeadersOptions = new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+};
+forwardedHeadersOptions.KnownNetworks.Clear();
+forwardedHeadersOptions.KnownProxies.Clear();
+app.UseForwardedHeaders(forwardedHeadersOptions);
+
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHsts();
+}
 
 app.UseStaticFiles();
 app.UseAntiforgery();

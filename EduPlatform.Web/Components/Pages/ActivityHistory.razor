@@ -7,20 +7,20 @@
 @if (!AuthState.IsAuthenticated)
 {
     <div class="profile-container">
-        <div class="alert-error">Connectez-vous pour consulter votre activité.</div>
+        <div class="alert-error">Connectez-vous pour consulter votre activitÃ©.</div>
         <button class="btn-primary" @onclick="GoToLogin">Se connecter</button>
     </div>
 }
 else
 {
     <div class="page-header">
-        <h1>Mon activité</h1>
+        <h1>Mon activitÃ©</h1>
         <p>Historique de vos actions sur la plateforme.</p>
     </div>
 
     @if (IsLoading)
     {
-        <p>Chargement de l'activité...</p>
+        <p>Chargement de l'activitÃ©...</p>
     }
     else if (!string.IsNullOrWhiteSpace(ErrorMessage))
     {
@@ -29,14 +29,14 @@ else
     else if (Activities.Count == 0)
     {
         <div class="course-section">
-            <p>Aucune activité enregistrée pour le moment.</p>
+            <p>Aucune activitÃ© enregistrÃ©e pour le moment.</p>
         </div>
     }
     else
     {
         <div class="course-section">
             <div class="activity-summary">
-                <strong>@Activities.Count</strong> actions récentes
+                <strong>@Activities.Count</strong> actions rÃ©centes
                 <span>Session actuelle : @AuthState.SessionId</span>
             </div>
 
@@ -80,7 +80,7 @@ else
         }
         catch
         {
-            ErrorMessage = "Impossible de charger votre activité.";
+            ErrorMessage = "Impossible de charger votre activitÃ©.";
         }
         finally
         {
@@ -99,10 +99,10 @@ else
     private static string FormatAction(string actionType) => actionType switch
     {
         "module_opened" => "Module ouvert",
-        "module_completed" => "Module terminé",
-        "video_view" => "Vidéo consultée",
-        "course_start" => "Cours commencé",
-        "quiz_attempt" => "Test commencé",
+        "module_completed" => "Module terminÃ©",
+        "video_view" => "VidÃ©o consultÃ©e",
+        "course_start" => "Cours commencÃ©",
+        "quiz_attempt" => "Test commencÃ©",
         _ => actionType
     };
 

@@ -7,7 +7,7 @@
 @if (!AuthState.IsAuthenticated)
 {
     <div class="profile-container">
-        <div class="alert-error">Connectez-vous pour utiliser l'assistant pédagogique.</div>
+        <div class="alert-error">Connectez-vous pour utiliser l'assistant pÃ©dagogique.</div>
         <button class="btn-primary" @onclick="GoToLogin">Se connecter</button>
     </div>
 }
@@ -15,7 +15,7 @@ else
 {
     <div class="chat-container">
         <div class="page-header">
-            <h1>Assistant pédagogique</h1>
+            <h1>Assistant pÃ©dagogique</h1>
             <p>Posez vos questions sur vos cours.</p>
         </div>
 
@@ -39,7 +39,7 @@ else
             {
                 <div class="chat-message chat-message-assistant">
                     <strong>Assistant</strong>
-                    <p>Réflexion en cours...</p>
+                    <p>RÃ©flexion en cours...</p>
                 </div>
             }
         </div>
@@ -50,7 +50,7 @@ else
         }
 
         <div class="chat-composer">
-            <textarea @bind="DraftMessage" @bind:event="oninput" placeholder="Écrivez votre question..." rows="3"></textarea>
+            <textarea @bind="DraftMessage" @bind:event="oninput" placeholder="Ã‰crivez votre question..." rows="3"></textarea>
             <button class="btn-primary" @onclick="SendMessage" disabled="@(IsSending || string.IsNullOrWhiteSpace(DraftMessage))">
                 @(IsSending ? "Envoi..." : "Envoyer")
             </button>
@@ -104,7 +104,7 @@ else
 
             if (!response.IsSuccessStatusCode)
             {
-                ErrorMessage = "L'assistant est momentanément indisponible.";
+                ErrorMessage = "L'assistant est momentanÃ©ment indisponible.";
                 return;
             }
 
@@ -114,7 +114,7 @@ else
         }
         catch
         {
-            ErrorMessage = "Erreur de connexion. Réessayez.";
+            ErrorMessage = "Erreur de connexion. RÃ©essayez.";
         }
         finally
         {

@@ -127,9 +127,29 @@ a {
         font-size: 14px;
         outline: none;
         transition: border 0.2s;
+        box-sizing: border-box;
     }
 
-        .form-group input:focus {
+    .form-group select,
+    .form-group textarea {
+        width: 100%;
+        padding: 10px 14px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        font-size: 14px;
+        font-family: inherit;
+        outline: none;
+        transition: border 0.2s;
+        box-sizing: border-box;
+    }
+
+    .form-group textarea {
+        resize: vertical;
+    }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
             border-color: var(--primary);
         }
 
@@ -630,6 +650,87 @@ a {
 
 .course-hero-card p { max-width: 760px; color: #d5dbe5; line-height: 1.65; }
 .course-hero-card .course-meta { color: #d5dbe5; }
+
+.instructor-tabs {
+    display: flex;
+    gap: 8px;
+    padding: 0 40px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+}
+
+.instructor-tab {
+    background: transparent;
+    border: 0;
+    padding: 12px 18px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -1px;
+}
+
+.instructor-tab:hover {
+    color: var(--primary);
+}
+
+.instructor-tab.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+}
+
+.section-hint {
+    color: var(--text-secondary);
+    font-size: 14px;
+    margin-bottom: 16px;
+}
+
+.qcm-options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.qcm-option-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.qcm-option-row input[type="radio"] {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    accent-color: var(--primary);
+}
+
+.qcm-option-input {
+    flex: 1;
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 14px;
+}
+
+.btn-remove-option {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+    cursor: pointer;
+    color: var(--danger);
+    font-size: 14px;
+}
+
+.btn-small {
+    padding: 8px 14px;
+    font-size: 13px;
+}
 
 .course-section {
     background: #ffffff;

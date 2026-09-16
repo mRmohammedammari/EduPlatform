@@ -7,7 +7,7 @@
 <div class="profile-container">
     @if (!AuthState.IsAuthenticated)
     {
-        <div class="alert-error">Vous devez être connecté pour accéder à cette page.</div>
+        <div class="alert-error">Vous devez Ãªtre connectÃ© pour accÃ©der Ã  cette page.</div>
         <button class="btn-primary" @onclick='() => Nav.NavigateTo("/login")'>Se connecter</button>
     }
     else
@@ -27,8 +27,8 @@
             }
             else if (!Enrollments.Any())
             {
-                <p>Vous n'êtes inscrit à aucun cours pour le moment.</p>
-                <button class="btn-primary" @onclick='() => Nav.NavigateTo("/courses")'>Découvrir les cours</button>
+                <p>Vous n'Ãªtes inscrit Ã  aucun cours pour le moment.</p>
+                <button class="btn-primary" @onclick='() => Nav.NavigateTo("/courses")'>DÃ©couvrir les cours</button>
             }
             else
             {
@@ -42,7 +42,7 @@
                                 <div class="progress-bar">
                                     <div class="progress-fill" style="width: @(enrollment.ProgressPercent)%"></div>
                                 </div>
-                                <span>@enrollment.ProgressPercent% complété</span>
+                                <span>@enrollment.ProgressPercent% complÃ©tÃ©</span>
                             </div>
                             <button class="btn-secondary" @onclick="() => GoToCourse(enrollment.CourseId)">
                                 Continuer ?
@@ -62,7 +62,7 @@
                 </div>
                 <div class="stat-card">
                     <span class="stat-value">@(Enrollments?.Count(e => e.ProgressPercent == 100) ?? 0)</span>
-                    <span class="stat-label">Cours terminés</span>
+                    <span class="stat-label">Cours terminÃ©s</span>
                 </div>
                 <div class="stat-card">
                     <span class="stat-value">@(Enrollments?.Count(e => e.ProgressPercent > 0 && e.ProgressPercent < 100) ?? 0)</span>

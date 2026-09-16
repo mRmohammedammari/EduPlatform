@@ -135,6 +135,21 @@ services:
       timeout: 5s
       retries: 10
 
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: eduplatform_nginx
+    ports:
+      - "8443:443"
+      - "8080:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/certs:/etc/nginx/certs:ro
+    depends_on:
+      web:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+
 volumes:
   sqlserver_data:
   cassandra_data:

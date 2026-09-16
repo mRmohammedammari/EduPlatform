@@ -7,7 +7,7 @@
 @if (!AuthState.IsAuthenticated)
 {
     <div class="profile-container">
-        <div class="alert-error">Connectez-vous pour obtenir des recommandations personnalisées.</div>
+        <div class="alert-error">Connectez-vous pour obtenir des recommandations personnalisÃ©es.</div>
         <button class="btn-primary" @onclick="GoToLogin">Se connecter</button>
     </div>
 }
@@ -16,9 +16,9 @@ else
     <div class="explore-page">
         <section class="explore-hero">
             <div class="explore-copy">
-                <span class="eyebrow dark">RECOMMANDÉ POUR VOUS</span>
+                <span class="eyebrow dark">RECOMMANDÃ‰ POUR VOUS</span>
                 <h1>Des cours choisis pour votre parcours.</h1>
-                <p>Basées sur votre activité et votre progression, voici les formations qui vous feront avancer.</p>
+                <p>BasÃ©es sur votre activitÃ© et votre progression, voici les formations qui vous feront avancer.</p>
             </div>
 
             <div class="explore-metrics">
@@ -93,7 +93,7 @@ else
         }
         catch
         {
-            ErrorMessage = "Impossible de charger les recommandations. Réessayez plus tard.";
+            ErrorMessage = "Impossible de charger les recommandations. RÃ©essayez plus tard.";
         }
         finally
         {

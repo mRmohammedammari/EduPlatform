@@ -13,7 +13,7 @@
 }
 else if (IsLoading)
 {
-    <p>Vérification de votre certificat...</p>
+    <p>VÃ©rification de votre certificat...</p>
 }
 else if (!string.IsNullOrWhiteSpace(ErrorMessage))
 {
@@ -27,13 +27,13 @@ else if (CertificateData != null)
     <div class="certificate-container">
         <div class="certificate-card">
             <span class="badge">EduPlatform</span>
-            <h1>Certificat de réussite</h1>
-            <p>Ce certificat est décerné à</p>
+            <h1>Certificat de rÃ©ussite</h1>
+            <p>Ce certificat est dÃ©cernÃ© Ã </p>
             <h2>@CertificateData.StudentName</h2>
-            <p>pour avoir réussi le cours</p>
+            <p>pour avoir rÃ©ussi le cours</p>
             <h3>@CertificateData.CourseTitle</h3>
             <p>Score obtenu : @CertificateData.Score / @CertificateData.MaxScore</p>
-            <p>Délivré le @CertificateData.IssuedAt.ToLocalTime().ToString("dd/MM/yyyy")</p>
+            <p>DÃ©livrÃ© le @CertificateData.IssuedAt.ToLocalTime().ToString("dd/MM/yyyy")</p>
             <small>Identifiant : @CertificateData.CertificateId</small>
         </div>
     </div>
@@ -59,12 +59,12 @@ else if (CertificateData != null)
             {
                 var body = await response.Content.ReadFromJsonAsync<Dictionary<string, string>>();
                 ErrorMessage = body?.GetValueOrDefault("message") ??
-                    "Vous n'êtes pas encore éligible au certificat.";
+                    "Vous n'Ãªtes pas encore Ã©ligible au certificat.";
             }
         }
         catch
         {
-            ErrorMessage = "Impossible de vérifier le certificat.";
+            ErrorMessage = "Impossible de vÃ©rifier le certificat.";
         }
         finally
         {

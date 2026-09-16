@@ -31,7 +31,7 @@
             <li><NavLink href="/progress">Progression</NavLink></li>
             <li><NavLink href="/recommendations">Recommandations</NavLink></li>
             <li><NavLink href="/chat">Assistant</NavLink></li>
-            <li><NavLink href="/activity">Mon activité</NavLink></li>
+            <li><NavLink href="/activity">Mon activitÃ©</NavLink></li>
             <li><NavLink href="/notifications">Notifications</NavLink></li>
             @if (AuthState.Role == "Instructor" || AuthState.Role == "Admin")
             {
@@ -42,7 +42,7 @@
                 <li><NavLink href="/admin">Dashboard admin</NavLink></li>
                 <li><NavLink href="/admin/users">Utilisateurs</NavLink></li>
             }
-            <li><a href="javascript:void(0)" @onclick="HandleLogout">Déconnexion</a></li>
+            <li><a href="javascript:void(0)" @onclick="HandleLogout">DÃ©connexion</a></li>
         }
     </ul>
 </nav>

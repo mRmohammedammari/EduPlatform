@@ -7,7 +7,7 @@
 @if (!AuthState.IsAuthenticated)
 {
     <div class="profile-container">
-        <div class="alert-error">Connectez-vous pour accéder au contenu du cours.</div>
+        <div class="alert-error">Connectez-vous pour accÃ©der au contenu du cours.</div>
         <button class="btn-primary" @onclick="GoToLogin">Se connecter</button>
     </div>
 }
@@ -18,7 +18,7 @@ else if (IsLoading)
 else if (!IsEnrolled)
 {
     <div class="profile-container">
-        <div class="alert-error">Vous devez être inscrit à ce cours pour accéder au contenu.</div>
+        <div class="alert-error">Vous devez Ãªtre inscrit Ã  ce cours pour accÃ©der au contenu.</div>
         <button class="btn-primary" @onclick="GoToCourse">Voir le cours</button>
     </div>
 }
@@ -45,7 +45,7 @@ else
             @if (SelectedModule == null)
             {
                 <h1>Bienvenue dans le cours</h1>
-                <p>Sélectionnez un module pour commencer.</p>
+                <p>SÃ©lectionnez un module pour commencer.</p>
             }
             else
             {
@@ -60,7 +60,7 @@ else
                         @if (IsYouTubeUrl(SelectedModule.VideoUrl))
                         {
                             <iframe src="@GetYouTubeEmbedUrl(SelectedModule.VideoUrl)"
-                                    title="Vidéo du module"
+                                    title="VidÃ©o du module"
                                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                                     allowfullscreen></iframe>
                         }
@@ -79,11 +79,11 @@ else
                 }
                 else if (string.IsNullOrWhiteSpace(SelectedModule.VideoUrl))
                 {
-                    <p>Le contenu de ce module sera bientôt disponible.</p>
+                    <p>Le contenu de ce module sera bientÃ´t disponible.</p>
                 }
 
                 <button class="btn-primary" @onclick="MarkModuleCompleted" disabled="@IsSavingActivity">
-                    @(IsSavingActivity ? "Enregistrement..." : "Marquer le module comme terminé")
+                    @(IsSavingActivity ? "Enregistrement..." : "Marquer le module comme terminÃ©")
                 </button>
 
                 @if (!string.IsNullOrWhiteSpace(ActivityMessage))
@@ -148,7 +148,7 @@ else
             return;
 
         await LogActivityAsync("module_completed", SelectedModule.DurationMinutes * 60);
-        ActivityMessage = "Votre progression a été enregistrée.";
+        ActivityMessage = "Votre progression a Ã©tÃ© enregistrÃ©e.";
     }
 
     private async Task LogActivityAsync(string actionType, int durationSeconds)
@@ -168,7 +168,7 @@ else
         }
         catch
         {
-            ActivityMessage = "L'activité n'a pas pu être enregistrée.";
+            ActivityMessage = "L'activitÃ© n'a pas pu Ãªtre enregistrÃ©e.";
         }
         finally
         {

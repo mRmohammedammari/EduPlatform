@@ -8,15 +8,15 @@
 @if (!IsAdmin)
 {
     <div class="profile-container">
-        <div class="alert-error">Cette page est réservée aux administrateurs.</div>
-        <button class="btn-primary" @onclick="GoToHome">Retour à l'accueil</button>
+        <div class="alert-error">Cette page est rÃ©servÃ©e aux administrateurs.</div>
+        <button class="btn-primary" @onclick="GoToHome">Retour Ã  l'accueil</button>
     </div>
 }
 else
 {
     <div class="page-header">
         <h1>Tableau de bord administrateur</h1>
-        <p>Vue globale de l'activité de la plateforme.</p>
+        <p>Vue globale de l'activitÃ© de la plateforme.</p>
     </div>
 
     @if (IsLoading)
@@ -31,17 +31,17 @@ else
     {
         <div class="stats-grid">
             <div class="stat-card"><span class="stat-value">@Overview.Users</span><span class="stat-label">Utilisateurs</span></div>
-            <div class="stat-card"><span class="stat-value">@Overview.Students</span><span class="stat-label">Étudiants</span></div>
+            <div class="stat-card"><span class="stat-value">@Overview.Students</span><span class="stat-label">Ã‰tudiants</span></div>
             <div class="stat-card"><span class="stat-value">@Overview.Instructors</span><span class="stat-label">Enseignants</span></div>
             <div class="stat-card"><span class="stat-value">@Overview.Courses</span><span class="stat-label">Cours</span></div>
-            <div class="stat-card"><span class="stat-value">@Overview.PublishedCourses</span><span class="stat-label">Cours publiés</span></div>
+            <div class="stat-card"><span class="stat-value">@Overview.PublishedCourses</span><span class="stat-label">Cours publiÃ©s</span></div>
             <div class="stat-card"><span class="stat-value">@Overview.Modules</span><span class="stat-label">Modules</span></div>
             <div class="stat-card"><span class="stat-value">@Overview.Enrollments</span><span class="stat-label">Inscriptions</span></div>
             <div class="stat-card"><span class="stat-value">@Overview.Questions</span><span class="stat-label">Questions</span></div>
         </div>
 
-        <button class="btn-primary" @onclick="GoToUsers">Gérer les utilisateurs</button>
-        <button class="btn-secondary" @onclick="DownloadReport">Télécharger le rapport CSV</button>
+        <button class="btn-primary" @onclick="GoToUsers">GÃ©rer les utilisateurs</button>
+        <button class="btn-secondary" @onclick="DownloadReport">TÃ©lÃ©charger le rapport CSV</button>
     }
 }
 

@@ -7,15 +7,15 @@
 @if (!IsAdmin)
 {
     <div class="profile-container">
-        <div class="alert-error">Cette page est réservée aux administrateurs.</div>
-        <button class="btn-primary" @onclick="GoToHome">Retour à l'accueil</button>
+        <div class="alert-error">Cette page est rÃ©servÃ©e aux administrateurs.</div>
+        <button class="btn-primary" @onclick="GoToHome">Retour Ã  l'accueil</button>
     </div>
 }
 else
 {
     <div class="page-header">
         <h1>Gestion des utilisateurs</h1>
-        <p>Attribuez les rôles nécessaires aux membres de la plateforme.</p>
+        <p>Attribuez les rÃ´les nÃ©cessaires aux membres de la plateforme.</p>
     </div>
 
     @if (IsLoading)
@@ -38,7 +38,7 @@ else
                     </div>
                     <div class="activity-meta">
                         <select value="@user.Role" @onchange="eventArgs => UpdateRole(user.Id, eventArgs.Value?.ToString())">
-                            <option value="Student">Étudiant</option>
+                            <option value="Student">Ã‰tudiant</option>
                             <option value="Instructor">Enseignant</option>
                             <option value="Admin">Administrateur</option>
                         </select>
@@ -89,7 +89,7 @@ else
             var response = await CreateAuthorizedClient().PutAsJsonAsync(
                 $"api/admin/users/{userId}/role", new { role });
             if (!response.IsSuccessStatusCode)
-                ErrorMessage = "La modification du rôle a échoué.";
+                ErrorMessage = "La modification du rÃ´le a Ã©chouÃ©.";
             else
                 ErrorMessage = string.Empty;
         }

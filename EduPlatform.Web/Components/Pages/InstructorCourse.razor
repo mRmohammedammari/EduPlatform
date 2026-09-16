@@ -7,8 +7,8 @@
 @if (!IsInstructor)
 {
     <div class="profile-container">
-        <div class="alert-error">Cette page est rÈservÈe aux enseignants et administrateurs.</div>
-        <button class="btn-primary" @onclick="GoToDashboard">Retour ‡ l'espace enseignant</button>
+        <div class="alert-error">Cette page est r√©serv√©e aux enseignants et administrateurs.</div>
+        <button class="btn-primary" @onclick="GoToDashboard">Retour √† l'espace enseignant</button>
     </div>
 }
 else if (IsLoading)
@@ -23,15 +23,24 @@ else
 {
     <div class="page-header">
         <h1>@Course.Title</h1>
-        <p>Gestion des modules et du contenu pÈdagogique.</p>
+        <p>Gestion des modules et du contenu p√©dagogique.</p>
         <button class="btn-primary" @onclick="TogglePublication">
-            @(Course.IsPublished ? "DÈpublier le cours" : "Publier le cours")
+            @(Course.IsPublished ? "D√©publier le cours" : "Publier le cours")
         </button>
         <button class="btn-secondary" @onclick="ToggleArchive">
             @(Course.IsArchived ? "Restaurer le cours" : "Archiver le cours")
         </button>
     </div>
 
+    <div class="instructor-tabs">
+        <button class="instructor-tab @(ActiveTab == "info" ? "active" : "")" @onclick='() => ActiveTab = "info"'>Informations</button>
+        <button class="instructor-tab @(ActiveTab == "modules" ? "active" : "")" @onclick='() => ActiveTab = "modules"'>Modules (@Course.Modules.Count)</button>
+        <button class="instructor-tab @(ActiveTab == "quiz" ? "active" : "")" @onclick='() => ActiveTab = "quiz"'>Test QCM (@Questions.Count)</button>
+        <button class="instructor-tab @(ActiveTab == "stats" ? "active" : "")" @onclick='() => ActiveTab = "stats"'>Statistiques</button>
+    </div>
+
+    @if (ActiveTab == "info")
+    {
     <div class="course-section">
         <h2>Informations du cours</h2>
         <div class="form-group">
@@ -43,18 +52,21 @@ else
             <textarea @bind="Course.Description" rows="4"></textarea>
         </div>
         <div class="form-row">
-            <input @bind="Course.Category" placeholder="CatÈgorie" />
+            <input @bind="Course.Category" placeholder="Cat√©gorie" />
             <select @bind="Course.Level">
-                <option value="Debutant">DÈbutant</option>
-                <option value="Intermediaire">IntermÈdiaire</option>
-                <option value="Avance">AvancÈ</option>
+                <option value="Debutant">D√©butant</option>
+                <option value="Intermediaire">Interm√©diaire</option>
+                <option value="Avance">Avanc√©</option>
             </select>
             <input type="number" min="1" @bind="Course.DurationMinutes" />
             <input type="number" min="0" step="0.01" @bind="Course.Price" />
         </div>
         <button class="btn-secondary" @onclick="SaveCourse" disabled="@IsSaving">Enregistrer les informations</button>
     </div>
+    }
 
+    @if (ActiveTab == "modules")
+    {
     <div class="course-section">
         <h2>Ajouter un module</h2>
         <div class="form-group">
@@ -62,16 +74,16 @@ else
             <input @bind="NewModule.Title" placeholder="Introduction" />
         </div>
         <div class="form-group">
-            <label>Contenu Ècrit</label>
-            <textarea @bind="NewModule.Description" rows="8" placeholder="RÈdigez le contenu pÈdagogique du module"></textarea>
+            <label>Contenu √©crit</label>
+            <textarea @bind="NewModule.Description" rows="8" placeholder="R√©digez le contenu p√©dagogique du module"></textarea>
         </div>
         <div class="form-row">
             <div class="form-group">
-                <label>URL de la vidÈo</label>
+                <label>URL de la vid√©o</label>
                 <input @bind="NewModule.VideoUrl" placeholder="https://.../video.mp4" />
             </div>
             <div class="form-group">
-                <label>DurÈe (minutes)</label>
+                <label>Dur√©e (minutes)</label>
                 <input type="number" min="1" @bind="NewModule.DurationMinutes" />
             </div>
             <div class="form-group">
@@ -97,7 +109,7 @@ else
         <h2>Modules (@Course.Modules.Count)</h2>
         @if (Course.Modules.Count == 0)
         {
-            <p>Aucun module n'est encore crÈÈ.</p>
+            <p>Aucun module n'est encore cr√©√©.</p>
         }
         else
         {
@@ -116,17 +128,17 @@ else
                                 <textarea @bind="EditingModule.Description" rows="5"></textarea>
                             </div>
                             <div class="form-row">
-                                <input @bind="EditingModule.VideoUrl" placeholder="URL vidÈo" />
+                                <input @bind="EditingModule.VideoUrl" placeholder="URL vid√©o" />
                                 <input type="number" min="1" @bind="EditingModule.DurationMinutes" />
                                 <input type="number" min="1" @bind="EditingModule.Order" />
                             </div>
                             <div class="form-group">
-                                <label>Ou tÈlÈverser une vidÈo</label>
+                                <label>Ou t√©l√©verser une vid√©o</label>
                                 <InputFile OnChange="SelectVideo" accept="video/mp4,video/webm,video/ogg" />
                                 @if (SelectedVideo != null)
                                 {
                                     <span>@SelectedVideo.Name</span>
-                                    <button class="btn-secondary" @onclick="UploadVideo" disabled="@IsSaving">TÈlÈverser</button>
+                                    <button class="btn-secondary" @onclick="UploadVideo" disabled="@IsSaving">T√©l√©verser</button>
                                 }
                             </div>
                             <button class="btn-primary" @onclick="SaveModule" disabled="@IsSaving">Enregistrer</button>
@@ -139,7 +151,7 @@ else
                                 <p>@module.DurationMinutes minutes</p>
                             </div>
                             <div>
-                                <span>@(string.IsNullOrWhiteSpace(module.VideoUrl) ? "Texte uniquement" : "VidÈo liÈe")</span>
+                                <span>@(string.IsNullOrWhiteSpace(module.VideoUrl) ? "Texte uniquement" : "Vid√©o li√©e")</span>
                                 <button class="btn-secondary" @onclick="() => BeginEdit(module)">Modifier</button>
                                 <button class="btn-secondary" @onclick="() => DeleteModule(module.Id)">Supprimer</button>
                             </div>
@@ -149,27 +161,48 @@ else
             </div>
         }
     </div>
+    }
 
+    @if (ActiveTab == "quiz")
+    {
     <div class="course-section">
         <h2>Questions du test (@Questions.Count)</h2>
+        <p class="section-hint">Renseignez la question, saisissez les options et cochez le bouton radio devant la bonne r√©ponse.</p>
         <div class="form-group">
             <label>Question</label>
-            <textarea @bind="NewQuestion.Text" rows="3" placeholder="…crivez la question"></textarea>
+            <textarea @bind="NewQuestion.Text" rows="3" placeholder="√âcrivez la question"></textarea>
         </div>
         <div class="form-group">
-            <label>Options, une par ligne</label>
-            <textarea @bind="OptionsText" rows="4" placeholder="Option A&#10;Option B&#10;Option C"></textarea>
-        </div>
-        <div class="form-row">
-            <div class="form-group">
-                <label>Bonne rÈponse</label>
-                <input @bind="NewQuestion.CorrectAnswer" placeholder="Copiez une option exacte" />
+            <label>Options de r√©ponse</label>
+            <div class="qcm-options">
+                @for (int i = 0; i < NewOptions.Count; i++)
+                {
+                    var idx = i;
+                    <div class="qcm-option-row">
+                        <input type="radio" name="new-question-correct" checked="@(NewCorrectIndex == idx)" @onclick="() => NewCorrectIndex = idx" />
+                        <input class="qcm-option-input" @bind="NewOptions[idx]" placeholder="@($"Option {idx + 1}")" />
+                        @if (NewOptions.Count > 2)
+                        {
+                            <button type="button" class="btn-remove-option" @onclick="() => RemoveNewOption(idx)">?</button>
+                        }
+                    </div>
+                }
             </div>
-            <div class="form-group">
-                <label>Points</label>
-                <input type="number" min="1" @bind="NewQuestion.Points" />
-            </div>
+            <button type="button" class="btn-secondary btn-small" @onclick="AddNewOption" disabled="@(NewOptions.Count >= 6)">+ Ajouter une option</button>
         </div>
+        <div class="form-group">
+            <label>Points</label>
+            <input type="number" min="1" @bind="NewQuestion.Points" style="max-width: 160px;" />
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+        {
+            <div class="alert-error">@ErrorMessage</div>
+        }
+        @if (!string.IsNullOrWhiteSpace(SuccessMessage))
+        {
+            <div class="alert-success">@SuccessMessage</div>
+        }
         <button class="btn-primary" @onclick="CreateQuestion" disabled="@IsSaving">Ajouter la question</button>
 
         @foreach (var question in Questions)
@@ -182,11 +215,24 @@ else
                         <textarea @bind="EditingQuestion.Text" rows="3"></textarea>
                     </div>
                     <div class="form-group">
-                        <label>Options, une par ligne</label>
-                        <textarea @bind="EditingOptionsText" rows="4"></textarea>
+                        <label>Options de r√©ponse</label>
+                        <div class="qcm-options">
+                            @for (int i = 0; i < EditingOptions.Count; i++)
+                            {
+                                var idx = i;
+                                <div class="qcm-option-row">
+                                    <input type="radio" name="edit-question-correct" checked="@(EditingCorrectIndex == idx)" @onclick="() => EditingCorrectIndex = idx" />
+                                    <input class="qcm-option-input" @bind="EditingOptions[idx]" placeholder="@($"Option {idx + 1}")" />
+                                    @if (EditingOptions.Count > 2)
+                                    {
+                                        <button type="button" class="btn-remove-option" @onclick="() => RemoveEditingOption(idx)">?</button>
+                                    }
+                                </div>
+                            }
+                        </div>
+                        <button type="button" class="btn-secondary btn-small" @onclick="AddEditingOption" disabled="@(EditingOptions.Count >= 6)">+ Ajouter une option</button>
                     </div>
                     <div class="form-row">
-                        <input @bind="EditingQuestion.CorrectAnswer" placeholder="Bonne rÈponse" />
                         <input type="number" min="1" @bind="EditingQuestion.Points" />
                     </div>
                     <button class="btn-primary" @onclick="SaveQuestion" disabled="@IsSaving">Enregistrer</button>
@@ -206,7 +252,10 @@ else
             </div>
         }
     </div>
+    }
 
+    @if (ActiveTab == "stats")
+    {
     <div class="course-section">
         <h2>Statistiques du test</h2>
         @if (Analytics == null)
@@ -226,16 +275,18 @@ else
                 </div>
                 <div class="stat-card">
                     <span class="stat-value">@Analytics.PassRate.ToString("0.0")%</span>
-                    <span class="stat-label">Taux de rÈussite</span>
+                    <span class="stat-label">Taux de r√©ussite</span>
                 </div>
             </div>
         }
     </div>
+    }
 }
 
 @code {
     [Parameter] public Guid CourseId { get; set; }
 
+    private string ActiveTab = "info";
     private bool IsLoading = true;
     private bool IsSaving;
     private string ErrorMessage = string.Empty;
@@ -248,10 +299,12 @@ else
     private List<QuestionDto> Questions = new();
     private AnalyticsDto? Analytics;
     private QuestionDto NewQuestion = new() { Points = 1 };
-    private string OptionsText = string.Empty;
+    private List<string> NewOptions = new() { "", "" };
+    private int NewCorrectIndex = -1;
     private Guid? EditingQuestionId;
     private QuestionDto EditingQuestion = new();
-    private string EditingOptionsText = string.Empty;
+    private List<string> EditingOptions = new();
+    private int EditingCorrectIndex = -1;
     private bool IsInstructor => AuthState.IsAuthenticated &&
         (AuthState.Role == "Instructor" || AuthState.Role == "Admin");
 
@@ -288,7 +341,7 @@ else
         SuccessMessage = string.Empty;
         if (Course == null || string.IsNullOrWhiteSpace(NewModule.Title) || string.IsNullOrWhiteSpace(NewModule.Description))
         {
-            ErrorMessage = "Le titre et le contenu Ècrit sont obligatoires.";
+            ErrorMessage = "Le titre et le contenu √©crit sont obligatoires.";
             return;
         }
 
@@ -299,14 +352,14 @@ else
                 $"api/courses/{CourseId}/modules", NewModule);
             if (!response.IsSuccessStatusCode)
             {
-                ErrorMessage = "La crÈation du module a ÈchouÈ.";
+                ErrorMessage = "La cr√©ation du module a √©chou√©.";
                 return;
             }
 
             var module = await response.Content.ReadFromJsonAsync<ModuleDto>();
             if (module != null)
                 Course.Modules.Add(module);
-            SuccessMessage = "Module ajoutÈ avec succËs.";
+            SuccessMessage = "Module ajout√© avec succ√®s.";
             NewModule = new CreateModuleDto { DurationMinutes = 10, Order = Course.Modules.Count + 1 };
         }
         catch
@@ -337,7 +390,7 @@ else
             }
 
             Course.IsPublished = true;
-            SuccessMessage = "Cours publiÈ avec succËs.";
+            SuccessMessage = "Cours publi√© avec succ√®s.";
         }
         catch
         {
@@ -358,12 +411,12 @@ else
                     $"api/courses/{CourseId}/unpublish", null);
                 if (!response.IsSuccessStatusCode)
                 {
-                    ErrorMessage = "La dÈpublication du cours a ÈchouÈ.";
+                    ErrorMessage = "La d√©publication du cours a √©chou√©.";
                     return;
                 }
 
                 Course.IsPublished = false;
-                SuccessMessage = "Cours dÈpubliÈ.";
+                SuccessMessage = "Cours d√©publi√©.";
             }
             catch
             {
@@ -387,13 +440,13 @@ else
                 $"api/courses/{CourseId}/archive", null);
             if (!response.IsSuccessStatusCode)
             {
-                ErrorMessage = "L'archivage du cours a ÈchouÈ.";
+                ErrorMessage = "L'archivage du cours a √©chou√©.";
                 return;
             }
 
             Course.IsArchived = true;
             Course.IsPublished = false;
-            SuccessMessage = "Cours archivÈ.";
+            SuccessMessage = "Cours archiv√©.";
         }
         catch
         {
@@ -413,13 +466,13 @@ else
                 $"api/courses/{CourseId}/{action}", null);
             if (!response.IsSuccessStatusCode)
             {
-                ErrorMessage = "La modification de l'archivage a ÈchouÈ.";
+                ErrorMessage = "La modification de l'archivage a √©chou√©.";
                 return;
             }
 
             Course.IsArchived = !Course.IsArchived;
             Course.IsPublished = false;
-            SuccessMessage = Course.IsArchived ? "Cours archivÈ." : "Cours restaurÈ en brouillon.";
+            SuccessMessage = Course.IsArchived ? "Cours archiv√©." : "Cours restaur√© en brouillon.";
         }
         catch
         {
@@ -449,11 +502,11 @@ else
                 });
             if (!response.IsSuccessStatusCode)
             {
-                ErrorMessage = "La modification du cours a ÈchouÈ.";
+                ErrorMessage = "La modification du cours a √©chou√©.";
                 return;
             }
 
-            SuccessMessage = "Informations du cours enregistrÈes.";
+            SuccessMessage = "Informations du cours enregistr√©es.";
         }
         catch
         {
@@ -474,7 +527,7 @@ else
                 $"api/courses/{CourseId}/modules/{moduleId}");
             if (!response.IsSuccessStatusCode)
             {
-                ErrorMessage = "La suppression du module a ÈchouÈ.";
+                ErrorMessage = "La suppression du module a √©chou√©.";
                 return;
             }
 
@@ -489,12 +542,15 @@ else
     private async Task CreateQuestion()
     {
         ErrorMessage = string.Empty;
-        var options = OptionsText.Split('\n', StringSplitOptions.RemoveEmptyEntries)
-            .Select(option => option.Trim()).Where(option => option.Length > 0).Distinct().ToList();
+        var options = NewOptions.Select(option => option.Trim())
+            .Where(option => option.Length > 0).Distinct().ToList();
+        var correctText = (NewCorrectIndex >= 0 && NewCorrectIndex < NewOptions.Count)
+            ? NewOptions[NewCorrectIndex].Trim() : string.Empty;
+
         if (string.IsNullOrWhiteSpace(NewQuestion.Text) || options.Count < 2 ||
-            !options.Contains(NewQuestion.CorrectAnswer.Trim()))
+            string.IsNullOrEmpty(correctText) || !options.Contains(correctText))
         {
-            ErrorMessage = "Ajoutez au moins deux options et indiquez une bonne rÈponse exacte.";
+            ErrorMessage = "Renseignez la question, au moins deux options non vides, et selectionnez la bonne reponse avec le bouton radio.";
             return;
         }
 
@@ -502,12 +558,12 @@ else
         try
         {
             NewQuestion.Options = options;
-            NewQuestion.CorrectAnswer = NewQuestion.CorrectAnswer.Trim();
+            NewQuestion.CorrectAnswer = correctText;
             var response = await CreateAuthorizedClient().PostAsJsonAsync(
                 $"api/tests/{CourseId}/questions", NewQuestion);
             if (!response.IsSuccessStatusCode)
             {
-                ErrorMessage = "La crÈation de la question a ÈchouÈ.";
+                ErrorMessage = "La creation de la question a echoue.";
                 return;
             }
 
@@ -515,8 +571,9 @@ else
             if (question != null)
                 Questions.Add(question);
             NewQuestion = new QuestionDto { Points = 1 };
-            OptionsText = string.Empty;
-            SuccessMessage = "Question ajoutÈe avec succËs.";
+            NewOptions = new List<string> { "", "" };
+            NewCorrectIndex = -1;
+            SuccessMessage = "Question ajoutee avec succes.";
         }
         catch
         {
@@ -528,6 +585,23 @@ else
         }
     }
 
+    private void AddNewOption()
+    {
+        if (NewOptions.Count < 6)
+            NewOptions.Add(string.Empty);
+    }
+
+    private void RemoveNewOption(int index)
+    {
+        if (NewOptions.Count <= 2)
+            return;
+        NewOptions.RemoveAt(index);
+        if (NewCorrectIndex == index)
+            NewCorrectIndex = -1;
+        else if (NewCorrectIndex > index)
+            NewCorrectIndex--;
+    }
+
     private async Task DeleteQuestion(Guid questionId)
     {
         try
@@ -537,7 +611,7 @@ else
             if (response.IsSuccessStatusCode)
                 Questions.RemoveAll(question => question.Id == questionId);
             else
-                ErrorMessage = "La suppression de la question a ÈchouÈ.";
+                ErrorMessage = "La suppression de la question a √©chou√©.";
         }
         catch
         {
@@ -556,14 +630,33 @@ else
             CorrectAnswer = question.CorrectAnswer,
             Points = question.Points
         };
-        EditingOptionsText = string.Join(Environment.NewLine, question.Options);
+        EditingOptions = question.Options.ToList();
+        EditingCorrectIndex = EditingOptions.IndexOf(question.CorrectAnswer);
     }
 
     private void CancelQuestionEdit()
     {
         EditingQuestionId = null;
         EditingQuestion = new QuestionDto();
-        EditingOptionsText = string.Empty;
+        EditingOptions = new List<string>();
+        EditingCorrectIndex = -1;
+    }
+
+    private void AddEditingOption()
+    {
+        if (EditingOptions.Count < 6)
+            EditingOptions.Add(string.Empty);
+    }
+
+    private void RemoveEditingOption(int index)
+    {
+        if (EditingOptions.Count <= 2)
+            return;
+        EditingOptions.RemoveAt(index);
+        if (EditingCorrectIndex == index)
+            EditingCorrectIndex = -1;
+        else if (EditingCorrectIndex > index)
+            EditingCorrectIndex--;
     }
 
     private async Task SaveQuestion()
@@ -571,12 +664,14 @@ else
         if (EditingQuestionId == null)
             return;
 
-        var options = EditingOptionsText.Split('\n', StringSplitOptions.RemoveEmptyEntries)
-            .Select(option => option.Trim()).Where(option => option.Length > 0).Distinct().ToList();
-        EditingQuestion.CorrectAnswer = EditingQuestion.CorrectAnswer.Trim();
-        if (options.Count < 2 || !options.Contains(EditingQuestion.CorrectAnswer))
+        var options = EditingOptions.Select(option => option.Trim())
+            .Where(option => option.Length > 0).Distinct().ToList();
+        var correctText = (EditingCorrectIndex >= 0 && EditingCorrectIndex < EditingOptions.Count)
+            ? EditingOptions[EditingCorrectIndex].Trim() : string.Empty;
+
+        if (options.Count < 2 || string.IsNullOrEmpty(correctText) || !options.Contains(correctText))
         {
-            ErrorMessage = "Ajoutez au moins deux options et une bonne rÈponse exacte.";
+            ErrorMessage = "Renseignez au moins deux options non vides et selectionnez la bonne reponse.";
             return;
         }
 
@@ -585,11 +680,12 @@ else
         try
         {
             EditingQuestion.Options = options;
+            EditingQuestion.CorrectAnswer = correctText;
             var response = await CreateAuthorizedClient().PutAsJsonAsync(
                 $"api/tests/{CourseId}/questions/{EditingQuestionId}", EditingQuestion);
             if (!response.IsSuccessStatusCode)
             {
-                ErrorMessage = "La modification de la question a ÈchouÈ.";
+                ErrorMessage = "La modification de la question a echoue.";
                 return;
             }
 
@@ -603,7 +699,7 @@ else
                 existing.Points = updated.Points;
             }
 
-            SuccessMessage = "Question modifiÈe avec succËs.";
+            SuccessMessage = "Question modifiee avec succes.";
             CancelQuestionEdit();
         }
         catch
@@ -661,7 +757,7 @@ else
                 $"api/courses/{CourseId}/modules/{EditingModuleId}/video", content);
             if (!response.IsSuccessStatusCode)
             {
-                ErrorMessage = "Le tÈlÈversement de la vidÈo a ÈchouÈ.";
+                ErrorMessage = "Le t√©l√©versement de la vid√©o a √©chou√©.";
                 return;
             }
 
@@ -671,12 +767,12 @@ else
                 existing.VideoUrl = updated.VideoUrl;
 
             EditingModule.VideoUrl = updated?.VideoUrl ?? EditingModule.VideoUrl;
-            SuccessMessage = "VidÈo tÈlÈversÈe avec succËs.";
+            SuccessMessage = "Vid√©o t√©l√©vers√©e avec succ√®s.";
             SelectedVideo = null;
         }
         catch
         {
-            ErrorMessage = "Erreur lors du tÈlÈversement de la vidÈo.";
+            ErrorMessage = "Erreur lors du t√©l√©versement de la vid√©o.";
         }
         finally
         {
@@ -697,7 +793,7 @@ else
                 $"api/courses/{CourseId}/modules/{EditingModuleId}", EditingModule);
             if (!response.IsSuccessStatusCode)
             {
-                ErrorMessage = "La modification du module a ÈchouÈ.";
+                ErrorMessage = "La modification du module a √©chou√©.";
                 return;
             }
 
@@ -712,7 +808,7 @@ else
                 existing.Order = updated.Order;
             }
 
-            SuccessMessage = "Module modifiÈ avec succËs.";
+            SuccessMessage = "Module modifi√© avec succ√®s.";
             CancelEdit();
         }
         catch
