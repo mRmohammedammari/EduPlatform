@@ -53,6 +53,7 @@ else
         <button class="instructor-tab @(ActiveTab == "modules" ? "active" : "")" @onclick='() => ActiveTab = "modules"'>Modules (@Course.Modules.Count)</button>
         <button class="instructor-tab @(ActiveTab == "quiz" ? "active" : "")" @onclick='() => ActiveTab = "quiz"'>Test QCM (@Questions.Count)</button>
         <button class="instructor-tab @(ActiveTab == "stats" ? "active" : "")" @onclick='() => ActiveTab = "stats"'>Statistiques</button>
+        <button class="instructor-tab @(ActiveTab == "students" ? "active" : "")" @onclick='() => ActiveTab = "students"'>Étudiants (@Students.Count)</button>
     </div>
 
     @if (ActiveTab == "info")
@@ -297,6 +298,47 @@ else
         }
     </div>
     }
+
+    @if (ActiveTab == "students")
+    {
+    <div class="course-section">
+        <h2>Étudiants inscrits</h2>
+        @if (!Students.Any())
+        {
+            <p>Aucun Étudiant inscrit pour le moment.</p>
+        }
+        else
+        {
+            @foreach (var student in Students)
+            {
+                <div class="activity-row">
+                    <div>
+                        <strong>@student.FirstName @student.LastName</strong>
+                        <p>@student.Email</p>
+                        <small>Inscrit le @student.EnrolledAt.ToLocalTime().ToString("dd/MM/yyyy")</small>
+                    </div>
+                    <div class="activity-meta">
+                        <span class="badge-status approved">@student.ProgressPercent% de progression</span>
+                        @if (MessagingStudentId == student.UserId)
+                        {
+                            <input class="admin-users-search" @bind="MessageText" placeholder="Votre message..." />
+                            <button class="btn-primary btn-small" @onclick="() => SendMessage(student.UserId)">Envoyer</button>
+                            <button class="btn-secondary btn-small" @onclick="() => MessagingStudentId = null">Annuler</button>
+                        }
+                        else
+                        {
+                            <button class="btn-secondary btn-small" @onclick="() => StartMessage(student.UserId)">Contacter</button>
+                        }
+                    </div>
+                </div>
+            }
+        }
+        @if (!string.IsNullOrWhiteSpace(MessageStatus))
+        {
+            <p class="section-hint">@MessageStatus</p>
+        }
+    </div>
+    }
 }
 
 @code {
@@ -308,6 +350,10 @@ else
     private string ErrorMessage = string.Empty;
     private string SuccessMessage = string.Empty;
     private CourseDto? Course;
+    private List<StudentDto> Students = new();
+    private Guid? MessagingStudentId;
+    private string MessageText = string.Empty;
+    private string MessageStatus = string.Empty;
     private CreateModuleDto NewModule = new() { DurationMinutes = 10, Order = 1 };
     private Guid? EditingModuleId;
     private CreateModuleDto EditingModule = new();
@@ -383,6 +429,8 @@ else
                 $"api/tests/{CourseId}/manage") ?? new();
             Analytics = await client.GetFromJsonAsync<AnalyticsDto>(
                 $"api/tests/{CourseId}/analytics");
+            Students = await client.GetFromJsonAsync<List<StudentDto>>(
+                $"api/courses/{CourseId}/students") ?? new();
         }
         catch
         {
@@ -397,6 +445,42 @@ else
     public void Dispose()
     {
         AuthState.OnChange -= OnAuthStateChanged;
+    }
+
+    private void StartMessage(Guid studentId)
+    {
+        MessagingStudentId = studentId;
+        MessageText = string.Empty;
+        MessageStatus = string.Empty;
+    }
+
+    private async Task SendMessage(Guid studentId)
+    {
+        if (string.IsNullOrWhiteSpace(MessageText) || Course == null)
+            return;
+
+        try
+        {
+            var response = await CreateAuthorizedClient().PostAsJsonAsync("api/notifications/send", new
+            {
+                userId = studentId,
+                title = $"Message de votre enseignant - {Course.Title}",
+                message = MessageText
+            });
+
+            MessageStatus = response.IsSuccessStatusCode
+                ? "Message envoyé avec succès."
+                : "L'envoi du message a échoué.";
+        }
+        catch
+        {
+            MessageStatus = "Erreur de connexion.";
+        }
+        finally
+        {
+            MessagingStudentId = null;
+            MessageText = string.Empty;
+        }
     }
 
     private async Task CreateModule()
@@ -961,5 +1045,15 @@ else
         public int TotalAttempts { get; set; }
         public double AverageScore { get; set; }
         public double PassRate { get; set; }
+    }
+
+    private sealed class StudentDto
+    {
+        public Guid UserId { get; set; }
+        public string FirstName { get; set; } = string.Empty;
+        public string LastName { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public DateTime EnrolledAt { get; set; }
+        public int ProgressPercent { get; set; }
     }
 }

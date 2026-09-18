@@ -1,5 +1,6 @@
 ﻿using EduPlatform.Core.Models;
 using EduPlatform.Data.Cache;
+using EduPlatform.Data.Cassandra.Repositories;
 using EduPlatform.Data.SqlServer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -15,17 +16,20 @@ namespace EduPlatform.API.Controllers
         private readonly CacheService _cache;
         private readonly IWebHostEnvironment _environment;
         private readonly IConfiguration _configuration;
+        private readonly ActivityRepository _activityRepo;
 
         public CoursesController(
             EduDbContext db,
             CacheService cache,
             IWebHostEnvironment environment,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            ActivityRepository activityRepo)
         {
             _db = db;
             _cache = cache;
             _environment = environment;
             _configuration = configuration;
+            _activityRepo = activityRepo;
         }
 
         [HttpGet]
@@ -586,6 +590,48 @@ namespace EduPlatform.API.Controllers
             var isEnrolled = _db.Enrollments
                 .Any(e => e.UserId == userId && e.CourseId == id);
             return Ok(isEnrolled);
+        }
+
+        [HttpGet("{id:guid}/students")]
+        [Authorize(Roles = "Instructor,Admin")]
+        public async Task<IActionResult> GetStudents(Guid id)
+        {
+            var userId = Guid.Parse(User.FindFirst(
+                System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+            var course = await _db.Courses.FindAsync(id);
+            if (course == null)
+                return NotFound();
+            if (!User.IsInRole("Admin") && course.InstructorId != userId)
+                return Forbid();
+
+            var enrollments = await _db.Enrollments
+                .Where(e => e.CourseId == id)
+                .Include(e => e.User)
+                .OrderByDescending(e => e.EnrolledAt)
+                .ToListAsync();
+
+            var expectedTimeSeconds = Math.Max(course.DurationMinutes * 60, 1);
+            var students = new List<object>();
+            foreach (var enrollment in enrollments)
+            {
+                var totalTimeSeconds = await _activityRepo
+                    .GetTotalTimeOnCourseAsync(enrollment.UserId, id);
+                var progressPercent = Math.Min(
+                    100,
+                    (int)Math.Round(totalTimeSeconds * 100d / expectedTimeSeconds));
+
+                students.Add(new
+                {
+                    UserId = enrollment.UserId,
+                    FirstName = enrollment.User.FirstName,
+                    LastName = enrollment.User.LastName,
+                    Email = enrollment.User.Email,
+                    enrollment.EnrolledAt,
+                    ProgressPercent = progressPercent
+                });
+            }
+
+            return Ok(students);
         }
     }
 

@@ -42,9 +42,44 @@ public class NotificationsController : ControllerBase
         return NoContent();
     }
 
+    [HttpPost("send")]
+    [Authorize(Roles = "Instructor,Admin")]
+    public async Task<IActionResult> Send([FromBody] SendNotificationDto dto)
+    {
+        if (string.IsNullOrWhiteSpace(dto.Title) || string.IsNullOrWhiteSpace(dto.Message))
+            return BadRequest(new { message = "Le titre et le message sont obligatoires." });
+
+        var senderId = GetUserId();
+        if (!User.IsInRole("Admin"))
+        {
+            var isOwnStudent = await _db.Enrollments.AnyAsync(e =>
+                e.UserId == dto.UserId && e.Course.InstructorId == senderId);
+            if (!isOwnStudent)
+                return Forbid();
+        }
+
+        var notification = new EduPlatform.Core.Models.Notification
+        {
+            UserId = dto.UserId,
+            Title = dto.Title,
+            Message = dto.Message
+        };
+        _db.Notifications.Add(notification);
+        await _db.SaveChangesAsync();
+
+        return Ok(notification);
+    }
+
     private Guid GetUserId()
     {
         return Guid.Parse(User.FindFirst(
             System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
     }
+}
+
+public class SendNotificationDto
+{
+    public Guid UserId { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public string Message { get; set; } = string.Empty;
 }
