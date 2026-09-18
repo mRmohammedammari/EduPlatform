@@ -1,5 +1,6 @@
 @page "/courses/{CourseId:guid}/certificate"
 @rendermode InteractiveServer
+@implements IDisposable
 @inject IHttpClientFactory HttpClientFactory
 @inject NavigationManager Nav
 @inject EduPlatform.Web.Services.AuthStateService AuthState
@@ -45,9 +46,42 @@ else if (CertificateData != null)
     private bool IsLoading = true;
     private string ErrorMessage = string.Empty;
     private CertificateDto? CertificateData;
+    private bool DataLoaded;
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
+        AuthState.OnChange += OnAuthStateChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await AuthState.InitializeAsync();
+            await EvaluateAuthStateAsync();
+        }
+    }
+
+    private async void OnAuthStateChanged()
+    {
+        await InvokeAsync(async () =>
+        {
+            await EvaluateAuthStateAsync();
+            StateHasChanged();
+        });
+    }
+
+    private async Task EvaluateAuthStateAsync()
+    {
+        if (!AuthState.IsAuthenticated)
+        {
+            IsLoading = false;
+            return;
+        }
+        if (DataLoaded)
+            return;
+        DataLoaded = true;
+
         try
         {
             var response = await CreateAuthorizedClient().GetAsync($"api/certificates/{CourseId}");
@@ -59,17 +93,22 @@ else if (CertificateData != null)
             {
                 var body = await response.Content.ReadFromJsonAsync<Dictionary<string, string>>();
                 ErrorMessage = body?.GetValueOrDefault("message") ??
-                    "Vous n'Ãªtes pas encore Ã©ligible au certificat.";
+                    "Vous n'êtes pas encore éligible au certificat.";
             }
         }
         catch
         {
-            ErrorMessage = "Impossible de vÃ©rifier le certificat.";
+            ErrorMessage = "Impossible de vérifier le certificat.";
         }
         finally
         {
             IsLoading = false;
         }
+    }
+
+    public void Dispose()
+    {
+        AuthState.OnChange -= OnAuthStateChanged;
     }
 
     private HttpClient CreateAuthorizedClient()

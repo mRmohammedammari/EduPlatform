@@ -1,5 +1,6 @@
 @page "/admin/users"
 @rendermode InteractiveServer
+@implements IDisposable
 @inject IHttpClientFactory HttpClientFactory
 @inject NavigationManager Nav
 @inject EduPlatform.Web.Services.AuthStateService AuthState
@@ -54,15 +55,42 @@ else
     private bool IsLoading = true;
     private string ErrorMessage = string.Empty;
     private List<UserDto> Users = new();
+    private bool DataLoaded;
     private bool IsAdmin => AuthState.IsAuthenticated && AuthState.Role == "Admin";
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
+    {
+        AuthState.OnChange += OnAuthStateChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await AuthState.InitializeAsync();
+            await EvaluateAuthStateAsync();
+        }
+    }
+
+    private async void OnAuthStateChanged()
+    {
+        await InvokeAsync(async () =>
+        {
+            await EvaluateAuthStateAsync();
+            StateHasChanged();
+        });
+    }
+
+    private async Task EvaluateAuthStateAsync()
     {
         if (!IsAdmin)
         {
             IsLoading = false;
             return;
         }
+        if (DataLoaded)
+            return;
+        DataLoaded = true;
 
         try
         {
@@ -77,6 +105,11 @@ else
         {
             IsLoading = false;
         }
+    }
+
+    public void Dispose()
+    {
+        AuthState.OnChange -= OnAuthStateChanged;
     }
 
     private async Task UpdateRole(Guid userId, string? role)

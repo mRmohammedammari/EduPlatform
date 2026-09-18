@@ -1,5 +1,6 @@
 @page "/profile"
 @rendermode InteractiveServer
+@implements IDisposable
 @inject EduPlatform.Web.Services.AuthStateService AuthState
 @inject IHttpClientFactory HttpClientFactory
 @inject NavigationManager Nav
@@ -45,7 +46,7 @@
                                 <span>@enrollment.ProgressPercent% complété</span>
                             </div>
                             <button class="btn-secondary" @onclick="() => GoToCourse(enrollment.CourseId)">
-                                Continuer ?
+                                Continuer →
                             </button>
                         </div>
                     }
@@ -76,7 +77,30 @@
 @code {
     private List<EnrollmentDto>? Enrollments;
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
+    {
+        AuthState.OnChange += OnAuthStateChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await AuthState.InitializeAsync();
+            await EvaluateAuthStateAsync();
+        }
+    }
+
+    private async void OnAuthStateChanged()
+    {
+        await InvokeAsync(async () =>
+        {
+            await EvaluateAuthStateAsync();
+            StateHasChanged();
+        });
+    }
+
+    private async Task EvaluateAuthStateAsync()
     {
         if (!AuthState.IsAuthenticated)
         {
@@ -84,16 +108,7 @@
             return;
         }
 
-        await LoadEnrollments();
-    }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (!AuthState.IsAuthenticated)
-        {
-            Nav.NavigateTo("/login");
-        }
-        else if (firstRender)
+        if (Enrollments == null)
         {
             await LoadEnrollments();
         }
@@ -113,6 +128,11 @@
         {
             Enrollments = new();
         }
+    }
+
+    public void Dispose()
+    {
+        AuthState.OnChange -= OnAuthStateChanged;
     }
 
     private void GoToCourse(Guid courseId)

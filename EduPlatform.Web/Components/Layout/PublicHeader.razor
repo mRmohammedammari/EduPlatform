@@ -1,18 +1,20 @@
-﻿@inject NavigationManager Nav
+@inject NavigationManager Nav
 @inject EduPlatform.Web.Services.AuthStateService AuthState
+@implements IDisposable
 
 <header class="public-header">
     <a class="public-brand" href="/">Edu<span>Platform</span></a>
     <NavLink class="public-nav-link" href="/explore">Explorer</NavLink>
     <NavLink class="public-nav-link" href="/recommendations">Parcours recommandés</NavLink>
     <form class="public-search" @onsubmit="SearchCourses">
-        <span aria-hidden="true">?</span>
+        <span aria-hidden="true">🔍</span>
         <input @bind="SearchTerm" placeholder="Que voulez-vous apprendre ?" aria-label="Rechercher un cours" />
     </form>
     <a class="public-teach" href="/instructor">Enseigner sur EduPlatform</a>
     @if (AuthState.IsAuthenticated)
     {
         <button class="public-login" @onclick='() => Nav.NavigateTo("/profile")'>Mon espace</button>
+        <button class="public-signup" @onclick="HandleLogout">Déconnexion</button>
     }
     else
     {
@@ -24,8 +26,29 @@
 @code {
     private string SearchTerm = string.Empty;
 
+    protected override void OnInitialized()
+    {
+        AuthState.OnChange += OnAuthStateChanged;
+    }
+
+    private async void OnAuthStateChanged()
+    {
+        await InvokeAsync(StateHasChanged);
+    }
+
     private void SearchCourses()
     {
         Nav.NavigateTo($"/explore?search={Uri.EscapeDataString(SearchTerm.Trim())}");
+    }
+
+    private async Task HandleLogout()
+    {
+        await AuthState.LogoutAsync();
+        Nav.NavigateTo("/");
+    }
+
+    public void Dispose()
+    {
+        AuthState.OnChange -= OnAuthStateChanged;
     }
 }

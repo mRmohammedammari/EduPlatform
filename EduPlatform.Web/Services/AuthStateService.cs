@@ -18,39 +18,55 @@ public class AuthStateService
 
     public event Action? OnChange;
 
+    private readonly TaskCompletionSource _initializationTcs = new();
+
     public AuthStateService(IJSRuntime js)
     {
         _js = js;
     }
 
+    /// <summary>
+    /// Waits until the first auth-restore attempt has completed (success or failure).
+    /// Does not guarantee the final auth state: subscribe to <see cref="OnChange"/> to react
+    /// to later updates (e.g. once the interactive circuit re-attaches after prerendering).
+    /// </summary>
+    public Task WaitForInitializationAsync() => _initializationTcs.Task;
+
     public async Task InitializeAsync()
     {
         try
         {
-            var json = await _js.InvokeAsync<string?>("localStorage.getItem", StorageKey);
-            if (!string.IsNullOrWhiteSpace(json))
+            try
             {
-                var session = JsonSerializer.Deserialize<AuthSession>(json);
-                if (session is not null)
+                var json = await _js.InvokeAsync<string?>("localStorage.getItem", StorageKey);
+                if (!string.IsNullOrWhiteSpace(json))
                 {
-                    session.SessionId = await GetOrCreateSessionIdAsync(session.SessionId);
-                    if (IsTokenExpired(session.Token))
+                    var session = JsonSerializer.Deserialize<AuthSession>(json);
+                    if (session is not null)
                     {
-                        await LogoutAsync();
+                        session.SessionId = await GetOrCreateSessionIdAsync(session.SessionId);
+                        if (IsTokenExpired(session.Token))
+                        {
+                            await LogoutAsync();
+                            return;
+                        }
+
+                        ApplySession(session);
                         return;
                     }
-
-                    ApplySession(session);
-                    return;
                 }
             }
-        }
-        catch
-        {
-            // Ignore in prerender or unsupported context.
-        }
+            catch
+            {
+                // Ignore in prerender or unsupported context.
+            }
 
-        ClearSession();
+            ClearSession();
+        }
+        finally
+        {
+            _initializationTcs.TrySetResult();
+        }
     }
 
     public async Task LoginAsync(string token, string userId, string firstName, string email, string role)

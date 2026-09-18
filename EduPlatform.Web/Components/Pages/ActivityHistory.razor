@@ -1,5 +1,6 @@
 @page "/activity"
 @rendermode InteractiveServer
+@implements IDisposable
 @inject IHttpClientFactory HttpClientFactory
 @inject NavigationManager Nav
 @inject EduPlatform.Web.Services.AuthStateService AuthState
@@ -64,14 +65,41 @@ else
     private bool IsLoading = true;
     private string ErrorMessage = string.Empty;
     private List<ActivityDto> Activities = new();
+    private bool DataLoaded;
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
+    {
+        AuthState.OnChange += OnAuthStateChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await AuthState.InitializeAsync();
+            await EvaluateAuthStateAsync();
+        }
+    }
+
+    private async void OnAuthStateChanged()
+    {
+        await InvokeAsync(async () =>
+        {
+            await EvaluateAuthStateAsync();
+            StateHasChanged();
+        });
+    }
+
+    private async Task EvaluateAuthStateAsync()
     {
         if (!AuthState.IsAuthenticated)
         {
             IsLoading = false;
             return;
         }
+        if (DataLoaded)
+            return;
+        DataLoaded = true;
 
         try
         {
@@ -80,12 +108,17 @@ else
         }
         catch
         {
-            ErrorMessage = "Impossible de charger votre activitÃ©.";
+            ErrorMessage = "Impossible de charger votre activité.";
         }
         finally
         {
             IsLoading = false;
         }
+    }
+
+    public void Dispose()
+    {
+        AuthState.OnChange -= OnAuthStateChanged;
     }
 
     private HttpClient CreateAuthorizedClient()

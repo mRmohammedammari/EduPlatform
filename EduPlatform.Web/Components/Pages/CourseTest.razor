@@ -1,5 +1,6 @@
 @page "/courses/{CourseId:guid}/test"
 @rendermode InteractiveServer
+@implements IDisposable
 @inject IHttpClientFactory HttpClientFactory
 @inject NavigationManager Nav
 @inject EduPlatform.Web.Services.AuthStateService AuthState
@@ -95,14 +96,41 @@ else
     private List<QuestionDto> Questions = new();
     private Dictionary<Guid, string> Answers = new();
     private TestResultDto? Result;
+    private bool DataLoaded;
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
+    {
+        AuthState.OnChange += OnAuthStateChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await AuthState.InitializeAsync();
+            await EvaluateAuthStateAsync();
+        }
+    }
+
+    private async void OnAuthStateChanged()
+    {
+        await InvokeAsync(async () =>
+        {
+            await EvaluateAuthStateAsync();
+            StateHasChanged();
+        });
+    }
+
+    private async Task EvaluateAuthStateAsync()
     {
         if (!AuthState.IsAuthenticated)
         {
             IsLoading = false;
             return;
         }
+        if (DataLoaded)
+            return;
+        DataLoaded = true;
 
         try
         {
@@ -111,12 +139,17 @@ else
         }
         catch
         {
-            ErrorMessage = "Impossible de charger le test. RÃ©essayez plus tard.";
+            ErrorMessage = "Impossible de charger le test. Réessayez plus tard.";
         }
         finally
         {
             IsLoading = false;
         }
+    }
+
+    public void Dispose()
+    {
+        AuthState.OnChange -= OnAuthStateChanged;
     }
 
     private HttpClient CreateAuthorizedClient()

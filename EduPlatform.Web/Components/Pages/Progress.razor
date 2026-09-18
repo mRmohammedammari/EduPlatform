@@ -1,5 +1,6 @@
 @page "/progress"
 @rendermode InteractiveServer
+@implements IDisposable
 @inject IHttpClientFactory HttpClientFactory
 @inject EduPlatform.Web.Services.AuthStateService AuthState
 @inject NavigationManager Nav
@@ -14,7 +15,7 @@
 else
 {
     <div class="page-header">
-        <h1>?? Ma progression</h1>
+        <h1>Ma progression</h1>
     </div>
 
     @if (IsLoading)
@@ -69,6 +70,7 @@ else
 
 @code {
     private bool IsLoading = true;
+    private bool DataLoaded;
     private ProgressSummary? Summary;
     private List<EnrollmentProgressDto> Enrollments = new();
 
@@ -82,12 +84,45 @@ else
         Nav.NavigateTo($"/courses/{courseId}");
     }
 
+    protected override void OnInitialized()
+    {
+        AuthState.OnChange += OnAuthStateChanged;
+    }
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender && AuthState.IsAuthenticated)
+        if (firstRender)
         {
+            await AuthState.InitializeAsync();
+            await EvaluateAuthStateAsync();
+        }
+    }
+
+    private async void OnAuthStateChanged()
+    {
+        await InvokeAsync(async () =>
+        {
+            await EvaluateAuthStateAsync();
+            StateHasChanged();
+        });
+    }
+
+    private async Task EvaluateAuthStateAsync()
+    {
+        if (AuthState.IsAuthenticated && !DataLoaded)
+        {
+            DataLoaded = true;
             await LoadProgressAsync();
         }
+        else if (!AuthState.IsAuthenticated)
+        {
+            IsLoading = false;
+        }
+    }
+
+    public void Dispose()
+    {
+        AuthState.OnChange -= OnAuthStateChanged;
     }
 
     private async Task LoadProgressAsync()

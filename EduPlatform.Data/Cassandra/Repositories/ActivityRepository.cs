@@ -36,14 +36,14 @@ namespace EduPlatform.Data.Cassandra.Repositories
 
             return rows.Select(row => new UserActivityEvent
             {
-                UserId = row.GetValue<Guid>("user_id"),
-                SessionId = row.GetValue<Guid>("session_id"),
+                UserId = row.GetValue<Guid?>("user_id") ?? Guid.Empty,
+                SessionId = row.GetValue<Guid?>("session_id") ?? Guid.Empty,
                 EventTime = row.GetValue<DateTimeOffset>("timestamp").DateTime,
-                CourseId = row.GetValue<Guid>("course_id"),
-                ActionType = row.GetValue<string>("action_type"),
-                DurationSec = row.GetValue<int>("duration_sec"),
-                PageUrl = row.GetValue<string>("page_url"),
-                DeviceType = row.GetValue<string>("device_type")
+                CourseId = row.GetValue<Guid?>("course_id") ?? Guid.Empty,
+                ActionType = row.GetValue<string>("action_type") ?? string.Empty,
+                DurationSec = row.GetValue<int?>("duration_sec") ?? 0,
+                PageUrl = row.GetValue<string>("page_url") ?? string.Empty,
+                DeviceType = row.GetValue<string>("device_type") ?? "web"
             }).Take(limit).ToList();
         }
 
@@ -51,7 +51,7 @@ namespace EduPlatform.Data.Cassandra.Repositories
         {
             var cql = "SELECT duration_sec FROM user_activities WHERE user_id = ? AND course_id = ?";
             var rows = await _session.ExecuteAsync(new SimpleStatement(cql, userId, courseId));
-            return rows.Sum(r => r.GetValue<int>("duration_sec"));
+            return rows.Sum(r => r.GetValue<int?>("duration_sec") ?? 0);
         }
     }
 }

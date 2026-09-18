@@ -1,5 +1,6 @@
 @page "/courses/{CourseId:guid}/learn"
 @rendermode InteractiveServer
+@implements IDisposable
 @inject IHttpClientFactory HttpClientFactory
 @inject NavigationManager Nav
 @inject EduPlatform.Web.Services.AuthStateService AuthState
@@ -104,14 +105,41 @@ else
     private bool IsEnrolled;
     private bool IsSavingActivity;
     private string ActivityMessage = string.Empty;
+    private bool DataLoaded;
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
+    {
+        AuthState.OnChange += OnAuthStateChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await AuthState.InitializeAsync();
+            await EvaluateAuthStateAsync();
+        }
+    }
+
+    private async void OnAuthStateChanged()
+    {
+        await InvokeAsync(async () =>
+        {
+            await EvaluateAuthStateAsync();
+            StateHasChanged();
+        });
+    }
+
+    private async Task EvaluateAuthStateAsync()
     {
         if (!AuthState.IsAuthenticated)
         {
             IsLoading = false;
             return;
         }
+        if (DataLoaded)
+            return;
+        DataLoaded = true;
 
         try
         {
@@ -133,6 +161,11 @@ else
         {
             IsLoading = false;
         }
+    }
+
+    public void Dispose()
+    {
+        AuthState.OnChange -= OnAuthStateChanged;
     }
 
     private async Task SelectModule(ModuleDto module)

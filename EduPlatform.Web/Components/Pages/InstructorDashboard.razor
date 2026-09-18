@@ -1,5 +1,6 @@
 @page "/instructor"
 @rendermode InteractiveServer
+@implements IDisposable
 @inject IHttpClientFactory HttpClientFactory
 @inject NavigationManager Nav
 @inject EduPlatform.Web.Services.AuthStateService AuthState
@@ -109,13 +110,50 @@ else
     private string SuccessMessage = string.Empty;
     private List<CourseDto> Courses = new();
     private CreateCourseDto NewCourse = new();
+    private bool CoursesLoaded;
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
+    {
+        AuthState.OnChange += OnAuthStateChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await AuthState.InitializeAsync();
+            await EvaluateAuthStateAsync();
+        }
+    }
+
+    private async void OnAuthStateChanged()
+    {
+        await InvokeAsync(async () =>
+        {
+            await EvaluateAuthStateAsync();
+            StateHasChanged();
+        });
+    }
+
+    private async Task EvaluateAuthStateAsync()
     {
         if (AuthState.IsAuthenticated && (AuthState.Role == "Instructor" || AuthState.Role == "Admin"))
-            await LoadCourses();
+        {
+            if (!CoursesLoaded)
+            {
+                CoursesLoaded = true;
+                await LoadCourses();
+            }
+        }
         else
+        {
             IsLoading = false;
+        }
+    }
+
+    public void Dispose()
+    {
+        AuthState.OnChange -= OnAuthStateChanged;
     }
 
     private async Task LoadCourses()

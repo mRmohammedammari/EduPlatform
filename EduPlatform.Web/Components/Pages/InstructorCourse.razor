@@ -1,5 +1,6 @@
 @page "/instructor/courses/{CourseId:guid}"
 @rendermode InteractiveServer
+@implements IDisposable
 @inject IHttpClientFactory HttpClientFactory
 @inject NavigationManager Nav
 @inject EduPlatform.Web.Services.AuthStateService AuthState
@@ -183,7 +184,7 @@ else
                         <input class="qcm-option-input" @bind="NewOptions[idx]" placeholder="@($"Option {idx + 1}")" />
                         @if (NewOptions.Count > 2)
                         {
-                            <button type="button" class="btn-remove-option" @onclick="() => RemoveNewOption(idx)">?</button>
+                            <button type="button" class="btn-remove-option" @onclick="() => RemoveNewOption(idx)">✕</button>
                         }
                     </div>
                 }
@@ -225,7 +226,7 @@ else
                                     <input class="qcm-option-input" @bind="EditingOptions[idx]" placeholder="@($"Option {idx + 1}")" />
                                     @if (EditingOptions.Count > 2)
                                     {
-                                        <button type="button" class="btn-remove-option" @onclick="() => RemoveEditingOption(idx)">?</button>
+                                        <button type="button" class="btn-remove-option" @onclick="() => RemoveEditingOption(idx)">✕</button>
                                     }
                                 </div>
                             }
@@ -307,14 +308,41 @@ else
     private int EditingCorrectIndex = -1;
     private bool IsInstructor => AuthState.IsAuthenticated &&
         (AuthState.Role == "Instructor" || AuthState.Role == "Admin");
+    private bool DataLoaded;
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
+    {
+        AuthState.OnChange += OnAuthStateChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await AuthState.InitializeAsync();
+            await EvaluateAuthStateAsync();
+        }
+    }
+
+    private async void OnAuthStateChanged()
+    {
+        await InvokeAsync(async () =>
+        {
+            await EvaluateAuthStateAsync();
+            StateHasChanged();
+        });
+    }
+
+    private async Task EvaluateAuthStateAsync()
     {
         if (!IsInstructor)
         {
             IsLoading = false;
             return;
         }
+        if (DataLoaded)
+            return;
+        DataLoaded = true;
 
         try
         {
@@ -333,6 +361,11 @@ else
         {
             IsLoading = false;
         }
+    }
+
+    public void Dispose()
+    {
+        AuthState.OnChange -= OnAuthStateChanged;
     }
 
     private async Task CreateModule()

@@ -37,12 +37,12 @@ public class CertificatesController : ControllerBase
 
         var result = await _testResults.GetBestPassedResultAsync(userId, courseId);
         if (result == null)
-            return Conflict(new { message = "Réussissez le test pour obtenir le certificat." });
+            return Conflict(new { message = "RÃ©ussissez le test pour obtenir le certificat." });
 
         return Ok(new
         {
             certificateId = $"EDU-{userId:N}-{courseId:N}",
-            studentName = User.FindFirst("firstName")?.Value ?? "Étudiant",
+            studentName = User.FindFirst("firstName")?.Value ?? "Ã‰tudiant",
             courseTitle = course.Title,
             issuedAt = result.TakenAt,
             score = result.Score,

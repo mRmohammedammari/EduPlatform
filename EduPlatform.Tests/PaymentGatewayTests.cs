@@ -15,7 +15,7 @@ public class PaymentGatewayTests
         {
             CourseId = Guid.NewGuid(),
             UserId = Guid.NewGuid(),
-            CourseTitle = "C# Avancé",
+            CourseTitle = "C# AvancÃ©",
             Plan = "Standard",
             Amount = 1490m,
             Currency = "DZD"
@@ -36,7 +36,7 @@ public class PaymentGatewayTests
         {
             CourseId = Guid.NewGuid(),
             UserId = Guid.NewGuid(),
-            CourseTitle = "C# Avancé",
+            CourseTitle = "C# AvancÃ©",
             Plan = "Standard",
             Amount = -1m,
             Currency = "DZD"

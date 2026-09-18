@@ -1,5 +1,6 @@
 @page "/chat"
 @rendermode InteractiveServer
+@implements IDisposable
 @inject IHttpClientFactory HttpClientFactory
 @inject EduPlatform.Web.Services.AuthStateService AuthState
 @inject NavigationManager Nav
@@ -64,11 +65,36 @@ else
     private string DraftMessage = string.Empty;
     private string ErrorMessage = string.Empty;
     private bool IsSending;
+    private bool DataLoaded;
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
-        if (!AuthState.IsAuthenticated)
+        AuthState.OnChange += OnAuthStateChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await AuthState.InitializeAsync();
+            await EvaluateAuthStateAsync();
+        }
+    }
+
+    private async void OnAuthStateChanged()
+    {
+        await InvokeAsync(async () =>
+        {
+            await EvaluateAuthStateAsync();
+            StateHasChanged();
+        });
+    }
+
+    private async Task EvaluateAuthStateAsync()
+    {
+        if (!AuthState.IsAuthenticated || DataLoaded)
             return;
+        DataLoaded = true;
 
         try
         {
@@ -81,6 +107,11 @@ else
         {
             // An empty history is a valid first-session state.
         }
+    }
+
+    public void Dispose()
+    {
+        AuthState.OnChange -= OnAuthStateChanged;
     }
 
     private async Task SendMessage()

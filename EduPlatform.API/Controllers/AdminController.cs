@@ -30,7 +30,7 @@ public class AdminController : ControllerBase
                 user.Email,
                 user.FirstName,
                 user.LastName,
-                user.Role,
+                Role = user.Role.ToString(),
                 user.CreatedAt
             })
             .ToListAsync());
@@ -97,7 +97,7 @@ public class AdminController : ControllerBase
     public async Task<IActionResult> UpdateRole(Guid id, [FromBody] UpdateRoleDto dto)
     {
         if (!Enum.TryParse<UserRole>(dto.Role, true, out var role))
-            return BadRequest(new { message = "Rôle invalide." });
+            return BadRequest(new { message = "RÃ´le invalide." });
 
         var user = await _db.Users.FindAsync(id);
         if (user == null)

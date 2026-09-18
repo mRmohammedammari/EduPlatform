@@ -1,5 +1,6 @@
 @page "/recommendations"
 @rendermode InteractiveServer
+@implements IDisposable
 @inject IHttpClientFactory HttpClientFactory
 @inject NavigationManager Nav
 @inject EduPlatform.Web.Services.AuthStateService AuthState
@@ -58,11 +59,11 @@ else
                         <div class="course-info">
                             <div class="course-card-topline">
                                 <span class="badge">@course.Level</span>
-                                <span class="course-duration">? @course.DurationMinutes min</span>
+                                <span class="course-duration">⏱ @course.DurationMinutes min</span>
                             </div>
                             <h3>@course.Title</h3>
                             <p>@course.Description</p>
-                            <button class="btn-primary">Voir le cours ?</button>
+                            <button class="btn-primary">Voir le cours →</button>
                         </div>
                     </article>
                 }
@@ -75,14 +76,41 @@ else
     private bool IsLoading = true;
     private string ErrorMessage = string.Empty;
     private List<CourseDto> Courses = new();
+    private bool DataLoaded;
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
+    {
+        AuthState.OnChange += OnAuthStateChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await AuthState.InitializeAsync();
+            await EvaluateAuthStateAsync();
+        }
+    }
+
+    private async void OnAuthStateChanged()
+    {
+        await InvokeAsync(async () =>
+        {
+            await EvaluateAuthStateAsync();
+            StateHasChanged();
+        });
+    }
+
+    private async Task EvaluateAuthStateAsync()
     {
         if (!AuthState.IsAuthenticated)
         {
             IsLoading = false;
             return;
         }
+        if (DataLoaded)
+            return;
+        DataLoaded = true;
 
         try
         {
@@ -93,12 +121,17 @@ else
         }
         catch
         {
-            ErrorMessage = "Impossible de charger les recommandations. Réessayez plus tard.";
+            ErrorMessage = "Impossible de charger les recommandations. R�essayez plus tard.";
         }
         finally
         {
             IsLoading = false;
         }
+    }
+
+    public void Dispose()
+    {
+        AuthState.OnChange -= OnAuthStateChanged;
     }
 
     private void GoToLogin() => Nav.NavigateTo("/login");
