@@ -1,22 +1,22 @@
 # ?? EduPlatform - Statut de la Roadmap
 
-**Dernière mise à jour:** 2026-09-18
+**DerniÃ¨re mise Ã  jour:** 2026-09-18
 
 ---
 
 ## ?? Vue d'ensemble de la progression
 
 ```
-Phase 1: Fondations et Sécurité       [??????????] 100% ? TERMINÉE
-Phase 2: Auth Client Blazor           [??????????] 100% ? TERMINÉE
-Phase 3: Complétion Interface Web     [??????????] 55% ? EN COURS
-Phase 4: Fonctionnalités Avancées     [??????????]  0% ? À VENIR
-Phase 5: Tests et Qualité             [??????????]  0% ? À VENIR
-Phase 6: DevOps et Déploiement        [??????????]  0% ? À VENIR
-Phase 7: Monitoring et Observabilité  [??????????]  0% ? À VENIR
-Phase 8: Monétisation                 [??????????]  0% ?? OPTIONNEL
-Phase 9: Fonctionnalités Pédagogiques [??????????]  0% ?? OPTIONNEL
-Phase 10: Optimisations               [??????????]  0% ? À VENIR
+Phase 1: Fondations et SÃ©curitÃ©       [??????????] 100% ? TERMINÃ‰E
+Phase 2: Auth Client Blazor           [??????????] 100% ? TERMINÃ‰E
+Phase 3: ComplÃ©tion Interface Web     [??????????] 55% ? EN COURS
+Phase 4: FonctionnalitÃ©s AvancÃ©es     [??????????]  0% ? Ã  VENIR
+Phase 5: Tests et QualitÃ©             [??????????]  0% ? Ã  VENIR
+Phase 6: DevOps et DÃ©ploiement        [??????????]  0% ? Ã  VENIR
+Phase 7: Monitoring et ObservabilitÃ©  [??????????]  0% ? Ã  VENIR
+Phase 8: MonÃ©tisation                 [??????????]  0% ?? OPTIONNEL
+Phase 9: FonctionnalitÃ©s PÃ©dagogiques [??????????]  0% ?? OPTIONNEL
+Phase 10: Optimisations               [??????????]  0% ? Ã  VENIR
 Phase 11: Mobile                      [??????????]  0% ?? FUTUR
 ```
 
@@ -24,186 +24,186 @@ Phase 11: Mobile                      [??????????]  0% ?? FUTUR
 
 ---
 
-## ?? SUCCÈS RÉCENTS
+## ?? SUCCÃˆS RÃ©CENTS
 
-- ? **Frontend Blazor complet et testé** (13 pages protégées, connexion/déconnexion/refresh token/"se souvenir de moi")
-- ? **Authentification robuste** : JWT + refresh token rotatif (table RefreshTokens), intercepteur HTTP centralisé
-- ? **API Backend opérationnelle** sur http://localhost:5053
+- ? **Frontend Blazor complet et testÃ©** (13 pages protÃ©gÃ©es, connexion/dÃ©connexion/refresh token/"se souvenir de moi")
+- ? **Authentification robuste** : JWT + refresh token rotatif (table RefreshTokens), intercepteur HTTP centralisÃ©
+- ? **API Backend opÃ©rationnelle** sur http://localhost:5053
 - ? **Swagger UI accessible** sur http://localhost:5053/swagger
-- ? **Kafka topics créés** (5 topics avec configuration complète)
-- ? **Cassandra initialisé** (keyspace + 4 tables)
+- ? **Kafka topics crÃ©Ã©s** (5 topics avec configuration complÃ©te)
+- ? **Cassandra initialisÃ©** (keyspace + 4 tables)
 - ? **Docker infrastructure** fonctionnelle (Kafka, Cassandra, Redis, Zookeeper)
-- ? **Documentation complète** (11 guides créés)
-- ? **Scripts d'initialisation** testés et validés
+- ? **Documentation complÃ©te** (11 guides crÃ©Ã©s)
+- ? **Scripts d'initialisation** testÃ©s et validÃ©s
 
 ---
 
-## ? Phase 1: Fondations et Sécurité (90% - EN COURS)
+## ? Phase 1: Fondations et SÃ©curitÃ© (90% - EN COURS)
 
-**Durée estimée:** 2-3 semaines  
-**Priorité:** ?? CRITIQUE  
-**Statut:** ? Presque terminée - API opérationnelle, Frontend à démarrer
+**DurÃ©e estimÃ©e:** 2-3 semaines  
+**PrioritÃ©:** ?? CRITIQUE  
+**Statut:** ? Presque terminÃ©e - API opÃ©rationnelle, Frontend â€” dÃ©marrer
 
-### 1.1 Sécurité et Configuration
+### 1.1 SÃ©curitÃ© et Configuration
 
 - [x] **Gestion des secrets**
-  - [x] Créer .gitignore complet
-  - [x] Créer template appsettings.template.json
-  - [x] Créer fichier .env.example
-  - [ ] Configurer User Secrets dans l'API (optionnel - clés par défaut dans appsettings.json)
+  - [x] CrÃ©er .gitignore complet
+  - [x] CrÃ©er template appsettings.template.json
+  - [x] CrÃ©er fichier .env.example
+  - [ ] Configurer User Secrets dans l'API (optionnel - clÃ©s par dÃ©faut dans appsettings.json)
   - [x] Documenter le processus de configuration des secrets (STARTUP.md)
   - [x] Tester la configuration avec des secrets locaux
 
 - [x] **Variables d'environnement**
-  - [x] Créer fichier .env.example
+  - [x] CrÃ©er fichier .env.example
   - [x] Documenter toutes les variables requises
   - [x] Configurer profil Development (launchSettings.json)
 
 ### 1.2 Infrastructure et Scripts
 
 - [x] ? **Cassandra**
-  - [x] Créer script d'initialisation keyspace (scripts/cassandra/init.cql)
-  - [x] Créer script de création tables (user_activity, test_results, chat_messages, chatbot_sessions, course_progress)
+  - [x] CrÃ©er script d'initialisation keyspace (scripts/cassandra/init.cql)
+  - [x] CrÃ©er script de crÃ©ation tables (user_activity, test_results, chat_messages, chatbot_sessions, course_progress)
   - [x] Script de seed data pour tests (scripts/cassandra/seed-data.cql)
-  - [x] Documentation complète (docs/CASSANDRA_SETUP.md)
-  - [x] Tester les scripts d'initialisation ? VALIDÉ
-  - [x] Keyspace initialisé et opérationnel
+  - [x] Documentation complÃ©te (docs/CASSANDRA_SETUP.md)
+  - [x] Tester les scripts d'initialisation ? VALIDÃ‰
+  - [x] Keyspace initialisÃ© et opÃ©rationnel
 
 - [x] ? **Kafka**
-  - [x] Script de création des topics (scripts/kafka/init-topics.sh)
-  - [x] Script PowerShell pour Windows (scripts/kafka/init-topics.ps1) ? TESTÉ
-  - [x] Configuration des partitions et réplication
-  - [x] Documentation complète (docs/KAFKA_SETUP.md)
-  - [x] Tester la création des topics ? 5 topics créés avec succès
-  - [x] Topics opérationnels : user-activity-events, test-results-events, notifications-events, course-enrollment-events, chatbot-interaction-events
-  - [ ] ?? Consumer Kafka à corriger (timeout au démarrage - temporairement désactivé)
+  - [x] Script de crÃ©ation des topics (scripts/kafka/init-topics.sh)
+  - [x] Script PowerShell pour Windows (scripts/kafka/init-topics.ps1) ? TESTÃ©
+  - [x] Configuration des partitions et rÃ©plication
+  - [x] Documentation complÃ©te (docs/KAFKA_SETUP.md)
+  - [x] Tester la crÃ©ation des topics ? 5 topics crÃ©Ã©s avec succÃ¨s
+  - [x] Topics opÃ©rationnels : user-activity-events, test-results-events, notifications-events, course-enrollment-events, chatbot-interaction-events
+  - [ ] ?? Consumer Kafka Ã  corriger (timeout au dÃ©marrage - temporairement dÃ©sactivÃ©)
 
 - [x] **SQL Server**
   - [x] Scripts de seed data (scripts/sqlserver/seed-data.sql)
-  - [x] Exécuter les migrations EF Core (4 migrations appliquées, dont AddRefreshTokens)
-  - [x] Insérer les données de seed
+  - [x] ExÃ©cuter les migrations EF Core (4 migrations appliquÃ©es, dont AddRefreshTokens)
+  - [x] InsÃ©rer les donnÃ©es de seed
   - [ ] Scripts de backup/restore
   - [x] Documentation des migrations (DATABASE_SETUP.md)
 
 - [x] ? **Docker**
-  - [x] Script de démarrage complet (scripts/init-platform.ps1)
-  - [x] Docker Compose opérationnel ? 4 conteneurs actifs
-  - [x] Infrastructure testée : Cassandra, Kafka, Zookeeper, Redis
-  - [ ] Configurer les healthchecks (amélioration optionnelle)
+  - [x] Script de dÃ©marrage complet (scripts/init-platform.ps1)
+  - [x] Docker Compose opÃ©rationnel ? 4 conteneurs actifs
+  - [x] Infrastructure testÃ©e : Cassandra, Kafka, Zookeeper, Redis
+  - [ ] Configurer les healthchecks (amÃ©lioration optionnelle)
   - [ ] Ajouter API et Web au docker-compose (Phase 2)
 
 ### 1.3 Documentation de base
 
 - [x] ? README.md principal
-- [x] ? Guide de démarrage rapide
-- [x] ? Architecture technique détaillée
-- [x] ? Documentation API complète
+- [x] ? Guide de dÃ©marrage rapide
+- [x] ? Architecture technique dÃ©taillÃ©e
+- [x] ? Documentation API complÃ©te
 - [x] ? Guides Cassandra et Kafka
 - [x] ? Guide de tests
-- [x] ? Guide de déploiement
-- [x] ? Guide de sécurité
-- [x] ? Roadmap détaillée
+- [x] ? Guide de dÃ©ploiement
+- [x] ? Guide de sÃ©curitÃ©
+- [x] ? Roadmap dÃ©taillÃ©e
 
 ---
 
-## ? Phase 2: Authentification Client Blazor (100% - TERMINÉE)
+## ? Phase 2: Authentification Client Blazor (100% - TERMINÃ‰E)
 
-**Durée estimée:** 1 semaine  
-**Priorité:** ?? HAUTE
+**DurÃ©e estimÃ©e:** 1 semaine  
+**PrioritÃ©:** ?? HAUTE
 
-### 2.1 Système d'authentification
+### 2.1 SystÃ¨me d'authentification
 
 - [x] **AuthenticationStateProvider**
-  - [x] Créer AuthStateService (équivalent CustomAuthStateProvider)
+  - [x] CrÃ©er AuthStateService (Ã‰quivalent CustomAuthStateProvider)
   - [x] Gestion du token JWT dans localStorage/sessionStorage
-  - [x] Rafraîchissement automatique du token (refresh token rotatif, 30 jours, table RefreshTokens)
-  - [x] Gestion de l'expiration (IsTokenExpired + refresh silencieux à l'initialisation)
+  - [x] RafraÃ®chissement automatique du token (refresh token rotatif, 30 jours, table RefreshTokens)
+  - [x] Gestion de l'expiration (IsTokenExpired + refresh silencieux Ã  l'initialisation)
 
 - [x] **Services d'authentification**
-  - [x] AuthStateService côté Blazor
-  - [x] Intercepteur HTTP pour ajouter JWT (HttpClientFactoryExtensions.CreateAuthorizedClient, utilisé par toutes les pages protégées)
-  - [x] Gestion des erreurs 401/403 (redirection vers /login, révocation du refresh token au logout)
+  - [x] AuthStateService cÃ´tÃ© Blazor
+  - [x] Intercepteur HTTP pour ajouter JWT (HttpClientFactoryExtensions.CreateAuthorizedClient, utilisÃ© par toutes les pages protÃ©gÃ©es)
+  - [x] Gestion des erreurs 401/403 (redirection vers /login, rÃ©vocation du refresh token au logout)
 
 - [x] **Protection des routes**
-  - [x] Vérification IsAuthenticated/Role par page + redirection automatique
+  - [x] VÃ©rification IsAuthenticated/Role par page + redirection automatique
   - [x] Redirections automatiques vers /login
-  - [x] Gestion des rôles (Student, Instructor, Admin)
+  - [x] Gestion des rÃ´les (Student, Instructor, Admin)
 
 ### 2.2 Interface utilisateur
 
-- [x] Bouton de déconnexion (avec révocation serveur du refresh token)
+- [x] Bouton de dÃ©connexion (avec rÃ©vocation serveur du refresh token)
 - [x] Affichage profil utilisateur dans le header/menu
-- [x] Persistance de la session (testée après reload complet du navigateur)
-- [x] "Se souvenir de moi" (localStorage si coché, sessionStorage sinon)
+- [x] Persistance de la session (testÃ©e aprÃ¨s reload complet du navigateur)
+- [x] "Se souvenir de moi" (localStorage si cochÃ©, sessionStorage sinon)
 
 ---
 
-## ?? Phase 3: Complétion Interface Web (55% - EN COURS)
+## ?? Phase 3: ComplÃ©tion Interface Web (75% - EN COURS)
 
-**Durée estimée:** 2-3 semaines  
-**Priorité:** ?? HAUTE
+**DurÃ©e estimÃ©e:** 2-3 semaines  
+**PrioritÃ©:** ?? HAUTE
 
-### 3.1 Navigation et Layout — 100% ?
-- [x] NavMenu remplacé (PublicHeader/NavSidebar), plus de Counter/Weather
-- [x] Liens Cours, Profil, Chat, Tests, Activité, Notifications
-- [x] Menu différencié par rôle (Student/Instructor/Admin)
-- [x] Indicateur utilisateur connecté (nom + avatar dans le header)
+### 3.1 Navigation et Layout â€” 100% ?
+- [x] NavMenu remplacÃ© (PublicHeader/NavSidebar), plus de Counter/Weather
+- [x] Liens Cours, Profil, Chat, Tests, ActivitÃ©, Notifications
+- [x] Menu diffÃ©renciÃ© par rÃ´le (Student/Instructor/Admin)
+- [x] Indicateur utilisateur connectÃ© (nom + avatar dans le header)
 
-### 3.2 Pages Étudiants — ~65%
+### 3.2 Pages Ã‰tudiants â€” ~80%
 - [x] Page Profil : infos perso, historique des cours, statistiques
-- [ ] Page Profil : édition du profil (lecture seule actuellement)
-- [x] Page Progression : stats agrégées par cours
+- [x] Page Profil : Ã‰dition du profil (prÃ©nom/nom + changement de mot de passe)
+- [x] Page Progression : stats agrÃ©gÃ©es par cours
 - [ ] Page Progression : graphiques, badges/achievements
-- [x] Page Tests/QCM : liste, passage, résultats
-- [ ] Page Tests/QCM : révision détaillée des réponses
-- [x] Page Chat IA : interface complète
+- [x] Page Tests/QCM : liste, passage, rÃ©sultats
+- [ ] Page Tests/QCM : rÃ©vision dÃ©taillÃ©e des rÃ©ponses
+- [x] Page Chat IA : interface complÃ©te
 - [ ] Page Chat IA : historique persistant, sessions par cours, suggestions
-- [x] Page Recommandations : affichage cours recommandés
+- [x] Page Recommandations : affichage cours recommandÃ©s
 - [ ] Page Recommandations : explication du "pourquoi", filtres/tri
 
-### 3.3 Pages Instructeurs — ~50%
-- [x] Dashboard Instructeur : vue d'ensemble des cours créés
-- [ ] Dashboard Instructeur : feedback étudiants, analytics avancées
-- [x] Création/Édition de cours : formulaire, modules, QCM (onglets)
-- [ ] Création/Édition de cours : upload de thumbnail (URL uniquement), prévisualisation
-- [ ] Gestion des Étudiants : liste des inscrits, progression par étudiant, communication (non commencé)
+### 3.3 Pages Instructeurs â€” ~80%
+- [x] Dashboard Instructeur : vue d'ensemble des cours crÃ©Ã©s
+- [ ] Dashboard Instructeur : feedback Ã‰tudiants, analytics avancÃ©es
+- [x] CrÃ©ation/Ã©dition de cours : formulaire, modules, QCM (onglets), workflow de validation admin
+- [ ] CrÃ©ation/Ã©dition de cours : upload de thumbnail (URL uniquement), prÃ©visualisation
+- [x] Gestion des Ã‰tudiants : liste des inscrits avec progression + messagerie (notifications)
 
-### 3.4 Pages Administrateur — ~55%
-- [x] Dashboard Admin : métriques globales (utilisateurs, cours, modules, inscriptions, questions)
-- [ ] Dashboard Admin : utilisateurs actifs, revenus, alertes système
-- [x] Gestion Utilisateurs : liste, modification des rôles
-- [ ] Gestion Utilisateurs : suspension/activation, recherche/filtres
-- [ ] Gestion Cours : approbation, modération, catégories/tags structurés (non commencé)
+### 3.4 Pages Administrateur â€” ~85%
+- [x] Dashboard Admin : mÃ©triques globales + cours en attente de validation
+- [ ] Dashboard Admin : utilisateurs actifs, revenus, alertes systÃ¨me
+- [x] Gestion Utilisateurs : liste, modification des rÃ´les, recherche/filtres, suspension/rÃ©activation
+- [x] Gestion Cours : workflow d'approbation (soumission ? validation admin ? publication)
+- [ ] Gestion Cours : approbation, modÃ©ration, catÃ©gories/tags structurÃ©s (non commencÃ©)
 
-### 3.5 Composants Réutilisables — 0%
-- [ ] Aucun composant Blazor partagé (CourseCard, Modal, LoadingSpinner, Toast, Pagination, SearchBar, Rating) — chaque page duplique son propre balisage
+### 3.5 Composants RÃ©utilisables â€” 0%
+- [ ] Aucun composant Blazor partagÃ© (CourseCard, Modal, LoadingSpinner, Toast, Pagination, SearchBar, Rating) â€” chaque page duplique son propre balisage
 
 ---
 
-## ?? Prochaines Actions Recommandées
+## ?? Prochaines Actions RecommandÃ©es
 
-### Priorité HAUTE — Combler les vrais manques de la Phase 3
+### PrioritÃ© HAUTE â€” Combler les vrais manques de la Phase 3
 
-1. **Instructeurs : Gestion des étudiants** (non commencé)
+1. **Instructeurs : Gestion des Ã‰tudiants** (non commencÃ©)
    - Liste des inscrits par cours, progression individuelle, communication
 
-2. **Composants réutilisables** (0%)
+2. **Composants rÃ©utilisables** (0%)
    - CourseCard, Modal, LoadingSpinner, Toast, Pagination, SearchBar, Rating
 
-3. **Édition de profil** (Profile.razor est actuellement en lecture seule)
+3. **Ã‰dition de profil** (Profile.razor est actuellement en lecture seule)
 
 4. **Admin : recherche/filtres + suspension de comptes** dans la gestion des utilisateurs
 
 ### Semaine prochaine
 
-5. **Phase 4** : upload de médias (thumbnails/vidéos), système d'évaluation des cours
-6. **Phase 5** : tests unitaires (couverture actuelle : `EduPlatform.Tests` limité à quelques tests de paiement)
+5. **Phase 4** : upload de mÃ©dias (thumbnails/vidÃ©os), systÃ¨me d'Ã‰valuation des cours
+6. **Phase 5** : tests unitaires (couverture actuelle : `EduPlatform.Tests` limitÃ© â€” quelques tests de paiement)
 
 ---
 
-## ?? Métriques de Progression
+## ?? MÃ©triques de Progression
 
-| Catégorie | Items Complétés | Items Totaux | % |
+| CatÃ©gorie | Items ComplÃ©tÃ©s | Items Totaux | % |
 |-----------|----------------|--------------|---|
 | **Documentation** | 10 | 10 | 100% |
 | **Scripts Infrastructure** | 7 | 10 | 70% |
@@ -216,41 +216,41 @@ Phase 11: Mobile                      [??????????]  0% ?? FUTUR
 ## ?? Objectifs par Sprint
 
 ### Sprint 1 (Semaine du 2026-08-28) - ACTUEL
-- [x] Créer toute la documentation
-- [x] Créer les scripts d'infrastructure
+- [x] CrÃ©er toute la documentation
+- [x] CrÃ©er les scripts d'infrastructure
 - [ ] Configurer les secrets
 - [ ] Initialiser la plateforme
 - [ ] Tester l'infrastructure
 
 ### Sprint 2 (Semaine du 2026-09-04)
-- [ ] Compléter Phase 1 à 100%
+- [ ] ComplÃ©ter Phase 1 â€” 100%
 - [ ] Commencer Phase 2 (Auth Blazor)
-- [ ] Créer AuthenticationStateProvider
-- [ ] Mettre à jour NavMenu
+- [ ] CrÃ©er AuthenticationStateProvider
+- [ ] Mettre Ã  jour NavMenu
 
 ### Sprint 3 (Semaine du 2026-09-11)
-- [ ] Compléter Phase 2
+- [ ] ComplÃ©ter Phase 2
 - [ ] Commencer Phase 3 (Pages Web)
-- [ ] Créer page Profil
-- [ ] Créer page Progression
+- [ ] CrÃ©er page Profil
+- [ ] CrÃ©er page Progression
 
 ---
 
-## ?? Problèmes Connus
+## ?? ProblÃ¨mes Connus
 
-*Aucun problème identifié pour le moment*
+*Aucun problÃ¨me identifiÃ© pour le moment*
 
 ---
 
-## ?? Notes et Idées
+## ?? Notes et IdÃ©es
 
-### Améliorations Futures
+### AmÃ©liorations Futures
 - Ajouter des healthchecks dans docker-compose
-- Créer des scripts de backup automatiques
-- Ajouter des tests d'intégration pour l'infrastructure
-- Créer un dashboard de monitoring
+- CrÃ©er des scripts de backup automatiques
+- Ajouter des tests d'intÃ©gration pour l'infrastructure
+- CrÃ©er un dashboard de monitoring
 
-### Décisions Techniques
+### DÃ©cisions Techniques
 - ? Utiliser BCrypt pour le hashing de mots de passe
 - ? JWT avec expiration 24h
 - ? Cassandra pour les time-series data
@@ -261,8 +261,8 @@ Phase 11: Mobile                      [??????????]  0% ?? FUTUR
 ## ?? Support
 
 Pour toute question sur la roadmap ou la progression:
-- Consulter [ROADMAP.md](ROADMAP.md) pour les détails complets
+- Consulter [ROADMAP.md](ROADMAP.md) pour les dÃ©tails complets
 - Consulter la documentation dans `docs/`
-- Créer une issue sur GitHub
+- CrÃ©er une issue sur GitHub
 
-**Dernière mise à jour:** 2026-08-28
+**DerniÃ¨re mise Ã  jour:** 2026-08-28
