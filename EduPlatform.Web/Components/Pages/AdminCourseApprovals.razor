@@ -1,0 +1,178 @@
+@page "/admin/courses"
+@rendermode InteractiveServer
+@implements IDisposable
+@inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager Nav
+@inject EduPlatform.Web.Services.AuthStateService AuthState
+
+@if (!IsAdmin)
+{
+    <div class="profile-container">
+        <div class="alert-error">Cette page est réservée aux administrateurs.</div>
+        <button class="btn-primary" @onclick="GoToHome">Retour à l'accueil</button>
+    </div>
+}
+else
+{
+    <div class="page-header">
+        <h1>Cours à valider</h1>
+        <p>Approuvez ou rejetez les cours soumis par les enseignants avant publication.</p>
+    </div>
+
+    @if (IsLoading)
+    {
+        <p>Chargement...</p>
+    }
+    else if (!string.IsNullOrWhiteSpace(ErrorMessage))
+    {
+        <div class="alert-error">@ErrorMessage</div>
+    }
+    else if (!PendingCourses.Any())
+    {
+        <div class="course-section">
+            <p>Aucun cours en attente de validation.</p>
+        </div>
+    }
+    else
+    {
+        <div class="pending-courses-list">
+            @foreach (var course in PendingCourses)
+            {
+                <div class="pending-course-card">
+                    <h3>@course.Title</h3>
+                    <div class="pending-course-meta">
+                        @course.Category · @course.Level · @course.DurationMinutes min · @course.ModuleCount module(s)
+                        <br />
+                        Soumis par @course.InstructorName (@course.InstructorEmail)
+                    </div>
+                    <p>@course.Description</p>
+                    <div class="pending-course-actions">
+                        <button class="btn-primary" @onclick="() => Approve(course.Id)">Approuver</button>
+                        <button class="btn-secondary" @onclick="() => Reject(course.Id)">Rejeter</button>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+}
+
+@code {
+    private bool IsLoading = true;
+    private string ErrorMessage = string.Empty;
+    private List<PendingCourseDto> PendingCourses = new();
+    private bool DataLoaded;
+    private bool IsAdmin => AuthState.IsAuthenticated && AuthState.Role == "Admin";
+
+    protected override void OnInitialized()
+    {
+        AuthState.OnChange += OnAuthStateChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await AuthState.InitializeAsync();
+            await EvaluateAuthStateAsync();
+        }
+    }
+
+    private async void OnAuthStateChanged()
+    {
+        await InvokeAsync(async () =>
+        {
+            await EvaluateAuthStateAsync();
+            StateHasChanged();
+        });
+    }
+
+    private async Task EvaluateAuthStateAsync()
+    {
+        if (!IsAdmin)
+        {
+            IsLoading = false;
+            return;
+        }
+        if (DataLoaded)
+            return;
+        DataLoaded = true;
+
+        await LoadPendingCourses();
+        IsLoading = false;
+    }
+
+    private async Task LoadPendingCourses()
+    {
+        try
+        {
+            PendingCourses = await CreateAuthorizedClient()
+                .GetFromJsonAsync<List<PendingCourseDto>>("api/courses/pending") ?? new();
+        }
+        catch
+        {
+            ErrorMessage = "Impossible de charger les cours en attente.";
+        }
+    }
+
+    private async Task Approve(Guid courseId)
+    {
+        try
+        {
+            var response = await CreateAuthorizedClient().PostAsync($"api/courses/{courseId}/approve", null);
+            if (response.IsSuccessStatusCode)
+            {
+                PendingCourses.RemoveAll(c => c.Id == courseId);
+            }
+            else
+            {
+                ErrorMessage = "L'approbation du cours a échoué.";
+            }
+        }
+        catch
+        {
+            ErrorMessage = "Erreur de connexion.";
+        }
+    }
+
+    private async Task Reject(Guid courseId)
+    {
+        try
+        {
+            var response = await CreateAuthorizedClient().PostAsync($"api/courses/{courseId}/reject", null);
+            if (response.IsSuccessStatusCode)
+            {
+                PendingCourses.RemoveAll(c => c.Id == courseId);
+            }
+            else
+            {
+                ErrorMessage = "Le rejet du cours a échoué.";
+            }
+        }
+        catch
+        {
+            ErrorMessage = "Erreur de connexion.";
+        }
+    }
+
+    public void Dispose()
+    {
+        AuthState.OnChange -= OnAuthStateChanged;
+    }
+
+    private HttpClient CreateAuthorizedClient() => HttpClientFactory.CreateAuthorizedClient(AuthState);
+
+    private void GoToHome() => Nav.NavigateTo("/");
+
+    private sealed class PendingCourseDto
+    {
+        public Guid Id { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string Category { get; set; } = string.Empty;
+        public string Level { get; set; } = string.Empty;
+        public int DurationMinutes { get; set; }
+        public int ModuleCount { get; set; }
+        public string InstructorName { get; set; } = string.Empty;
+        public string InstructorEmail { get; set; } = string.Empty;
+    }
+}

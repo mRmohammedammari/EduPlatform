@@ -46,6 +46,7 @@ public class AdminController : ControllerBase
             instructors = await _db.Users.CountAsync(user => user.Role == UserRole.Instructor),
             courses = await _db.Courses.CountAsync(),
             publishedCourses = await _db.Courses.CountAsync(course => course.IsPublished),
+            pendingCourses = await _db.Courses.CountAsync(course => course.Status == CourseStatus.PendingReview),
             modules = await _db.Modules.CountAsync(),
             enrollments = await _db.Enrollments.CountAsync(),
             questions = await _db.Questions.CountAsync()

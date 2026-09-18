@@ -29,8 +29,19 @@ else
     }
     else
     {
+        <div class="admin-users-filters">
+            <input type="text" class="admin-users-search" placeholder="Rechercher par nom ou email..." @bind="SearchTerm" @bind:event="oninput" />
+            <select @bind="RoleFilter">
+                <option value="">Tous les rôles</option>
+                <option value="Student">Étudiants</option>
+                <option value="Instructor">Enseignants</option>
+                <option value="Admin">Gestionnaires</option>
+            </select>
+            <span class="admin-users-count">@FilteredUsers.Count() utilisateur(s)</span>
+        </div>
+
         <div class="course-section">
-            @foreach (var user in Users)
+            @foreach (var user in FilteredUsers)
             {
                 <div class="activity-row">
                     <div>
@@ -41,7 +52,7 @@ else
                         <select value="@user.Role" @onchange="eventArgs => UpdateRole(user.Id, eventArgs.Value?.ToString())">
                             <option value="Student">Étudiant</option>
                             <option value="Instructor">Enseignant</option>
-                            <option value="Admin">Administrateur</option>
+                            <option value="Admin">Gestionnaire</option>
                         </select>
                         <small>@user.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")</small>
                     </div>
@@ -56,7 +67,15 @@ else
     private string ErrorMessage = string.Empty;
     private List<UserDto> Users = new();
     private bool DataLoaded;
+    private string SearchTerm = string.Empty;
+    private string RoleFilter = string.Empty;
     private bool IsAdmin => AuthState.IsAuthenticated && AuthState.Role == "Admin";
+
+    private IEnumerable<UserDto> FilteredUsers => Users.Where(u =>
+        (string.IsNullOrWhiteSpace(RoleFilter) || u.Role == RoleFilter) &&
+        (string.IsNullOrWhiteSpace(SearchTerm) ||
+            $"{u.FirstName} {u.LastName}".Contains(SearchTerm, StringComparison.OrdinalIgnoreCase) ||
+            u.Email.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase)));
 
     protected override void OnInitialized()
     {

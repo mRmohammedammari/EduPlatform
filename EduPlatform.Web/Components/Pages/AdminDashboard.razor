@@ -36,12 +36,14 @@ else
             <div class="stat-card"><span class="stat-value">@Overview.Instructors</span><span class="stat-label">Enseignants</span></div>
             <div class="stat-card"><span class="stat-value">@Overview.Courses</span><span class="stat-label">Cours</span></div>
             <div class="stat-card"><span class="stat-value">@Overview.PublishedCourses</span><span class="stat-label">Cours publiés</span></div>
+            <div class="stat-card"><span class="stat-value">@Overview.PendingCourses</span><span class="stat-label">En attente de validation</span></div>
             <div class="stat-card"><span class="stat-value">@Overview.Modules</span><span class="stat-label">Modules</span></div>
             <div class="stat-card"><span class="stat-value">@Overview.Enrollments</span><span class="stat-label">Inscriptions</span></div>
             <div class="stat-card"><span class="stat-value">@Overview.Questions</span><span class="stat-label">Questions</span></div>
         </div>
 
         <button class="btn-primary" @onclick="GoToUsers">Gérer les utilisateurs</button>
+        <button class="btn-primary" @onclick="GoToCourseApprovals">Cours à valider (@Overview.PendingCourses)</button>
         <button class="btn-secondary" @onclick="DownloadReport">Télécharger le rapport CSV</button>
     }
 }
@@ -111,6 +113,7 @@ else
 
     private void GoToHome() => Nav.NavigateTo("/");
     private void GoToUsers() => Nav.NavigateTo("/admin/users");
+    private void GoToCourseApprovals() => Nav.NavigateTo("/admin/courses");
 
     private async Task DownloadReport()
     {
@@ -131,6 +134,7 @@ else
         public int Instructors { get; set; }
         public int Courses { get; set; }
         public int PublishedCourses { get; set; }
+        public int PendingCourses { get; set; }
         public int Modules { get; set; }
         public int Enrollments { get; set; }
         public int Questions { get; set; }

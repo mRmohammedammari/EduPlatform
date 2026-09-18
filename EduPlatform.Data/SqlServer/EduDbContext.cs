@@ -34,6 +34,7 @@ namespace EduPlatform.Data.SqlServer
                 entity.HasKey(c => c.Id);
                 entity.Property(c => c.Title).IsRequired().HasMaxLength(300);
                 entity.Property(c => c.Price).HasPrecision(10, 2);
+                entity.Property(c => c.Status).HasConversion<string>();
                 entity.HasMany(c => c.Modules)
                       .WithOne(m => m.Course)
                       .HasForeignKey(m => m.CourseId);

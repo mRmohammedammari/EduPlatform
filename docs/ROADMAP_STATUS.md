@@ -9,7 +9,7 @@
 ```
 Phase 1: Fondations et Sécurité       [??????????] 100% ? TERMINÉE
 Phase 2: Auth Client Blazor           [??????????] 100% ? TERMINÉE
-Phase 3: Complétion Interface Web     [??????????]  0% ? À VENIR
+Phase 3: Complétion Interface Web     [??????????] 55% ? EN COURS
 Phase 4: Fonctionnalités Avancées     [??????????]  0% ? À VENIR
 Phase 5: Tests et Qualité             [??????????]  0% ? À VENIR
 Phase 6: DevOps et Déploiement        [??????????]  0% ? À VENIR
@@ -138,43 +138,66 @@ Phase 11: Mobile                      [??????????]  0% ?? FUTUR
 
 ---
 
-## ?? Phase 3: Complétion Interface Web (0% - À VENIR)
+## ?? Phase 3: Complétion Interface Web (55% - EN COURS)
 
 **Durée estimée:** 2-3 semaines  
 **Priorité:** ?? HAUTE
 
-*Détails complets dans [ROADMAP.md](ROADMAP.md#phase-3)*
+### 3.1 Navigation et Layout — 100% ?
+- [x] NavMenu remplacé (PublicHeader/NavSidebar), plus de Counter/Weather
+- [x] Liens Cours, Profil, Chat, Tests, Activité, Notifications
+- [x] Menu différencié par rôle (Student/Instructor/Admin)
+- [x] Indicateur utilisateur connecté (nom + avatar dans le header)
+
+### 3.2 Pages Étudiants — ~65%
+- [x] Page Profil : infos perso, historique des cours, statistiques
+- [ ] Page Profil : édition du profil (lecture seule actuellement)
+- [x] Page Progression : stats agrégées par cours
+- [ ] Page Progression : graphiques, badges/achievements
+- [x] Page Tests/QCM : liste, passage, résultats
+- [ ] Page Tests/QCM : révision détaillée des réponses
+- [x] Page Chat IA : interface complète
+- [ ] Page Chat IA : historique persistant, sessions par cours, suggestions
+- [x] Page Recommandations : affichage cours recommandés
+- [ ] Page Recommandations : explication du "pourquoi", filtres/tri
+
+### 3.3 Pages Instructeurs — ~50%
+- [x] Dashboard Instructeur : vue d'ensemble des cours créés
+- [ ] Dashboard Instructeur : feedback étudiants, analytics avancées
+- [x] Création/Édition de cours : formulaire, modules, QCM (onglets)
+- [ ] Création/Édition de cours : upload de thumbnail (URL uniquement), prévisualisation
+- [ ] Gestion des Étudiants : liste des inscrits, progression par étudiant, communication (non commencé)
+
+### 3.4 Pages Administrateur — ~55%
+- [x] Dashboard Admin : métriques globales (utilisateurs, cours, modules, inscriptions, questions)
+- [ ] Dashboard Admin : utilisateurs actifs, revenus, alertes système
+- [x] Gestion Utilisateurs : liste, modification des rôles
+- [ ] Gestion Utilisateurs : suspension/activation, recherche/filtres
+- [ ] Gestion Cours : approbation, modération, catégories/tags structurés (non commencé)
+
+### 3.5 Composants Réutilisables — 0%
+- [ ] Aucun composant Blazor partagé (CourseCard, Modal, LoadingSpinner, Toast, Pagination, SearchBar, Rating) — chaque page duplique son propre balisage
 
 ---
 
 ## ?? Prochaines Actions Recommandées
 
-### Cette semaine (Priorité HAUTE)
+### Priorité HAUTE — Combler les vrais manques de la Phase 3
 
-1. **Configurer les secrets** ??
-   ```powershell
-   cd EduPlatform.API
-   dotnet user-secrets set "OpenAI:ApiKey" "votre-clé"
-   dotnet user-secrets set "Jwt:Key" "votre-clé-jwt-32-caractères-minimum"
-   ```
+1. **Instructeurs : Gestion des étudiants** (non commencé)
+   - Liste des inscrits par cours, progression individuelle, communication
 
-2. **Initialiser la plateforme** ??
-   ```powershell
-   .\scripts\init-platform.ps1
-   ```
+2. **Composants réutilisables** (0%)
+   - CourseCard, Modal, LoadingSpinner, Toast, Pagination, SearchBar, Rating
 
-3. **Tester que tout fonctionne** ?
-   - Vérifier Cassandra
-   - Vérifier Kafka
-   - Vérifier Redis
-   - Lancer l'API
-   - Lancer le Web
+3. **Édition de profil** (Profile.razor est actuellement en lecture seule)
+
+4. **Admin : recherche/filtres + suspension de comptes** dans la gestion des utilisateurs
 
 ### Semaine prochaine
 
-4. **Commencer Phase 2**: Authentification Blazor
-5. **Créer les premiers tests unitaires**
-6. **Mettre à jour NavMenu**
+5. **Phase 4** : upload de médias (thumbnails/vidéos), système d'évaluation des cours
+6. **Phase 5** : tests unitaires (couverture actuelle : `EduPlatform.Tests` limité à quelques tests de paiement)
 
 ---
 

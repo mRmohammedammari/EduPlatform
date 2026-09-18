@@ -149,6 +149,7 @@ namespace EduPlatform.API.Controllers
                 ThumbnailUrl = dto.ThumbnailUrl,
                 Price = dto.Price,
                 IsPublished = false,
+                Status = CourseStatus.Draft,
                 InstructorId = instructorId
             };
             _db.Courses.Add(course);
@@ -221,6 +222,96 @@ namespace EduPlatform.API.Controllers
             return Ok(course);
         }
 
+        [HttpGet("pending")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> GetPendingReview()
+        {
+            var pending = await _db.Courses
+                .Include(c => c.Modules)
+                .Where(c => c.Status == CourseStatus.PendingReview)
+                .OrderBy(c => c.CreatedAt)
+                .Join(_db.Users, c => c.InstructorId, u => u.Id, (c, u) => new
+                {
+                    c.Id,
+                    c.Title,
+                    c.Description,
+                    c.Category,
+                    c.Level,
+                    c.DurationMinutes,
+                    ModuleCount = c.Modules.Count,
+                    InstructorName = u.FirstName + " " + u.LastName,
+                    InstructorEmail = u.Email
+                })
+                .ToListAsync();
+
+            return Ok(pending);
+        }
+
+        [HttpPost("{id:guid}/submit-for-review")]
+        [Authorize(Roles = "Instructor,Admin")]
+        public async Task<IActionResult> SubmitForReview(Guid id)
+        {
+            var userId = Guid.Parse(User.FindFirst(
+                System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+            var course = await _db.Courses.Include(c => c.Modules)
+                .FirstOrDefaultAsync(c => c.Id == id);
+
+            if (course == null)
+                return NotFound();
+            if (!User.IsInRole("Admin") && course.InstructorId != userId)
+                return Forbid();
+            if (!course.Modules.Any())
+                return BadRequest(new { message = "Ajoutez au moins un module avant de soumettre le cours." });
+            if (course.Status is not (CourseStatus.Draft or CourseStatus.Rejected))
+                return BadRequest(new { message = "Ce cours a déjà été soumis ou approuvé." });
+
+            course.Status = CourseStatus.PendingReview;
+            course.RejectionReason = null;
+            await _db.SaveChangesAsync();
+            await _cache.RemoveAsync(CacheService.CourseKey(id));
+
+            return Ok(course);
+        }
+
+        [HttpPost("{id:guid}/approve")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> Approve(Guid id)
+        {
+            var course = await _db.Courses.FindAsync(id);
+            if (course == null)
+                return NotFound();
+            if (course.Status != CourseStatus.PendingReview)
+                return BadRequest(new { message = "Ce cours n'est pas en attente de validation." });
+
+            course.Status = CourseStatus.Approved;
+            course.IsPublished = true;
+            course.RejectionReason = null;
+            await _db.SaveChangesAsync();
+            await _cache.RemoveAsync(CacheService.CourseKey(id));
+            await _cache.RemoveAsync(CacheService.CourseListKey());
+
+            return Ok(course);
+        }
+
+        [HttpPost("{id:guid}/reject")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> Reject(Guid id, [FromBody] RejectCourseDto? dto)
+        {
+            var course = await _db.Courses.FindAsync(id);
+            if (course == null)
+                return NotFound();
+            if (course.Status != CourseStatus.PendingReview)
+                return BadRequest(new { message = "Ce cours n'est pas en attente de validation." });
+
+            course.Status = CourseStatus.Rejected;
+            course.IsPublished = false;
+            course.RejectionReason = dto?.Reason;
+            await _db.SaveChangesAsync();
+            await _cache.RemoveAsync(CacheService.CourseKey(id));
+
+            return Ok(course);
+        }
+
         [HttpPost("{id:guid}/publish")]
         [Authorize(Roles = "Instructor,Admin")]
         public async Task<IActionResult> Publish(Guid id)
@@ -236,6 +327,10 @@ namespace EduPlatform.API.Controllers
                 return Forbid();
             if (!course.Modules.Any())
                 return BadRequest(new { message = "Ajoutez au moins un module avant de publier." });
+            if (course.Status != CourseStatus.Approved && !User.IsInRole("Admin"))
+                return BadRequest(new { message = "Ce cours doit d'abord être validé par un administrateur." });
+            if (course.Status != CourseStatus.Approved)
+                course.Status = CourseStatus.Approved;
 
             course.IsPublished = true;
             await _db.SaveChangesAsync();
@@ -503,6 +598,11 @@ namespace EduPlatform.API.Controllers
         public int DurationMinutes { get; set; }
         public string ThumbnailUrl { get; set; } = string.Empty;
         public decimal Price { get; set; }
+    }
+
+    public class RejectCourseDto
+    {
+        public string? Reason { get; set; }
     }
 
     public class CreateModuleDto

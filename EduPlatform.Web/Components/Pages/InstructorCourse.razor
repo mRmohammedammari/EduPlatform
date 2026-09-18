@@ -25,12 +25,27 @@ else
     <div class="page-header">
         <h1>@Course.Title</h1>
         <p>Gestion des modules et du contenu pédagogique.</p>
-        <button class="btn-primary" @onclick="TogglePublication">
-            @(Course.IsPublished ? "Dépublier le cours" : "Publier le cours")
-        </button>
+        <span class="badge-status @StatusCssClass">@StatusLabel</span>
+
+        @if (Course.Status is "Draft" or "Rejected")
+        {
+            <button class="btn-primary" @onclick="SubmitForReview">Soumettre pour validation</button>
+        }
+        else if (Course.Status == "Approved")
+        {
+            <button class="btn-primary" @onclick="TogglePublication">
+                @(Course.IsPublished ? "Dépublier le cours" : "Publier le cours")
+            </button>
+        }
+
         <button class="btn-secondary" @onclick="ToggleArchive">
             @(Course.IsArchived ? "Restaurer le cours" : "Archiver le cours")
         </button>
+
+        @if (Course.Status == "Rejected" && !string.IsNullOrWhiteSpace(Course.RejectionReason))
+        {
+            <div class="alert-error">Motif du rejet : @Course.RejectionReason</div>
+        }
     </div>
 
     <div class="instructor-tabs">
@@ -310,6 +325,22 @@ else
         (AuthState.Role == "Instructor" || AuthState.Role == "Admin");
     private bool DataLoaded;
 
+    private string StatusLabel => Course?.Status switch
+    {
+        "PendingReview" => "En attente de validation",
+        "Approved" => "Approuvé",
+        "Rejected" => "Rejeté",
+        _ => "Brouillon"
+    };
+
+    private string StatusCssClass => Course?.Status switch
+    {
+        "PendingReview" => "pending",
+        "Approved" => "approved",
+        "Rejected" => "rejected",
+        _ => "draft"
+    };
+
     protected override void OnInitialized()
     {
         AuthState.OnChange += OnAuthStateChanged;
@@ -402,6 +433,33 @@ else
         finally
         {
             IsSaving = false;
+        }
+    }
+
+    private async Task SubmitForReview()
+    {
+        if (Course == null)
+            return;
+
+        ErrorMessage = string.Empty;
+        SuccessMessage = string.Empty;
+        try
+        {
+            var response = await CreateAuthorizedClient().PostAsync(
+                $"api/courses/{CourseId}/submit-for-review", null);
+            if (!response.IsSuccessStatusCode)
+            {
+                var body = await response.Content.ReadFromJsonAsync<Dictionary<string, string>>();
+                ErrorMessage = body?.GetValueOrDefault("message") ?? "La soumission du cours a échoué.";
+                return;
+            }
+
+            Course.Status = "PendingReview";
+            SuccessMessage = "Cours soumis pour validation. Un administrateur va l'examiner.";
+        }
+        catch
+        {
+            ErrorMessage = "Erreur de connexion.";
         }
     }
 
@@ -870,6 +928,8 @@ else
         public string ThumbnailUrl { get; set; } = string.Empty;
         public bool IsPublished { get; set; }
         public bool IsArchived { get; set; }
+        public string Status { get; set; } = "Draft";
+        public string? RejectionReason { get; set; }
         public List<ModuleDto> Modules { get; set; } = new();
     }
 
