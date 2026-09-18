@@ -18,6 +18,7 @@ public class AuthStateService
     public string Email { get; private set; } = string.Empty;
     public string Role { get; private set; } = string.Empty;
     public Guid SessionId { get; private set; }
+    public bool RememberMe { get; private set; } = true;
 
     public event Action? OnChange;
 
@@ -103,6 +104,24 @@ public class AuthStateService
             Role = role,
             RememberMe = rememberMe,
             SessionId = await GetOrCreateSessionIdAsync(Guid.Empty)
+        };
+
+        await SaveSessionAsync(session);
+        ApplySession(session);
+    }
+
+    public async Task UpdateFirstNameAsync(string firstName)
+    {
+        var session = new AuthSession
+        {
+            Token = Token,
+            RefreshToken = RefreshToken,
+            UserId = UserId,
+            FirstName = firstName,
+            Email = Email,
+            Role = Role,
+            SessionId = SessionId,
+            RememberMe = RememberMe
         };
 
         await SaveSessionAsync(session);
@@ -276,6 +295,7 @@ public class AuthStateService
         Email = session.Email;
         Role = session.Role;
         SessionId = session.SessionId == Guid.Empty ? Guid.NewGuid() : session.SessionId;
+        RememberMe = session.RememberMe;
         IsAuthenticated = !string.IsNullOrWhiteSpace(session.Token) && !IsTokenExpired(session.Token);
         OnChange?.Invoke();
     }

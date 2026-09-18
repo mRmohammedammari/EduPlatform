@@ -1,6 +1,7 @@
 ﻿using EduPlatform.Core.Models;
 using EduPlatform.Core.Services;
 using EduPlatform.Data.SqlServer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -17,6 +18,19 @@ namespace EduPlatform.API.Controllers
         {
             _db = db;
             _auth = auth;
+        }
+
+        [HttpGet("me")]
+        [Authorize]
+        public async Task<IActionResult> GetMe()
+        {
+            var userId = Guid.Parse(User.FindFirst(
+                System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+            var user = await _db.Users.FindAsync(userId);
+            if (user is null)
+                return NotFound();
+
+            return Ok(new { user.FirstName, user.LastName, user.Email, user.Role, user.CreatedAt });
         }
 
         [HttpPost("register")]
@@ -106,6 +120,47 @@ namespace EduPlatform.API.Controllers
             return Ok();
         }
 
+        [HttpPut("profile")]
+        [Authorize]
+        public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileDto dto)
+        {
+            if (string.IsNullOrWhiteSpace(dto.FirstName) || string.IsNullOrWhiteSpace(dto.LastName))
+                return BadRequest(new { message = "Le prénom et le nom sont obligatoires." });
+
+            var userId = Guid.Parse(User.FindFirst(
+                System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+            var user = await _db.Users.FindAsync(userId);
+            if (user is null)
+                return NotFound();
+
+            user.FirstName = dto.FirstName.Trim();
+            user.LastName = dto.LastName.Trim();
+            await _db.SaveChangesAsync();
+
+            return Ok(new { user.FirstName, user.LastName });
+        }
+
+        [HttpPost("change-password")]
+        [Authorize]
+        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto dto)
+        {
+            if (string.IsNullOrWhiteSpace(dto.NewPassword) || dto.NewPassword.Length < 6)
+                return BadRequest(new { message = "Le nouveau mot de passe doit contenir au moins 6 caractères." });
+
+            var userId = Guid.Parse(User.FindFirst(
+                System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+            var user = await _db.Users.FindAsync(userId);
+            if (user is null)
+                return NotFound();
+            if (!_auth.VerifyPassword(dto.CurrentPassword, user.PasswordHash))
+                return BadRequest(new { message = "Mot de passe actuel incorrect." });
+
+            user.PasswordHash = _auth.HashPassword(dto.NewPassword);
+            await _db.SaveChangesAsync();
+
+            return Ok();
+        }
+
         private async Task<string> IssueRefreshTokenAsync(Guid userId)
         {
             var refreshToken = new RefreshToken
@@ -138,5 +193,17 @@ namespace EduPlatform.API.Controllers
     public class RefreshDto
     {
         public string RefreshToken { get; set; } = string.Empty;
+    }
+
+    public class UpdateProfileDto
+    {
+        public string FirstName { get; set; } = string.Empty;
+        public string LastName { get; set; } = string.Empty;
+    }
+
+    public class ChangePasswordDto
+    {
+        public string CurrentPassword { get; set; } = string.Empty;
+        public string NewPassword { get; set; } = string.Empty;
     }
 }

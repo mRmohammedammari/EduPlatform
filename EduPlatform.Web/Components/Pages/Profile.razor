@@ -18,7 +18,47 @@
             <h1>@AuthState.FirstName</h1>
             <p class="profile-email">@AuthState.Email</p>
             <span class="badge">@AuthState.Role</span>
+            <button class="btn-secondary btn-small" @onclick="ToggleEdit">
+                @(IsEditing ? "Annuler" : "Modifier le profil")
+            </button>
         </div>
+
+        @if (IsEditing)
+        {
+            <div class="profile-section">
+                <h2>Modifier mes informations</h2>
+                @if (!string.IsNullOrWhiteSpace(ProfileMessage))
+                {
+                    <div class="alert-error">@ProfileMessage</div>
+                }
+                <div class="form-group">
+                    <label>Prénom</label>
+                    <input type="text" @bind="EditFirstName" />
+                </div>
+                <div class="form-group">
+                    <label>Nom</label>
+                    <input type="text" @bind="EditLastName" />
+                </div>
+                <button class="btn-primary" @onclick="SaveProfile">Enregistrer</button>
+            </div>
+
+            <div class="profile-section">
+                <h2>Changer mon mot de passe</h2>
+                @if (!string.IsNullOrWhiteSpace(PasswordMessage))
+                {
+                    <div class="alert-error">@PasswordMessage</div>
+                }
+                <div class="form-group">
+                    <label>Mot de passe actuel</label>
+                    <input type="password" @bind="CurrentPassword" />
+                </div>
+                <div class="form-group">
+                    <label>Nouveau mot de passe</label>
+                    <input type="password" @bind="NewPassword" />
+                </div>
+                <button class="btn-primary" @onclick="ChangePassword">Changer le mot de passe</button>
+            </div>
+        }
 
         <div class="profile-section">
             <h2>Mes inscriptions aux cours</h2>
@@ -76,6 +116,14 @@
 
 @code {
     private List<EnrollmentDto>? Enrollments;
+    private string LastName = string.Empty;
+    private bool IsEditing;
+    private string EditFirstName = string.Empty;
+    private string EditLastName = string.Empty;
+    private string ProfileMessage = string.Empty;
+    private string CurrentPassword = string.Empty;
+    private string NewPassword = string.Empty;
+    private string PasswordMessage = string.Empty;
 
     protected override void OnInitialized()
     {
@@ -111,6 +159,22 @@
         if (Enrollments == null)
         {
             await LoadEnrollments();
+            await LoadProfileDetails();
+        }
+    }
+
+    private async Task LoadProfileDetails()
+    {
+        try
+        {
+            var me = await HttpClientFactory.CreateAuthorizedClient(AuthState)
+                .GetFromJsonAsync<MeDto>("api/auth/me");
+            if (me != null)
+                LastName = me.LastName;
+        }
+        catch
+        {
+            // Non-blocking: profile editing will just start with an empty last name field.
         }
     }
 
@@ -133,6 +197,77 @@
         AuthState.OnChange -= OnAuthStateChanged;
     }
 
+    private void ToggleEdit()
+    {
+        IsEditing = !IsEditing;
+        if (IsEditing)
+        {
+            EditFirstName = AuthState.FirstName;
+            EditLastName = LastName;
+            ProfileMessage = string.Empty;
+            PasswordMessage = string.Empty;
+            CurrentPassword = string.Empty;
+            NewPassword = string.Empty;
+        }
+    }
+
+    private async Task SaveProfile()
+    {
+        ProfileMessage = string.Empty;
+        try
+        {
+            var response = await HttpClientFactory.CreateAuthorizedClient(AuthState).PutAsJsonAsync(
+                "api/auth/profile", new { firstName = EditFirstName, lastName = EditLastName });
+
+            if (response.IsSuccessStatusCode)
+            {
+                LastName = EditLastName;
+                await AuthState.UpdateFirstNameAsync(EditFirstName);
+                ProfileMessage = "Profil mis à jour.";
+            }
+            else
+            {
+                ProfileMessage = "La mise à jour du profil a échoué.";
+            }
+        }
+        catch
+        {
+            ProfileMessage = "Erreur de connexion.";
+        }
+    }
+
+    private async Task ChangePassword()
+    {
+        PasswordMessage = string.Empty;
+        if (string.IsNullOrWhiteSpace(CurrentPassword) || string.IsNullOrWhiteSpace(NewPassword))
+        {
+            PasswordMessage = "Renseignez le mot de passe actuel et le nouveau.";
+            return;
+        }
+
+        try
+        {
+            var response = await HttpClientFactory.CreateAuthorizedClient(AuthState).PostAsJsonAsync(
+                "api/auth/change-password", new { currentPassword = CurrentPassword, newPassword = NewPassword });
+
+            if (response.IsSuccessStatusCode)
+            {
+                PasswordMessage = "Mot de passe modifié avec succès.";
+                CurrentPassword = string.Empty;
+                NewPassword = string.Empty;
+            }
+            else
+            {
+                var body = await response.Content.ReadFromJsonAsync<Dictionary<string, string>>();
+                PasswordMessage = body?.GetValueOrDefault("message") ?? "Le changement de mot de passe a échoué.";
+            }
+        }
+        catch
+        {
+            PasswordMessage = "Erreur de connexion.";
+        }
+    }
+
     private void GoToCourse(Guid courseId)
     {
         Nav.NavigateTo($"/courses/{courseId}");
@@ -144,5 +279,12 @@
         public string CourseTitle { get; set; } = string.Empty;
         public DateTime EnrolledAt { get; set; }
         public int ProgressPercent { get; set; }
+    }
+
+    private class MeDto
+    {
+        public string FirstName { get; set; } = string.Empty;
+        public string LastName { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
     }
 }
