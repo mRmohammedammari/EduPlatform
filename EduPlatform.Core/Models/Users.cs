@@ -15,6 +15,7 @@ namespace EduPlatform.Core.Models
         public string LastName { get; set; } = string.Empty;
         public UserRole Role { get; set; } = UserRole.Student;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public bool IsSuspended { get; set; } = false;
         public ICollection<Enrollment> Enrollments { get; set; } = new List<Enrollment>();
     }
 

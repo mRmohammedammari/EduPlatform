@@ -47,6 +47,10 @@ else
                     <div>
                         <strong>@user.FirstName @user.LastName</strong>
                         <p>@user.Email</p>
+                        @if (user.IsSuspended)
+                        {
+                            <span class="badge-status rejected">Suspendu</span>
+                        }
                     </div>
                     <div class="activity-meta">
                         <select value="@user.Role" @onchange="eventArgs => UpdateRole(user.Id, eventArgs.Value?.ToString())">
@@ -55,6 +59,14 @@ else
                             <option value="Admin">Gestionnaire</option>
                         </select>
                         <small>@user.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")</small>
+                        @if (user.IsSuspended)
+                        {
+                            <button class="btn-secondary btn-small" @onclick="() => ToggleSuspension(user, false)">Réactiver</button>
+                        }
+                        else
+                        {
+                            <button class="btn-secondary btn-small" @onclick="() => ToggleSuspension(user, true)">Suspendre</button>
+                        }
                     </div>
                 </div>
             }
@@ -141,7 +153,7 @@ else
             var response = await CreateAuthorizedClient().PutAsJsonAsync(
                 $"api/admin/users/{userId}/role", new { role });
             if (!response.IsSuccessStatusCode)
-                ErrorMessage = "La modification du rôle a échoué.";
+                ErrorMessage = "La modification du rôle a échouée.";
             else
                 ErrorMessage = string.Empty;
         }
@@ -155,6 +167,29 @@ else
 
     private void GoToHome() => Nav.NavigateTo("/");
 
+    private async Task ToggleSuspension(UserDto user, bool suspend)
+    {
+        try
+        {
+            var action = suspend ? "suspend" : "reactivate";
+            var response = await CreateAuthorizedClient().PutAsync(
+                $"api/admin/users/{user.Id}/{action}", null);
+            if (response.IsSuccessStatusCode)
+            {
+                user.IsSuspended = suspend;
+                ErrorMessage = string.Empty;
+            }
+            else
+            {
+                ErrorMessage = "L'opération a échoué.";
+            }
+        }
+        catch
+        {
+            ErrorMessage = "Erreur de connexion.";
+        }
+    }
+
     private sealed class UserDto
     {
         public Guid Id { get; set; }
@@ -163,5 +198,6 @@ else
         public string LastName { get; set; } = string.Empty;
         public string Role { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; }
+        public bool IsSuspended { get; set; }
     }
 }

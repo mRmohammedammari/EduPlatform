@@ -63,6 +63,8 @@ namespace EduPlatform.API.Controllers
 
             if (user == null || !_auth.VerifyPassword(dto.Password, user.PasswordHash))
                 return Unauthorized(new { message = "Email ou mot de passe incorrect" });
+            if (user.IsSuspended)
+                return Unauthorized(new { message = "Ce compte a été suspendu. Contactez un administrateur." });
 
             var token = _auth.GenerateToken(user);
             var refreshToken = await IssueRefreshTokenAsync(user.Id);

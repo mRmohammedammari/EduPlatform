@@ -31,7 +31,8 @@ public class AdminController : ControllerBase
                 user.FirstName,
                 user.LastName,
                 Role = user.Role.ToString(),
-                user.CreatedAt
+                user.CreatedAt,
+                user.IsSuspended
             })
             .ToListAsync());
     }
@@ -107,6 +108,30 @@ public class AdminController : ControllerBase
         user.Role = role;
         await _db.SaveChangesAsync();
         return Ok(new { user.Id, user.Role });
+    }
+
+    [HttpPut("users/{id:guid}/suspend")]
+    public async Task<IActionResult> SuspendUser(Guid id)
+    {
+        var user = await _db.Users.FindAsync(id);
+        if (user == null)
+            return NotFound();
+
+        user.IsSuspended = true;
+        await _db.SaveChangesAsync();
+        return Ok(new { user.Id, user.IsSuspended });
+    }
+
+    [HttpPut("users/{id:guid}/reactivate")]
+    public async Task<IActionResult> ReactivateUser(Guid id)
+    {
+        var user = await _db.Users.FindAsync(id);
+        if (user == null)
+            return NotFound();
+
+        user.IsSuspended = false;
+        await _db.SaveChangesAsync();
+        return Ok(new { user.Id, user.IsSuspended });
     }
 }
 
