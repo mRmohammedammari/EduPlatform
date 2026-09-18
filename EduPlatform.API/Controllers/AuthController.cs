@@ -2,6 +2,7 @@
 using EduPlatform.Core.Services;
 using EduPlatform.Data.SqlServer;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace EduPlatform.API.Controllers
 {
@@ -37,11 +38,12 @@ namespace EduPlatform.API.Controllers
             await _db.SaveChangesAsync();
 
             var token = _auth.GenerateToken(user);
-            return Ok(new { token, userId = user.Id, role = user.Role });
+            var refreshToken = await IssueRefreshTokenAsync(user.Id);
+            return Ok(new { token, refreshToken, userId = user.Id, role = user.Role });
         }
 
         [HttpPost("login")]
-        public IActionResult Login([FromBody] LoginDto dto)
+        public async Task<IActionResult> Login([FromBody] LoginDto dto)
         {
             var user = _db.Users.FirstOrDefault(u => u.Email == dto.Email);
 
@@ -49,13 +51,73 @@ namespace EduPlatform.API.Controllers
                 return Unauthorized(new { message = "Email ou mot de passe incorrect" });
 
             var token = _auth.GenerateToken(user);
+            var refreshToken = await IssueRefreshTokenAsync(user.Id);
             return Ok(new
             {
                 token,
+                refreshToken,
                 userId = user.Id,
                 firstName = user.FirstName,
                 role = user.Role
             });
+        }
+
+        [HttpPost("refresh")]
+        public async Task<IActionResult> Refresh([FromBody] RefreshDto dto)
+        {
+            var existing = await _db.RefreshTokens
+                .FirstOrDefaultAsync(r => r.Token == dto.RefreshToken);
+
+            if (existing is null || !existing.IsActive)
+                return Unauthorized(new { message = "Session expirée, veuillez vous reconnecter." });
+
+            var user = await _db.Users.FindAsync(existing.UserId);
+            if (user is null)
+                return Unauthorized(new { message = "Session expirée, veuillez vous reconnecter." });
+
+            existing.RevokedAt = DateTime.UtcNow;
+
+            var token = _auth.GenerateToken(user);
+            var refreshToken = await IssueRefreshTokenAsync(user.Id);
+            await _db.SaveChangesAsync();
+
+            return Ok(new
+            {
+                token,
+                refreshToken,
+                userId = user.Id,
+                firstName = user.FirstName,
+                role = user.Role
+            });
+        }
+
+        [HttpPost("logout")]
+        public async Task<IActionResult> Logout([FromBody] RefreshDto dto)
+        {
+            var existing = await _db.RefreshTokens
+                .FirstOrDefaultAsync(r => r.Token == dto.RefreshToken);
+
+            if (existing is not null && existing.RevokedAt is null)
+            {
+                existing.RevokedAt = DateTime.UtcNow;
+                await _db.SaveChangesAsync();
+            }
+
+            return Ok();
+        }
+
+        private async Task<string> IssueRefreshTokenAsync(Guid userId)
+        {
+            var refreshToken = new RefreshToken
+            {
+                UserId = userId,
+                Token = _auth.GenerateRefreshToken(),
+                ExpiresAt = DateTime.UtcNow.AddDays(_auth.GetRefreshTokenExpirationDays())
+            };
+
+            _db.RefreshTokens.Add(refreshToken);
+            await _db.SaveChangesAsync();
+            return refreshToken.Token;
         }
     }
 
@@ -71,5 +133,10 @@ namespace EduPlatform.API.Controllers
     {
         public string Email { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
+    }
+
+    public class RefreshDto
+    {
+        public string RefreshToken { get; set; } = string.Empty;
     }
 }

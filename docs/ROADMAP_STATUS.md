@@ -1,14 +1,14 @@
 # ?? EduPlatform - Statut de la Roadmap
 
-**Dernière mise à jour:** 2026-08-28 15:00
+**Dernière mise à jour:** 2026-09-18
 
 ---
 
 ## ?? Vue d'ensemble de la progression
 
 ```
-Phase 1: Fondations et Sécurité       [??????????] 90% ? EN COURS
-Phase 2: Auth Client Blazor           [??????????]  0% ? À VENIR
+Phase 1: Fondations et Sécurité       [??????????] 100% ? TERMINÉE
+Phase 2: Auth Client Blazor           [??????????] 100% ? TERMINÉE
 Phase 3: Complétion Interface Web     [??????????]  0% ? À VENIR
 Phase 4: Fonctionnalités Avancées     [??????????]  0% ? À VENIR
 Phase 5: Tests et Qualité             [??????????]  0% ? À VENIR
@@ -20,12 +20,14 @@ Phase 10: Optimisations               [??????????]  0% ? À VENIR
 Phase 11: Mobile                      [??????????]  0% ?? FUTUR
 ```
 
-**Progression globale:** 8%
+**Progression globale:** 18%
 
 ---
 
 ## ?? SUCCÈS RÉCENTS
 
+- ? **Frontend Blazor complet et testé** (13 pages protégées, connexion/déconnexion/refresh token/"se souvenir de moi")
+- ? **Authentification robuste** : JWT + refresh token rotatif (table RefreshTokens), intercepteur HTTP centralisé
 - ? **API Backend opérationnelle** sur http://localhost:5053
 - ? **Swagger UI accessible** sur http://localhost:5053/swagger
 - ? **Kafka topics créés** (5 topics avec configuration complète)
@@ -78,8 +80,8 @@ Phase 11: Mobile                      [??????????]  0% ?? FUTUR
 
 - [x] **SQL Server**
   - [x] Scripts de seed data (scripts/sqlserver/seed-data.sql)
-  - [ ] Exécuter les migrations EF Core (prochaine étape)
-  - [ ] Insérer les données de seed
+  - [x] Exécuter les migrations EF Core (4 migrations appliquées, dont AddRefreshTokens)
+  - [x] Insérer les données de seed
   - [ ] Scripts de backup/restore
   - [x] Documentation des migrations (DATABASE_SETUP.md)
 
@@ -104,35 +106,35 @@ Phase 11: Mobile                      [??????????]  0% ?? FUTUR
 
 ---
 
-## ? Phase 2: Authentification Client Blazor (0% - À VENIR)
+## ? Phase 2: Authentification Client Blazor (100% - TERMINÉE)
 
 **Durée estimée:** 1 semaine  
 **Priorité:** ?? HAUTE
 
 ### 2.1 Système d'authentification
 
-- [ ] **AuthenticationStateProvider**
-  - [ ] Créer CustomAuthStateProvider
-  - [ ] Gestion du token JWT dans localStorage
-  - [ ] Rafraîchissement automatique du token
-  - [ ] Gestion de l'expiration
+- [x] **AuthenticationStateProvider**
+  - [x] Créer AuthStateService (équivalent CustomAuthStateProvider)
+  - [x] Gestion du token JWT dans localStorage/sessionStorage
+  - [x] Rafraîchissement automatique du token (refresh token rotatif, 30 jours, table RefreshTokens)
+  - [x] Gestion de l'expiration (IsTokenExpired + refresh silencieux à l'initialisation)
 
-- [ ] **Services d'authentification**
-  - [ ] AuthService côté Blazor
-  - [ ] Intercepteur HTTP pour ajouter JWT
-  - [ ] Gestion des erreurs 401/403
+- [x] **Services d'authentification**
+  - [x] AuthStateService côté Blazor
+  - [x] Intercepteur HTTP pour ajouter JWT (HttpClientFactoryExtensions.CreateAuthorizedClient, utilisé par toutes les pages protégées)
+  - [x] Gestion des erreurs 401/403 (redirection vers /login, révocation du refresh token au logout)
 
-- [ ] **Protection des routes**
-  - [ ] Composant AuthorizeRouteView
-  - [ ] Redirections automatiques
-  - [ ] Gestion des rôles (Student, Instructor, Admin)
+- [x] **Protection des routes**
+  - [x] Vérification IsAuthenticated/Role par page + redirection automatique
+  - [x] Redirections automatiques vers /login
+  - [x] Gestion des rôles (Student, Instructor, Admin)
 
 ### 2.2 Interface utilisateur
 
-- [ ] Page de déconnexion
-- [ ] Affichage profil utilisateur dans NavMenu
-- [ ] Persistance de la session
-- [ ] "Se souvenir de moi"
+- [x] Bouton de déconnexion (avec révocation serveur du refresh token)
+- [x] Affichage profil utilisateur dans le header/menu
+- [x] Persistance de la session (testée après reload complet du navigateur)
+- [x] "Se souvenir de moi" (localStorage si coché, sessionStorage sinon)
 
 ---
 

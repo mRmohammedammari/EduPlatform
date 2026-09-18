@@ -28,6 +28,13 @@
             <input type="password" @bind="Password" placeholder="••••••••" />
         </div>
 
+        <div class="form-group form-check">
+            <label class="form-check-label">
+                <input type="checkbox" @bind="RememberMe" />
+                Se souvenir de moi
+            </label>
+        </div>
+
         <button class="btn-primary" @onclick="HandleLogin" disabled="@(IsLoading ? "disabled" : null)">
             @(IsLoading ? "Connexion..." : "Se connecter")
         </button>
@@ -41,6 +48,7 @@
     private string Password = string.Empty;
     private string ErrorMessage = string.Empty;
     private bool IsLoading = false;
+    private bool RememberMe = true;
 
     private async Task HandleLogin()
     {
@@ -68,7 +76,7 @@
                         2 => "Admin",
                         _ => "Student"
                     };
-                    await AuthState.LoginAsync(result.Token, result.UserId.ToString(), result.FirstName, Email, role);
+                    await AuthState.LoginAsync(result.Token, result.UserId.ToString(), result.FirstName, Email, role, result.RefreshToken, RememberMe);
                 }
                 Nav.NavigateTo("/courses");
             }
@@ -91,6 +99,7 @@
     private class LoginResponse
     {
         public string Token { get; set; } = string.Empty;
+        public string RefreshToken { get; set; } = string.Empty;
         public Guid UserId { get; set; }
         public string FirstName { get; set; } = string.Empty;
         public int Role { get; set; }

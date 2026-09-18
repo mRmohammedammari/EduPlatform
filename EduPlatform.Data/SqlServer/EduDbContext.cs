@@ -16,6 +16,7 @@ namespace EduPlatform.Data.SqlServer
         public DbSet<Enrollment> Enrollments { get; set; }
         public DbSet<Question> Questions { get; set; }
         public DbSet<Notification> Notifications { get; set; }
+        public DbSet<RefreshToken> RefreshTokens { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -78,6 +79,16 @@ namespace EduPlatform.Data.SqlServer
                 entity.Property(notification => notification.Title).IsRequired().HasMaxLength(200);
                 entity.Property(notification => notification.Message).IsRequired().HasMaxLength(2000);
                 entity.HasIndex(notification => new { notification.UserId, notification.CreatedAt });
+            });
+
+            modelBuilder.Entity<RefreshToken>(entity =>
+            {
+                entity.HasKey(r => r.Id);
+                entity.Property(r => r.Token).IsRequired().HasMaxLength(200);
+                entity.HasIndex(r => r.Token).IsUnique();
+                entity.HasOne(r => r.User)
+                      .WithMany()
+                      .HasForeignKey(r => r.UserId);
             });
         }
     }

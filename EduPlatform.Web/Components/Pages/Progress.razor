@@ -130,9 +130,7 @@ else
         IsLoading = true;
         try
         {
-            var httpClient = HttpClientFactory.CreateClient("EduPlatformAPI");
-            httpClient.DefaultRequestHeaders.Authorization =
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", AuthState.Token);
+            var httpClient = HttpClientFactory.CreateAuthorizedClient(AuthState);
 
             Enrollments = await httpClient.GetFromJsonAsync<List<EnrollmentProgressDto>>(
                 "api/progress/enrollments") ?? new();

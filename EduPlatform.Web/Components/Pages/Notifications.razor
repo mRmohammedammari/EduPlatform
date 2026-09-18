@@ -113,13 +113,7 @@ else
             notification.IsRead = true;
     }
 
-    private HttpClient CreateAuthorizedClient()
-    {
-        var client = HttpClientFactory.CreateClient("EduPlatformAPI");
-        client.DefaultRequestHeaders.Authorization =
-            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", AuthState.Token);
-        return client;
-    }
+    private HttpClient CreateAuthorizedClient() => HttpClientFactory.CreateAuthorizedClient(AuthState);
 
     private void GoToLogin() => Nav.NavigateTo("/login");
 

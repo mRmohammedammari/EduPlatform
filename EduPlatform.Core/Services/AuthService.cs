@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace EduPlatform.Core.Services
@@ -50,6 +51,17 @@ namespace EduPlatform.Core.Services
             );
 
             return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+
+        public string GenerateRefreshToken()
+        {
+            var bytes = RandomNumberGenerator.GetBytes(64);
+            return Convert.ToBase64String(bytes);
+        }
+
+        public int GetRefreshTokenExpirationDays()
+        {
+            return int.TryParse(_config["Jwt:RefreshTokenExpirationDays"], out var days) ? days : 30;
         }
     }
 }

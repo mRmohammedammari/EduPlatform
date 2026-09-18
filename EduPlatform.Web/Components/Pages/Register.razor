@@ -75,7 +75,7 @@
                 var result = await response.Content.ReadFromJsonAsync<RegisterResponse>();
                 if (result != null)
                 {
-                    await AuthState.LoginAsync(result.Token, result.UserId.ToString(), FirstName, Email, "Student");
+                    await AuthState.LoginAsync(result.Token, result.UserId.ToString(), FirstName, Email, "Student", result.RefreshToken, rememberMe: true);
                 }
                 Nav.NavigateTo("/courses");
             }
@@ -98,6 +98,7 @@
     private class RegisterResponse
     {
         public string Token { get; set; } = string.Empty;
+        public string RefreshToken { get; set; } = string.Empty;
         public Guid UserId { get; set; }
         public int Role { get; set; }
     }

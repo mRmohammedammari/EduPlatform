@@ -1,4 +1,5 @@
 using Microsoft.JSInterop;
+using System.Net.Http.Json;
 using System.Text.Json;
 
 namespace EduPlatform.Web.Services;
@@ -7,9 +8,11 @@ public class AuthStateService
 {
     private const string StorageKey = "eduplatform-auth";
     private readonly IJSRuntime _js;
+    private readonly IHttpClientFactory _httpClientFactory;
 
     public bool IsAuthenticated { get; private set; }
     public string Token { get; private set; } = string.Empty;
+    public string RefreshToken { get; private set; } = string.Empty;
     public string UserId { get; private set; } = string.Empty;
     public string FirstName { get; private set; } = string.Empty;
     public string Email { get; private set; } = string.Empty;
@@ -20,9 +23,10 @@ public class AuthStateService
 
     private readonly TaskCompletionSource _initializationTcs = new();
 
-    public AuthStateService(IJSRuntime js)
+    public AuthStateService(IJSRuntime js, IHttpClientFactory httpClientFactory)
     {
         _js = js;
+        _httpClientFactory = httpClientFactory;
     }
 
     /// <summary>
@@ -38,15 +42,25 @@ public class AuthStateService
         {
             try
             {
-                var json = await _js.InvokeAsync<string?>("localStorage.getItem", StorageKey);
+                // "Remember me" sessions live in localStorage; tab-only sessions live in sessionStorage.
+                var json = await _js.InvokeAsync<string?>("sessionStorage.getItem", StorageKey)
+                    ?? await _js.InvokeAsync<string?>("localStorage.getItem", StorageKey);
+
                 if (!string.IsNullOrWhiteSpace(json))
                 {
                     var session = JsonSerializer.Deserialize<AuthSession>(json);
                     if (session is not null)
                     {
                         session.SessionId = await GetOrCreateSessionIdAsync(session.SessionId);
+
                         if (IsTokenExpired(session.Token))
                         {
+                            if (!string.IsNullOrWhiteSpace(session.RefreshToken)
+                                && await TryRefreshAsync(session))
+                            {
+                                return;
+                            }
+
                             await LogoutAsync();
                             return;
                         }
@@ -69,7 +83,9 @@ public class AuthStateService
         }
     }
 
-    public async Task LoginAsync(string token, string userId, string firstName, string email, string role)
+    public async Task LoginAsync(
+        string token, string userId, string firstName, string email, string role,
+        string refreshToken = "", bool rememberMe = true)
     {
         if (IsTokenExpired(token))
         {
@@ -80,10 +96,12 @@ public class AuthStateService
         var session = new AuthSession
         {
             Token = token,
+            RefreshToken = refreshToken,
             UserId = userId,
             FirstName = firstName,
             Email = email,
             Role = role,
+            RememberMe = rememberMe,
             SessionId = await GetOrCreateSessionIdAsync(Guid.Empty)
         };
 
@@ -91,25 +109,14 @@ public class AuthStateService
         ApplySession(session);
     }
 
-    public void Login(string token, string userId, string firstName, string email, string role)
-    {
-        var session = new AuthSession
-        {
-            Token = token,
-            UserId = userId,
-            FirstName = firstName,
-            Email = email,
-            Role = role
-        };
-
-        ApplySession(session);
-    }
-
     public async Task LogoutAsync()
     {
+        var refreshToken = RefreshToken;
+
         try
         {
             await _js.InvokeVoidAsync("localStorage.removeItem", StorageKey);
+            await _js.InvokeVoidAsync("sessionStorage.removeItem", StorageKey);
             await _js.InvokeVoidAsync("eduPlatformSession.clear");
         }
         catch
@@ -117,20 +124,95 @@ public class AuthStateService
             // Ignore if browser storage is unavailable.
         }
 
+        if (!string.IsNullOrWhiteSpace(refreshToken))
+        {
+            try
+            {
+                var client = _httpClientFactory.CreateClient("EduPlatformAPI");
+                await client.PostAsJsonAsync("api/auth/logout", new { refreshToken });
+            }
+            catch
+            {
+                // Best-effort server-side revocation; local session is cleared regardless.
+            }
+        }
+
         ClearSession();
     }
 
-    public void Logout()
+    /// <summary>
+    /// Attempts to silently exchange the stored refresh token for a new access token.
+    /// Returns false (and leaves the caller to log out) if the refresh token is missing/invalid.
+    /// </summary>
+    public async Task<bool> TryRefreshAsync()
     {
-        ClearSession();
+        var current = new AuthSession
+        {
+            Token = Token,
+            RefreshToken = RefreshToken,
+            UserId = UserId,
+            FirstName = FirstName,
+            Email = Email,
+            Role = Role,
+            SessionId = SessionId,
+            RememberMe = true
+        };
+
+        return await TryRefreshAsync(current);
     }
+
+    private async Task<bool> TryRefreshAsync(AuthSession session)
+    {
+        if (string.IsNullOrWhiteSpace(session.RefreshToken))
+            return false;
+
+        try
+        {
+            var client = _httpClientFactory.CreateClient("EduPlatformAPI");
+            var response = await client.PostAsJsonAsync("api/auth/refresh", new { refreshToken = session.RefreshToken });
+            if (!response.IsSuccessStatusCode)
+                return false;
+
+            var result = await response.Content.ReadFromJsonAsync<RefreshResponse>();
+            if (result is null || string.IsNullOrWhiteSpace(result.Token))
+                return false;
+
+            var refreshed = new AuthSession
+            {
+                Token = result.Token,
+                RefreshToken = result.RefreshToken,
+                UserId = result.UserId.ToString(),
+                FirstName = result.FirstName,
+                Email = session.Email,
+                Role = RoleToString(result.Role),
+                RememberMe = session.RememberMe,
+                SessionId = session.SessionId
+            };
+
+            await SaveSessionAsync(refreshed);
+            ApplySession(refreshed);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static string RoleToString(int role) => role switch
+    {
+        1 => "Instructor",
+        2 => "Admin",
+        _ => "Student"
+    };
 
     private async Task SaveSessionAsync(AuthSession session)
     {
         try
         {
             var json = JsonSerializer.Serialize(session);
-            await _js.InvokeVoidAsync("localStorage.setItem", StorageKey, json);
+            var storage = session.RememberMe ? "localStorage" : "sessionStorage";
+            await _js.InvokeVoidAsync($"{storage}.setItem", StorageKey, json);
         }
         catch
         {
@@ -188,6 +270,7 @@ public class AuthStateService
     private void ApplySession(AuthSession session)
     {
         Token = session.Token;
+        RefreshToken = session.RefreshToken;
         UserId = session.UserId;
         FirstName = session.FirstName;
         Email = session.Email;
@@ -200,6 +283,7 @@ public class AuthStateService
     private void ClearSession()
     {
         Token = string.Empty;
+        RefreshToken = string.Empty;
         UserId = string.Empty;
         FirstName = string.Empty;
         Email = string.Empty;
@@ -212,10 +296,22 @@ public class AuthStateService
     private class AuthSession
     {
         public string Token { get; set; } = string.Empty;
+        public string RefreshToken { get; set; } = string.Empty;
         public string UserId { get; set; } = string.Empty;
         public string FirstName { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public string Role { get; set; } = string.Empty;
         public Guid SessionId { get; set; }
+        public bool RememberMe { get; set; } = true;
+    }
+
+    private class RefreshResponse
+    {
+        public string Token { get; set; } = string.Empty;
+        public string RefreshToken { get; set; } = string.Empty;
+        public Guid UserId { get; set; }
+        public string FirstName { get; set; } = string.Empty;
+        public int Role { get; set; }
     }
 }
+

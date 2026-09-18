@@ -59,7 +59,7 @@ else
                         <div class="course-info">
                             <div class="course-card-topline">
                                 <span class="badge">@course.Level</span>
-                                <span class="course-duration">⏱ @course.DurationMinutes min</span>
+                                <span class="course-duration">❱ @course.DurationMinutes min</span>
                             </div>
                             <h3>@course.Title</h3>
                             <p>@course.Description</p>
@@ -114,14 +114,12 @@ else
 
         try
         {
-            var client = HttpClientFactory.CreateClient("EduPlatformAPI");
-            client.DefaultRequestHeaders.Authorization =
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", AuthState.Token);
+            var client = HttpClientFactory.CreateAuthorizedClient(AuthState);
             Courses = await client.GetFromJsonAsync<List<CourseDto>>("api/recommendations") ?? new();
         }
         catch
         {
-            ErrorMessage = "Impossible de charger les recommandations. R�essayez plus tard.";
+            ErrorMessage = "Impossible de charger les recommandations. Réessayez plus tard.";
         }
         finally
         {

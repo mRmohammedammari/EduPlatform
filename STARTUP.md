@@ -171,10 +171,10 @@ cd C:\Projects\EduPlatform
 - [x] API Backend fonctionnelle
 - [x] Kafka topics créés
 - [x] Cassandra initialisé
-- [ ] Migrations SQL Server exécutées
-- [ ] Frontend Blazor démarré et testé
+- [x] Migrations SQL Server exécutées
+- [x] Frontend Blazor démarré et testé
 - [x] Consumer Kafka réactivé et corrigé
-- [ ] Données de test insérées
+- [x] Données de test insérées
 
 ### Phase 2 : Authentification Frontend (À venir)
 
