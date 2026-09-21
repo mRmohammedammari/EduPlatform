@@ -163,7 +163,7 @@ Phase 11: Mobile                      [??????????]  0% ?? FUTUR
 
 ### 3.3 Pages Instructeurs — ~90%
 - [x] Dashboard Instructeur : vue d'ensemble des cours créés
-- [ ] Dashboard Instructeur : feedback Étudiants, analytics avancées
+- [x] Dashboard Instructeur : analytics avancées (inscriptions, tentatives, score moyen, taux de réussite)
 - [x] Création/édition de cours : formulaire, modules, QCM (onglets), workflow de validation admin
 - [x] Création/édition de cours : upload de thumbnail (fichier réel jpg/png/webp) avec aperçu
 - [ ] Création/édition de cours : prévisualisation complète du cours

@@ -17,19 +17,22 @@ namespace EduPlatform.API.Controllers
         private readonly IWebHostEnvironment _environment;
         private readonly IConfiguration _configuration;
         private readonly ActivityRepository _activityRepo;
+        private readonly TestResultRepository _testRepo;
 
         public CoursesController(
             EduDbContext db,
             CacheService cache,
             IWebHostEnvironment environment,
             IConfiguration configuration,
-            ActivityRepository activityRepo)
+            ActivityRepository activityRepo,
+            TestResultRepository testRepo)
         {
             _db = db;
             _cache = cache;
             _environment = environment;
             _configuration = configuration;
             _activityRepo = activityRepo;
+            _testRepo = testRepo;
         }
 
         [HttpGet]
@@ -131,6 +134,54 @@ namespace EduPlatform.API.Controllers
                 query = query.Where(c => c.InstructorId == userId);
 
             return Ok(await query.OrderByDescending(c => c.CreatedAt).ToListAsync());
+        }
+
+        [HttpGet("instructor-analytics")]
+        [Authorize(Roles = "Instructor,Admin")]
+        public async Task<IActionResult> GetInstructorAnalytics()
+        {
+            var userId = Guid.Parse(User.FindFirst(
+                System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+
+            var courses = await _db.Courses
+                .Where(c => User.IsInRole("Admin") || c.InstructorId == userId)
+                .Select(c => new { c.Id, c.Title, c.IsPublished, c.Status })
+                .ToListAsync();
+
+            var courseIds = courses.Select(c => c.Id).ToList();
+            var enrollments = await _db.Enrollments
+                .Where(e => courseIds.Contains(e.CourseId))
+                .GroupBy(e => e.CourseId)
+                .Select(group => new { CourseId = group.Key, Count = group.Count() })
+                .ToDictionaryAsync(item => item.CourseId, item => item.Count);
+
+            var quizResults = new List<TestResult>();
+            foreach (var course in courses)
+                quizResults.AddRange(await _testRepo.GetResultsByCourseAsync(course.Id));
+
+            return Ok(new
+            {
+                totalCourses = courses.Count,
+                publishedCourses = courses.Count(c => c.IsPublished),
+                pendingCourses = courses.Count(c => c.Status == CourseStatus.PendingReview),
+                totalEnrollments = enrollments.Values.Sum(),
+                totalQuizAttempts = quizResults.Count,
+                averageQuizScore = quizResults.Count == 0
+                    ? 0
+                    : Math.Round(quizResults.Average(result => result.MaxScore == 0
+                        ? 0
+                        : (double)(result.Score / result.MaxScore * 100)), 1),
+                passRate = quizResults.Count == 0
+                    ? 0
+                    : Math.Round(quizResults.Count(result => result.Passed) * 100d / quizResults.Count, 1),
+                courses = courses.Select(course => new
+                {
+                    course.Title,
+                    course.IsPublished,
+                    status = course.Status.ToString(),
+                    enrollments = enrollments.GetValueOrDefault(course.Id)
+                })
+            });
         }
 
         [HttpPost]

@@ -682,6 +682,27 @@ a {
     text-align: right;
 }
 
+.analytics-course-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.analytics-course-row {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+}
+
+.analytics-course-row:last-child {
+    border-bottom: 0;
+}
+
 /* ===== STATS ===== */
 .stats-grid {
     display: grid;

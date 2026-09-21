@@ -101,6 +101,43 @@ else
             </div>
         }
     </div>
+
+    @if (Analytics != null)
+    {
+        <div class="course-section">
+            <h2>Analytics de la plateforme</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <span class="stat-value">@Analytics.TotalEnrollments</span>
+                    <span class="stat-label">Inscriptions</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-value">@Analytics.TotalQuizAttempts</span>
+                    <span class="stat-label">Tentatives de quiz</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-value">@Analytics.AverageQuizScore%</span>
+                    <span class="stat-label">Score moyen</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-value">@Analytics.PassRate%</span>
+                    <span class="stat-label">Taux de réussite</span>
+                </div>
+            </div>
+            <div class="analytics-course-list">
+                @foreach (var course in Analytics.Courses)
+                {
+                    <div class="analytics-course-row">
+                        <strong>@course.Title</strong>
+                        <span>@course.Enrollments inscription(s)</span>
+                        <span class="badge-status @(course.IsPublished ? "approved" : "pending")">
+                            @(course.IsPublished ? "Publié" : course.Status)
+                        </span>
+                    </div>
+                }
+            </div>
+        </div>
+    }
 }
 
 @code {
@@ -110,6 +147,7 @@ else
     private string SuccessMessage = string.Empty;
     private List<CourseDto> Courses = new();
     private CreateCourseDto NewCourse = new();
+    private AnalyticsDto? Analytics;
     private bool CoursesLoaded;
 
     protected override void OnInitialized()
@@ -161,6 +199,7 @@ else
         try
         {
             Courses = await CreateAuthorizedClient().GetFromJsonAsync<List<CourseDto>>("api/courses/mine") ?? new();
+            Analytics = await CreateAuthorizedClient().GetFromJsonAsync<AnalyticsDto>("api/courses/instructor-analytics");
         }
         catch
         {
@@ -232,5 +271,22 @@ else
     private sealed class ModuleDto
     {
         public Guid Id { get; set; }
+    }
+
+    private sealed class AnalyticsDto
+    {
+        public int TotalEnrollments { get; set; }
+        public int TotalQuizAttempts { get; set; }
+        public double AverageQuizScore { get; set; }
+        public double PassRate { get; set; }
+        public List<AnalyticsCourseDto> Courses { get; set; } = new();
+    }
+
+    private sealed class AnalyticsCourseDto
+    {
+        public string Title { get; set; } = string.Empty;
+        public bool IsPublished { get; set; }
+        public string Status { get; set; } = string.Empty;
+        public int Enrollments { get; set; }
     }
 }
