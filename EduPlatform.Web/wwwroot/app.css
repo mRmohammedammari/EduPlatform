@@ -605,6 +605,83 @@ a {
     transition: width 0.3s;
 }
 
+.badges-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 12px;
+}
+
+.badge-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 8px;
+    padding: 16px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+}
+
+.badge-card.earned {
+    background: #fff7ed;
+    border-color: #fdba74;
+}
+
+.badge-card.locked {
+    opacity: 0.4;
+    filter: grayscale(1);
+}
+
+.badge-icon {
+    font-size: 32px;
+}
+
+.badge-label {
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.progress-chart {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.progress-chart-row {
+    display: grid;
+    grid-template-columns: 200px 1fr 50px;
+    align-items: center;
+    gap: 12px;
+}
+
+.progress-chart-label {
+    font-size: 14px;
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.progress-chart-bar {
+    height: 14px;
+    background: #e5e7eb;
+    border-radius: 7px;
+    overflow: hidden;
+}
+
+.progress-chart-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary), var(--success));
+    border-radius: 7px;
+    transition: width 0.3s;
+}
+
+.progress-chart-value {
+    font-size: 13px;
+    font-weight: 600;
+    text-align: right;
+}
+
 /* ===== STATS ===== */
 .stats-grid {
     display: grid;

@@ -43,6 +43,38 @@ else
             </div>
         </div>
 
+        <div class="course-section">
+            <h2>Badges</h2>
+            <div class="badges-grid">
+                @foreach (var badge in Badges)
+                {
+                    <div class="badge-card @(badge.Earned ? "earned" : "locked")">
+                        <span class="badge-icon">@badge.Icon</span>
+                        <span class="badge-label">@badge.Label</span>
+                    </div>
+                }
+            </div>
+        </div>
+
+        @if (Enrollments.Any())
+        {
+            <div class="course-section">
+                <h2>Graphique de progression</h2>
+                <div class="progress-chart">
+                    @foreach (var item in Enrollments.OrderByDescending(e => e.ProgressPercent))
+                    {
+                        <div class="progress-chart-row">
+                            <span class="progress-chart-label">@item.CourseTitle</span>
+                            <div class="progress-chart-bar">
+                                <div class="progress-chart-fill" style="width: @(item.ProgressPercent)%"></div>
+                            </div>
+                            <span class="progress-chart-value">@item.ProgressPercent%</span>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
         @if (Enrollments.Any())
         {
             <div class="course-section">
@@ -73,6 +105,15 @@ else
     private bool DataLoaded;
     private ProgressSummary? Summary;
     private List<EnrollmentProgressDto> Enrollments = new();
+
+    private List<BadgeInfo> Badges => new()
+    {
+        new("🎓", "Premier pas", Enrollments.Count >= 1),
+        new("📚", "Multi-formations", Enrollments.Count >= 3),
+        new("🔥", "En bonne voie", (Summary?.AverageProgress ?? 0) >= 50),
+        new("🏆", "Premier cours terminé", Enrollments.Any(e => e.ProgressPercent >= 100)),
+        new("⭐", "Sans faute", Enrollments.Any() && Enrollments.All(e => e.ProgressPercent >= 100)),
+    };
 
     private void GoToLogin()
     {
@@ -172,4 +213,6 @@ else
         public int CompletedCourses { get; set; }
         public int AverageProgress { get; set; }
     }
+
+    private sealed record BadgeInfo(string Icon, string Label, bool Earned);
 }
