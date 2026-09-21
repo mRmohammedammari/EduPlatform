@@ -1,0 +1,37 @@
+@if (IsOpen)
+{
+    <div class="modal-backdrop" role="presentation" @onclick="CloseFromBackdrop">
+        <section class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="@TitleId" @onclick:stopPropagation="true">
+            <div class="modal-header">
+                <h2 id="@TitleId">@Title</h2>
+                <button type="button" class="modal-close" aria-label="Fermer" @onclick="Close">×</button>
+            </div>
+            <div class="modal-body">
+                @ChildContent
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn-secondary" @onclick="Close">@CancelText</button>
+                <button type="button" class="btn-primary" @onclick="Confirm" disabled="@IsBusy">@ConfirmText</button>
+            </div>
+        </section>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public string Title { get; set; } = "Confirmation";
+    [Parameter] public string ConfirmText { get; set; } = "Confirmer";
+    [Parameter] public string CancelText { get; set; } = "Annuler";
+    [Parameter] public bool IsBusy { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback OnConfirm { get; set; }
+
+    private string TitleId { get; } = $"modal-title-{Guid.NewGuid():N}";
+
+    private Task Close() => OnClose.InvokeAsync();
+
+    private Task CloseFromBackdrop(MouseEventArgs args) => Close();
+
+    private Task Confirm() => OnConfirm.InvokeAsync();
+}

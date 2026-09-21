@@ -61,11 +61,11 @@ else
                         <small>@user.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")</small>
                         @if (user.IsSuspended)
                         {
-                            <button class="btn-secondary btn-small" @onclick="() => ToggleSuspension(user, false)">RÃ©activer</button>
+                            <button class="btn-secondary btn-small" @onclick="() => RequestSuspensionChange(user, false)">RÃ©activer</button>
                         }
                         else
                         {
-                            <button class="btn-secondary btn-small" @onclick="() => ToggleSuspension(user, true)">Suspendre</button>
+                            <button class="btn-secondary btn-small" @onclick="() => RequestSuspensionChange(user, true)">Suspendre</button>
                         }
                     </div>
                 </div>
@@ -73,6 +73,18 @@ else
         </div>
     }
 }
+
+<Modal IsOpen="@IsSuspensionModalOpen"
+       Title="@(PendingSuspension ? "Suspendre l'utilisateur" : "Réactiver l'utilisateur")"
+       ConfirmText="@(PendingSuspension ? "Suspendre" : "Réactiver")"
+       IsBusy="@IsSuspensionInProgress"
+       OnClose="CloseSuspensionModal"
+       OnConfirm="ConfirmSuspensionChange">
+    @if (PendingUser is not null)
+    {
+        <p>Confirmer l'opération pour <strong>@PendingUser.FirstName @PendingUser.LastName</strong> (@PendingUser.Email) ?</p>
+    }
+</Modal>
 
 @code {
     private bool IsLoading = true;
@@ -82,6 +94,10 @@ else
     private string SearchTerm = string.Empty;
     private string RoleFilter = string.Empty;
     private bool IsAdmin => AuthState.IsAuthenticated && AuthState.Role == "Admin";
+    private UserDto? PendingUser;
+    private bool PendingSuspension;
+    private bool IsSuspensionModalOpen;
+    private bool IsSuspensionInProgress;
 
     private IEnumerable<UserDto> FilteredUsers => Users.Where(u =>
         (string.IsNullOrWhiteSpace(RoleFilter) || u.Role == RoleFilter) &&
@@ -166,6 +182,34 @@ else
     private HttpClient CreateAuthorizedClient() => HttpClientFactory.CreateAuthorizedClient(AuthState);
 
     private void GoToHome() => Nav.NavigateTo("/");
+
+    private void RequestSuspensionChange(UserDto user, bool suspend)
+    {
+        PendingUser = user;
+        PendingSuspension = suspend;
+        IsSuspensionModalOpen = true;
+    }
+
+    private void CloseSuspensionModal()
+    {
+        if (!IsSuspensionInProgress)
+        {
+            IsSuspensionModalOpen = false;
+            PendingUser = null;
+        }
+    }
+
+    private async Task ConfirmSuspensionChange()
+    {
+        if (PendingUser is null)
+            return;
+
+        IsSuspensionInProgress = true;
+        await ToggleSuspension(PendingUser, PendingSuspension);
+        IsSuspensionInProgress = false;
+        if (string.IsNullOrWhiteSpace(ErrorMessage))
+            CloseSuspensionModal();
+    }
 
     private async Task ToggleSuspension(UserDto user, bool suspend)
     {
