@@ -4,6 +4,24 @@
 
 Ce document décrit la stratégie de tests pour EduPlatform, incluant les tests unitaires, d'intégration et end-to-end.
 
+## Smoke E2E public
+
+Le smoke test Playwright couvre le catalogue public, la recherche, les filtres et l'ouverture du détail d'un cours.
+
+```powershell
+Push-Location scripts/e2e
+npm ci
+npx playwright install chromium
+npm test
+Pop-Location
+```
+
+La cible par défaut est `http://localhost:5297`. Pour tester une autre instance :
+
+```powershell
+$env:EDUPLATFORM_BASE_URL = "http://localhost:5297"
+```
+
 ---
 
 ## ?? Stratégie de Tests

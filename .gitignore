@@ -2,6 +2,7 @@
 bin/
 obj/
 *.user
+scripts/e2e/node_modules/
 *.suo
 *.cache
 *.dll
