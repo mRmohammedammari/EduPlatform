@@ -1006,6 +1006,22 @@ a {
         margin-top: 12px;
     }
 
+    .reject-course-form {
+        margin-top: 14px;
+        padding-top: 14px;
+        border-top: 1px solid var(--border);
+    }
+
+    .reject-course-form textarea {
+        width: 100%;
+        min-height: 72px;
+        padding: 10px 12px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        resize: vertical;
+        box-sizing: border-box;
+    }
+
 .badge-status {
     display: inline-block;
     padding: 4px 10px;

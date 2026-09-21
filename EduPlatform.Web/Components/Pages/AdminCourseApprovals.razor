@@ -48,8 +48,18 @@ else
                     <p>@course.Description</p>
                     <div class="pending-course-actions">
                         <button class="btn-primary" @onclick="() => Approve(course.Id)">Approuver</button>
-                        <button class="btn-secondary" @onclick="() => Reject(course.Id)">Rejeter</button>
+                        <button class="btn-secondary" @onclick="() => StartReject(course.Id)">Rejeter</button>
                     </div>
+                    @if (RejectingCourseId == course.Id)
+                    {
+                        <div class="reject-course-form">
+                            <textarea @bind="RejectionReason" placeholder="Motif du rejet (obligatoire)" rows="3"></textarea>
+                            <div class="pending-course-actions">
+                                <button class="btn-secondary" @onclick="() => Reject(course.Id)">Confirmer le rejet</button>
+                                <button class="btn-secondary" @onclick="CancelReject">Annuler</button>
+                            </div>
+                        </div>
+                    }
                 </div>
             }
         </div>
@@ -61,6 +71,8 @@ else
     private string ErrorMessage = string.Empty;
     private List<PendingCourseDto> PendingCourses = new();
     private bool DataLoaded;
+    private Guid? RejectingCourseId;
+    private string RejectionReason = string.Empty;
     private bool IsAdmin => AuthState.IsAuthenticated && AuthState.Role == "Admin";
 
     protected override void OnInitialized()
@@ -134,14 +146,35 @@ else
         }
     }
 
+    private void StartReject(Guid courseId)
+    {
+        RejectingCourseId = courseId;
+        RejectionReason = string.Empty;
+        ErrorMessage = string.Empty;
+    }
+
+    private void CancelReject()
+    {
+        RejectingCourseId = null;
+        RejectionReason = string.Empty;
+    }
+
     private async Task Reject(Guid courseId)
     {
+        if (string.IsNullOrWhiteSpace(RejectionReason))
+        {
+            ErrorMessage = "Le motif du rejet est obligatoire.";
+            return;
+        }
+
         try
         {
-            var response = await CreateAuthorizedClient().PostAsync($"api/courses/{courseId}/reject", null);
+            var response = await CreateAuthorizedClient().PostAsJsonAsync(
+                $"api/courses/{courseId}/reject", new { reason = RejectionReason });
             if (response.IsSuccessStatusCode)
             {
                 PendingCourses.RemoveAll(c => c.Id == courseId);
+                CancelReject();
             }
             else
             {

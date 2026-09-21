@@ -361,10 +361,12 @@ namespace EduPlatform.API.Controllers
                 return NotFound();
             if (course.Status != CourseStatus.PendingReview)
                 return BadRequest(new { message = "Ce cours n'est pas en attente de validation." });
+            if (string.IsNullOrWhiteSpace(dto?.Reason))
+                return BadRequest(new { message = "Le motif du rejet est obligatoire." });
 
             course.Status = CourseStatus.Rejected;
             course.IsPublished = false;
-            course.RejectionReason = dto?.Reason;
+            course.RejectionReason = dto.Reason.Trim();
             await _db.SaveChangesAsync();
             await _cache.RemoveAsync(CacheService.CourseKey(id));
 
