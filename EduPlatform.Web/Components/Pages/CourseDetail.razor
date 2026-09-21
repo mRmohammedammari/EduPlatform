@@ -1,4 +1,4 @@
-﻿@page "/courses/{CourseId:guid}"
+@page "/courses/{CourseId:guid}"
 @rendermode InteractiveServer
 @inject IHttpClientFactory HttpClientFactory
 @inject NavigationManager Nav
@@ -22,7 +22,7 @@
             <div class="course-section course-reviews">
                 <div class="reviews-heading">
                     <h2>Avis des apprenants</h2>
-                    <strong>★ @Reviews.AverageRating.ToString("0.0")</strong>
+                    <strong><StarRating Rating="@Reviews.AverageRating" /> @Reviews.AverageRating.ToString("0.0")</strong>
                     <span>(@Reviews.TotalReviews avis)</span>
                 </div>
                 @if (IsEnrolled && !IsPreview)
@@ -44,7 +44,7 @@
                 {
                     <div class="review-item">
                         <strong>@review.UserName</strong>
-                        <span class="review-stars">@GetStars(review.Rating)</span>
+                        <StarRating Rating="@review.Rating" />
                         <small>@review.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")</small>
                         <p>@review.Comment</p>
                     </div>
@@ -275,11 +275,6 @@ else
         }
     }
 
-    private static string GetStars(int rating)
-    {
-        return new string('★', rating) + new string('☆', Math.Max(0, 5 - rating));
-    }
-
     private void SelectPlan(string plan) => SelectedPlan = plan;
     private void GoBack() => ShowPayment = false;
 
@@ -315,7 +310,7 @@ else
 
         if (SelectedPlan != "Free" && (string.IsNullOrWhiteSpace(CardNumber) || CardNumber.Replace(" ", "").Length < 16))
         {
-            PaymentError = "Veuillez entrer un numéro de carte valide.";
+            PaymentError = "Veuillez entrer un num�ro de carte valide.";
             return;
         }
 
@@ -350,7 +345,7 @@ else
         }
         catch
         {
-            PaymentError = "Erreur de connexion. Réessayez.";
+            PaymentError = "Erreur de connexion. R�essayez.";
         }
         finally
         {

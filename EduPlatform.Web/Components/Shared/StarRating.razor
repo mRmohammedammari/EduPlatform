@@ -1,0 +1,10 @@
+<span class="review-stars" role="img" aria-label="@($"{Rating:0.0} sur 5")">
+    @for (var index = 1; index <= 5; index++)
+    {
+        <span aria-hidden="true">@(index <= Math.Round(Rating) ? "?" : "?")</span>
+    }
+</span>
+
+@code {
+    [Parameter] public double Rating { get; set; }
+}
