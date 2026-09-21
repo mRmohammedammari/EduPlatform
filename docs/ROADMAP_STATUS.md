@@ -155,7 +155,7 @@ Phase 11: Mobile                      [??????????]  0% ?? FUTUR
 - [x] Page Progression : stats agrégées par cours
 - [ ] Page Progression : graphiques, badges/achievements
 - [x] Page Tests/QCM : liste, passage, résultats
-- [ ] Page Tests/QCM : révision détaillée des réponses
+- [x] Page Tests/QCM : révision détaillée des réponses (bonne réponse mise en surbrillance)
 - [x] Page Chat IA : interface compléte
 - [ ] Page Chat IA : historique persistant, sessions par cours, suggestions
 - [x] Page Recommandations : affichage cours recommandés
