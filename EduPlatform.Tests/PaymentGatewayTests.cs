@@ -45,4 +45,28 @@ public class PaymentGatewayTests
         Assert.False(result.IsSuccess);
         Assert.Contains("montant", result.ErrorMessage, StringComparison.OrdinalIgnoreCase);
     }
+
+    [Fact]
+    public void DemoPaymentGateway_ValidatesPaymentId()
+    {
+        var gateway = new DemoPaymentGateway();
+
+        var result = gateway.ValidatePayment("demo_payment_123", "provider_ref");
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal("Paid", result.Status);
+        Assert.Equal("demo_payment_123", result.PaymentId);
+    }
+
+    [Fact]
+    public void DemoPaymentGateway_RejectsMissingPaymentId()
+    {
+        var gateway = new DemoPaymentGateway();
+
+        var result = gateway.ValidatePayment(" ");
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal("Failed", result.Status);
+        Assert.Contains("manquant", result.ErrorMessage, StringComparison.OrdinalIgnoreCase);
+    }
 }

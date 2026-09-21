@@ -37,4 +37,22 @@ public class CourseMediaValidatorTests
 
         Assert.Equal("La vidéo ne doit pas dépasser 100 Mo.", error);
     }
+
+    [Theory]
+    [InlineData("lesson.webm", "video/webm")]
+    [InlineData("lesson.ogg", "video/ogg")]
+    public void ValidateVideo_AcceptsAllSupportedFormats(string fileName, string contentType)
+    {
+        var error = CourseMediaValidator.ValidateVideo(fileName, contentType, 1024);
+
+        Assert.Null(error);
+    }
+
+    [Fact]
+    public void ValidateVideo_RejectsEmptyFile()
+    {
+        var error = CourseMediaValidator.ValidateVideo("lesson.mp4", "video/mp4", 0);
+
+        Assert.Equal("Sélectionnez une vidéo.", error);
+    }
 }

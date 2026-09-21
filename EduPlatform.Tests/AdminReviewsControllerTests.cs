@@ -51,6 +51,17 @@ public class AdminReviewsControllerTests
         Assert.Empty(db.CourseReviewReports);
     }
 
+    [Fact]
+    public async Task DeleteReview_ReturnsNotFoundForUnknownReview()
+    {
+        await using var db = CreateContext();
+        var controller = new AdminController(db);
+
+        var result = await controller.DeleteReview(Guid.NewGuid());
+
+        Assert.IsType<NotFoundResult>(result);
+    }
+
     private static (CourseReview Review, User Reporter) SeedReview(EduDbContext db)
     {
         var course = new Course { Title = "Cours de modération" };

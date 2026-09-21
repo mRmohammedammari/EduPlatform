@@ -37,6 +37,44 @@ public class AuthServiceTests
         Assert.Equal(3, token.Split('.').Length);
     }
 
+    [Fact]
+    public void GenerateToken_ContainsUserIdentityAndRoleClaims()
+    {
+        var user = new User
+        {
+            Id = Guid.NewGuid(),
+            Email = "admin@example.com",
+            FirstName = "Admin",
+            Role = UserRole.Admin
+        };
+
+        var token = _auth.GenerateToken(user);
+        var claims = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler()
+            .ReadJwtToken(token)
+            .Claims
+            .ToDictionary(claim => claim.Type, claim => claim.Value);
+
+        Assert.Equal(user.Id.ToString(), claims[System.Security.Claims.ClaimTypes.NameIdentifier]);
+        Assert.Equal(user.Email, claims[System.Security.Claims.ClaimTypes.Email]);
+        Assert.Equal("Admin", claims[System.Security.Claims.ClaimTypes.Role]);
+        Assert.Equal(user.FirstName, claims["firstName"]);
+    }
+
+    [Fact]
+    public void RefreshTokenExpiration_UsesConfiguredDaysAndDefault()
+    {
+        var configured = new AuthService(new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Jwt:RefreshTokenExpirationDays"] = "45"
+            })
+            .Build());
+        var defaulted = new AuthService(new ConfigurationBuilder().Build());
+
+        Assert.Equal(45, configured.GetRefreshTokenExpirationDays());
+        Assert.Equal(30, defaulted.GetRefreshTokenExpirationDays());
+    }
+
     private static IConfiguration BuildConfiguration()
     {
         return new ConfigurationBuilder()

@@ -226,7 +226,7 @@ Phase 11: Mobile                      [??????????]  0% ?? FUTUR
 ### Semaine prochaine
 
 5. **Phase 4** : stockage objet/CDN et transcodage des médias
-6. **Phase 5** : tests unitaires et d'intégration (13 tests automatisés actuellement)
+6. **Phase 5** : tests unitaires et d'intégration (24 tests automatisés actuellement)
 
 ---
 
@@ -237,7 +237,7 @@ Phase 11: Mobile                      [??????????]  0% ?? FUTUR
 | **Documentation** | 10 | 10 | 100% |
 | **Scripts Infrastructure** | 7 | 10 | 70% |
 | **Configuration** | 3 | 6 | 50% |
-| **Tests** | 13 | 13 | 100% |
+| **Tests** | 24 | 24 | 100% |
 | **Features** | Phases 1-3 | Phases 1-3 | 100% |
 
 ---

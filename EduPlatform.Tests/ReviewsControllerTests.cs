@@ -64,6 +64,50 @@ public class ReviewsControllerTests
         Assert.IsType<ForbidResult>(result);
     }
 
+    [Fact]
+    public async Task Report_RejectsOwnReview()
+    {
+        await using var db = CreateContext();
+        var fixture = SeedReview(db, enrolled: true);
+        var controller = CreateController(db, fixture.Review.UserId);
+
+        var result = await controller.Report(fixture.Review.Id, new ReviewReportDto
+        {
+            Reason = "Motif"
+        });
+
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task Report_RejectsMissingReason()
+    {
+        await using var db = CreateContext();
+        var fixture = SeedReview(db, enrolled: true);
+        var controller = CreateController(db, fixture.Reporter.Id);
+
+        var result = await controller.Report(fixture.Review.Id, new ReviewReportDto());
+
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task Report_ReturnsNotFoundForUnknownReview()
+    {
+        await using var db = CreateContext();
+        var reporter = new User { Email = "reporter@example.com" };
+        db.Users.Add(reporter);
+        await db.SaveChangesAsync();
+        var controller = CreateController(db, reporter.Id);
+
+        var result = await controller.Report(Guid.NewGuid(), new ReviewReportDto
+        {
+            Reason = "Motif"
+        });
+
+        Assert.IsType<NotFoundResult>(result);
+    }
+
     private static ReviewsController CreateController(EduDbContext db, Guid userId)
     {
         var controller = new ReviewsController(db)
