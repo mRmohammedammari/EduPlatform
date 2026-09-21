@@ -733,6 +733,37 @@ a {
     border-bottom: 0;
 }
 
+.admin-category-section {
+    margin-top: 24px;
+}
+
+.admin-category-form {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.admin-category-form input {
+    flex: 1;
+    min-width: 180px;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+}
+
+.admin-category-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.admin-category-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+}
+
 /* ===== STATS ===== */
 .stats-grid {
     display: grid;

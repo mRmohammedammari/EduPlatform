@@ -32,7 +32,7 @@ else
     {
         <div class="stats-grid">
             <div class="stat-card"><span class="stat-value">@Overview.Users</span><span class="stat-label">Utilisateurs</span></div>
-            <div class="stat-card"><span class="stat-value">@Overview.ActiveUsers</span><span class="stat-label">Comptes actifs</span></div>
+            <div class="stat-card"><span class="stat-value">@Overview.ActiverUsers</span><span class="stat-label">Comptes actifs</span></div>
             <div class="stat-card"><span class="stat-value">@Overview.SuspendedUsers</span><span class="stat-label">Comptes suspendus</span></div>
             <div class="stat-card"><span class="stat-value">@Overview.Students</span><span class="stat-label">Étudiants</span></div>
             <div class="stat-card"><span class="stat-value">@Overview.Instructors</span><span class="stat-label">Enseignants</span></div>
@@ -69,6 +69,33 @@ else
         <button class="btn-primary" @onclick="GoToUsers">Gérer les utilisateurs</button>
         <button class="btn-primary" @onclick="GoToCourseApprovals">Cours à valider (@Overview.PendingCourses)</button>
         <button class="btn-secondary" @onclick="DownloadReport">Télécharger le rapport CSV</button>
+
+        <div class="course-section admin-category-section">
+            <h2>Catégories de cours</h2>
+            @if (CategoriesLoading)
+            {
+                <LoadingState Message="Chargement des catégories..." />
+            }
+            else
+            {
+                <div class="admin-category-form">
+                    <input @bind="NewCategoryName" placeholder="Nouvelle catégorie" />
+                    <button class="btn-secondary" @onclick="CreateCategory">Ajouter</button>
+                </div>
+                <div class="admin-category-list">
+                    @foreach (var category in Categories)
+                    {
+                        <div class="admin-category-row">
+                            <span>@category.Name</span>
+                            <button class="btn-small @(category.IsActiver ? "btn-secondary" : "btn-primary")"
+                                    @onclick="() => ToggleCategory(category)">
+                                @(category.IsActiver ? "Désactiver" : "Activerr")
+                            </button>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
     }
 }
 
@@ -77,6 +104,9 @@ else
     private string ErrorMessage = string.Empty;
     private OverviewDto? Overview;
     private bool DataLoaded;
+    private bool CategoriesLoading = true;
+    private string NewCategoryName = string.Empty;
+    private List<CategoryDto> Categories = new();
     private bool IsAdmin => AuthState.IsAuthenticated && AuthState.Role == "Admin";
 
     protected override void OnInitialized()
@@ -119,6 +149,7 @@ else
             client.DefaultRequestHeaders.Authorization =
                 new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", AuthState.Token);
             Overview = await client.GetFromJsonAsync<OverviewDto>("api/admin/overview");
+            Categories = await client.GetFromJsonAsync<List<CategoryDto>>("api/admin/categories") ?? new();
         }
         catch
         {
@@ -127,7 +158,32 @@ else
         finally
         {
             IsLoading = false;
+            CategoriesLoading = false;
         }
+    }
+
+    private async Task CreateCategory()
+    {
+        if (string.IsNullOrWhiteSpace(NewCategoryName))
+            return;
+
+        var response = await CreateAuthorizedClient().PostAsJsonAsync(
+            "api/admin/categories", new { name = NewCategoryName });
+        if (response.IsSuccessStatusCode)
+        {
+            var category = await response.Content.ReadFromJsonAsync<CategoryDto>();
+            if (category is not null)
+                Categories.Add(category);
+            NewCategoryName = string.Empty;
+        }
+    }
+
+    private async Task ToggleCategory(CategoryDto category)
+    {
+        var response = await CreateAuthorizedClient().PutAsync(
+            $"api/admin/categories/{category.Id}/toggle", null);
+        if (response.IsSuccessStatusCode)
+            category.IsActiver = !category.IsActiver;
     }
 
     public void Dispose()
@@ -154,7 +210,7 @@ else
     private sealed class OverviewDto
     {
         public int Users { get; set; }
-        public int ActiveUsers { get; set; }
+        public int ActiverUsers { get; set; }
         public int SuspendedUsers { get; set; }
         public int Students { get; set; }
         public int Instructors { get; set; }
@@ -165,5 +221,12 @@ else
         public int Enrollments { get; set; }
         public int RecentEnrollments { get; set; }
         public int Questions { get; set; }
+    }
+
+    private sealed class CategoryDto
+    {
+        public Guid Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public bool IsActiver { get; set; }
     }
 }

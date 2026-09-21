@@ -59,6 +59,62 @@ public class AdminController : ControllerBase
         });
     }
 
+    [HttpGet("categories")]
+    public async Task<IActionResult> GetCategories()
+    {
+        await EnsureCategoriesAsync();
+        return Ok(await _db.CourseCategories
+            .OrderBy(category => category.Name)
+            .ToListAsync());
+    }
+
+    [HttpPost("categories")]
+    public async Task<IActionResult> CreateCategory([FromBody] CategoryDto dto)
+    {
+        var name = dto.Name?.Trim();
+        if (string.IsNullOrWhiteSpace(name))
+            return BadRequest(new { message = "Le nom de la catégorie est obligatoire." });
+
+        await EnsureCategoriesAsync();
+        if (await _db.CourseCategories.AnyAsync(category => category.Name == name))
+            return Conflict(new { message = "Cette catégorie existe déjà." });
+
+        var category = new CourseCategory { Name = name };
+        _db.CourseCategories.Add(category);
+        await _db.SaveChangesAsync();
+        return Created($"api/admin/categories/{category.Id}", category);
+    }
+
+    [HttpPut("categories/{id:guid}/toggle")]
+    public async Task<IActionResult> ToggleCategory(Guid id)
+    {
+        var category = await _db.CourseCategories.FindAsync(id);
+        if (category is null)
+            return NotFound();
+
+        category.IsActive = !category.IsActive;
+        await _db.SaveChangesAsync();
+        return Ok(category);
+    }
+
+    private async Task EnsureCategoriesAsync()
+    {
+        var existing = await _db.CourseCategories
+            .Select(category => category.Name)
+            .ToListAsync();
+        var courseCategories = await _db.Courses
+            .Select(course => course.Category)
+            .Where(category => category != "")
+            .Distinct()
+            .ToListAsync();
+
+        foreach (var name in courseCategories.Except(existing, StringComparer.OrdinalIgnoreCase))
+            _db.CourseCategories.Add(new CourseCategory { Name = name });
+
+        if (courseCategories.Any(name => !existing.Contains(name)))
+            await _db.SaveChangesAsync();
+    }
+
     [HttpGet("reports/courses.csv")]
     public async Task<IActionResult> ExportCoursesReport()
     {
@@ -143,4 +199,9 @@ public class AdminController : ControllerBase
 public class UpdateRoleDto
 {
     public string Role { get; set; } = string.Empty;
+}
+
+public class CategoryDto
+{
+    public string Name { get; set; } = string.Empty;
 }
