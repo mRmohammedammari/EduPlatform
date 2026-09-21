@@ -153,7 +153,7 @@ Phase 11: Mobile                      [??????????]  0% ?? FUTUR
 - [x] Page Profil : infos perso, historique des cours, statistiques
 - [x] Page Profil : Édition du profil (prénom/nom + changement de mot de passe)
 - [x] Page Progression : stats agrégées par cours
-- [ ] Page Progression : graphiques, badges/achievements
+- [x] Page Progression : graphiques, badges/achievements
 - [x] Page Tests/QCM : liste, passage, résultats
 - [x] Page Tests/QCM : révision détaillée des réponses (bonne réponse mise en surbrillance)
 - [x] Page Chat IA : interface compléte
