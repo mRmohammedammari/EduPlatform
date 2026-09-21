@@ -7,6 +7,7 @@ const page = await browser.newPage();
 try {
   await page.goto(`${baseUrl}/explore`);
   await page.locator('.course-card').first().waitFor();
+  await page.waitForTimeout(2500);
 
   const initialCount = await page.locator('.course-card').count();
   assert(initialCount > 0, 'Le catalogue doit contenir au moins un cours.');
@@ -48,9 +49,31 @@ try {
   await page.getByRole('heading', { name: 'Ma progression' }).waitFor();
   assert(await page.getByRole('heading', { name: 'Badges' }).count() === 1, 'La progression authentifiée doit afficher les badges.');
 
-  console.log('E2E smoke tests passed: catalogue, recherche, filtres, détail et parcours étudiant authentifié.');
+  await loginAs('admin@eduplatform.com', 'Admin123!');
+  await page.goto(`${baseUrl}/admin`);
+  await page.getByRole('heading', { name: 'Tableau de bord administrateur' }).waitFor();
+  await page.goto(`${baseUrl}/admin/reviews`);
+  await page.getByRole('heading', { name: 'Modération des avis' }).waitFor();
+
+  await loginAs('instructor@eduplatform.com', 'Instructor123!');
+  await page.goto(`${baseUrl}/instructor`);
+  await page.getByRole('heading', { name: 'Espace enseignant' }).waitFor();
+  await page.waitForTimeout(2500);
+  const instructorHeadings = await page.locator('h1, h2').allTextContents();
+  assert(instructorHeadings.some((heading) => heading.toLowerCase().includes('cours')), `Le parcours instructeur doit afficher le formulaire de cours. Titres: ${instructorHeadings.join(' | ')}`);
+
+  console.log('E2E smoke tests passed: public, student, instructor and admin flows.');
 } finally {
   await browser.close();
+}
+
+async function loginAs(email, password) {
+  await page.goto(`${baseUrl}/login`);
+  await page.waitForTimeout(2500);
+  await page.locator('input[type="email"]').fill(email);
+  await page.locator('input[type="password"]').fill(password);
+  await page.getByRole('button', { name: 'Se connecter' }).click();
+  await page.waitForURL('**/courses');
 }
 
 function assert(condition, message) {
