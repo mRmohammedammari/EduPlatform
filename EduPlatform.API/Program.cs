@@ -191,6 +191,7 @@ app.UseSwagger();
 app.UseSwaggerUI();
 app.UseStaticFiles();
 app.UseMiddleware<RequestCorrelationMiddleware>();
+app.UseMiddleware<SecurityAuditMiddleware>();
 app.UseCors("AllowBlazor");
 app.UseAuthentication();
 app.UseAuthorization();

@@ -30,7 +30,13 @@ public class RequestCorrelationMiddleware
         finally
         {
             stopwatch.Stop();
-            _logger.LogInformation(
+            var logLevel = context.Response.StatusCode >= 500
+                ? LogLevel.Error
+                : context.Response.StatusCode >= 400
+                    ? LogLevel.Warning
+                    : LogLevel.Information;
+            _logger.Log(
+                logLevel,
                 "HTTP {Method} {Path} -> {StatusCode} in {ElapsedMs}ms; CorrelationId={CorrelationId}; UserId={UserId}; SessionId={SessionId}",
                 context.Request.Method,
                 context.Request.Path,
