@@ -6,7 +6,7 @@ Ce document décrit la stratégie de tests pour EduPlatform, incluant les tests un
 
 ## Smoke E2E public
 
-Le smoke test Playwright couvre le catalogue public, la recherche, les filtres, l'ouverture du détail d'un cours, la connexion étudiant avec accès à la progression, les accès instructeur et administrateur, ainsi que la validation d'une création de cours vide.
+Le smoke test Playwright couvre le catalogue public, la recherche, les filtres, l'ouverture du détail d'un cours, la connexion étudiant avec accès à la progression, les accès instructeur et administrateur, la validation d'une création de cours vide et le cycle persistant création/archivage/suppression avec séparation des rôles.
 
 ```powershell
 Push-Location scripts/e2e

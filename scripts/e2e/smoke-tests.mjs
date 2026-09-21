@@ -1,4 +1,4 @@
-import { chromium } from '@playwright/test';
+import { chromium, request } from '@playwright/test';
 
 const baseUrl = process.env.EDUPLATFORM_BASE_URL ?? 'http://localhost:5297';
 const browser = await chromium.launch({ headless: true });
@@ -65,6 +65,17 @@ try {
   await page.getByRole('alert').waitFor();
   assert((await page.getByRole('alert').textContent()).includes('titre'), 'La création vide doit afficher la validation métier.');
 
+  const testCourseTitle = `E2E course ${Date.now()}`;
+  await page.locator('input[placeholder="Titre du cours"]').fill(testCourseTitle);
+  await page.locator('input[placeholder="Informatique"]').fill('E2E');
+  await page.locator('textarea').first().fill('Cours créé par le smoke test.');
+  await page.locator('input[type="number"]').first().fill('30');
+  await page.locator('button.btn-primary').first().click();
+  await page.locator('h3').filter({ hasText: testCourseTitle }).waitFor();
+
+  const createdCourseId = await cleanupInstructorCourse(testCourseTitle);
+  assert(createdCourseId, 'Le cours E2E créé doit être nettoyé.');
+
   await loginAs('admin@eduplatform.com', 'Admin123!');
   await page.goto(`${baseUrl}/admin/users`);
   await page.getByRole('heading', { name: 'Gestion des utilisateurs' }).waitFor();
@@ -83,6 +94,37 @@ async function loginAs(email, password) {
   await page.locator('input[type="password"]').fill(password);
   await page.getByRole('button', { name: 'Se connecter' }).click();
   await page.waitForURL('**/courses');
+}
+
+async function cleanupInstructorCourse(title) {
+  const apiUrl = process.env.EDUPLATFORM_API_URL ?? 'http://localhost:5053';
+  const api = await request.newContext();
+  const login = await api.post(`${apiUrl}/api/auth/login`, {
+    data: { email: 'instructor@eduplatform.com', password: 'Instructor123!' }
+  });
+  assert(login.ok(), 'Le compte instructeur doit permettre le nettoyage E2E.');
+  const auth = await login.json();
+  const courses = await api.get(`${apiUrl}/api/courses/mine`, {
+    headers: { Authorization: `Bearer ${auth.token}` }
+  });
+  assert(courses.ok(), 'Les cours instructeur doivent être accessibles pour le nettoyage E2E.');
+  const course = (await courses.json()).find((item) => item.title === title);
+  assert(course, 'Le cours E2E créé doit être retrouvé dans les cours instructeur.');
+  const archive = await api.post(`${apiUrl}/api/courses/${course.id}/archive`, {
+    headers: { Authorization: `Bearer ${auth.token}` }
+  });
+  assert(archive.ok(), 'Le cours E2E doit être archivable.');
+  const adminLogin = await api.post(`${apiUrl}/api/auth/login`, {
+    data: { email: 'admin@eduplatform.com', password: 'Admin123!' }
+  });
+  assert(adminLogin.ok(), 'Le compte admin doit permettre le nettoyage E2E.');
+  const adminAuth = await adminLogin.json();
+  const deletion = await api.delete(`${apiUrl}/api/courses/${course.id}?confirm=DELETE`, {
+    headers: { Authorization: `Bearer ${adminAuth.token}` }
+  });
+  assert(deletion.ok(), 'Le cours E2E archivé doit être supprimable.');
+  await api.dispose();
+  return course.id;
 }
 
 function assert(condition, message) {
