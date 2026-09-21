@@ -1,0 +1,35 @@
+<form class="public-search" @onsubmit="Submit" @onsubmit:preventDefault="true">
+    <span aria-hidden="true">??</span>
+    <input value="@CurrentValue" @oninput="OnInput" @onkeydown="OnKeyDown" placeholder="@Placeholder" aria-label="@AriaLabel" />
+    <button type="submit" class="search-submit" aria-label="Lancer la recherche">Rechercher</button>
+</form>
+
+@code {
+    [Parameter] public string Value { get; set; } = string.Empty;
+    [Parameter] public EventCallback<string> ValueChanged { get; set; }
+    [Parameter] public EventCallback<string> Submitted { get; set; }
+    [Parameter] public string Placeholder { get; set; } = "Rechercher";
+    [Parameter] public string AriaLabel { get; set; } = "Rechercher";
+
+    private string CurrentValue { get; set; } = string.Empty;
+
+    protected override void OnParametersSet()
+    {
+        if (CurrentValue != Value)
+            CurrentValue = Value;
+    }
+
+    private async Task OnInput(ChangeEventArgs args)
+    {
+        CurrentValue = args.Value?.ToString() ?? string.Empty;
+        await ValueChanged.InvokeAsync(CurrentValue);
+    }
+
+    private async Task OnKeyDown(KeyboardEventArgs args)
+    {
+        if (args.Key == "Enter")
+            await Submit();
+    }
+
+    private Task Submit() => Submitted.InvokeAsync(CurrentValue.Trim());
+}

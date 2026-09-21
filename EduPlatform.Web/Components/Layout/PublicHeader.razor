@@ -6,10 +6,10 @@
     <a class="public-brand" href="/">Edu<span>Platform</span></a>
     <NavLink class="public-nav-link" href="/explore">Explorer</NavLink>
     <NavLink class="public-nav-link" href="/recommendations">Parcours recommandés</NavLink>
-    <form class="public-search" @onsubmit="SearchCourses">
-        <span aria-hidden="true">🔍</span>
-        <input @bind="SearchTerm" placeholder="Que voulez-vous apprendre ?" aria-label="Rechercher un cours" />
-    </form>
+    <SearchBar @bind-Value="SearchTerm"
+               Submitted="SearchCourses"
+               Placeholder="Que voulez-vous apprendre ?"
+               AriaLabel="Rechercher un cours" />
     <a class="public-teach" href="/instructor">Enseigner sur EduPlatform</a>
     @if (AuthState.IsAuthenticated)
     {
@@ -36,9 +36,10 @@
         await InvokeAsync(StateHasChanged);
     }
 
-    private void SearchCourses()
+    private void SearchCourses(string searchTerm)
     {
-        Nav.NavigateTo($"/explore?search={Uri.EscapeDataString(SearchTerm.Trim())}");
+        SearchTerm = searchTerm;
+        Nav.NavigateTo($"/explore?search={Uri.EscapeDataString(searchTerm)}");
     }
 
     private async Task HandleLogout()
