@@ -32,10 +32,10 @@
         <div class="filters">
             <select class="explore-select" @bind="SelectedCategory" @bind:after="LoadCourseList">
                 <option value="">Toutes les catégories</option>
-                <option value="Informatique">Informatique</option>
-                <option value="Economie">Economie</option>
-                <option value="Physique">Physique</option>
-                <option value="Langues">Langues</option>
+                @foreach (var category in AvailableCategories)
+                {
+                    <option value="@category">@category</option>
+                }
             </select>
 
             <select class="explore-select" @bind="SelectedLevel" @bind:after="LoadCourseList">
@@ -79,6 +79,7 @@
     private bool IsLoading = true;
     private string SelectedCategory = string.Empty;
     private string SelectedLevel = string.Empty;
+    private List<string> AvailableCategories = new();
 
     [SupplyParameterFromQuery(Name = "search")]
     public string SearchTerm { get; set; } = string.Empty;
@@ -114,6 +115,15 @@
             var httpClient = HttpClientFactory.CreateClient("EduPlatformAPI");
             var url = $"api/courses?category={SelectedCategory}&level={SelectedLevel}";
             CourseList = await httpClient.GetFromJsonAsync<List<CourseDto>>(url);
+            if (string.IsNullOrWhiteSpace(SelectedCategory) && string.IsNullOrWhiteSpace(SelectedLevel))
+            {
+                AvailableCategories = (CourseList ?? new List<CourseDto>())
+                    .Select(course => course.Category)
+                    .Where(category => !string.IsNullOrWhiteSpace(category))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .OrderBy(category => category)
+                    .ToList();
+            }
         }
         catch (Exception)
         {
