@@ -41,14 +41,14 @@ else
             <div class="stat-card"><span class="stat-value">@Overview.PendingCourses</span><span class="stat-label">En attente de validation</span></div>
             <div class="stat-card"><span class="stat-value">@Overview.Modules</span><span class="stat-label">Modules</span></div>
             <div class="stat-card"><span class="stat-value">@Overview.Enrollments</span><span class="stat-label">Inscriptions</span></div>
-            <div class="stat-card"><span class="stat-value">@Overview.RecentEnrollments</span><span class="stat-label">Inscriptions récentes</span></div>
+            <div class="stat-card"><span class="stat-value">@Overview.RecentEnrollments</span><span class="stat-label">Inscriptions rÃ©centes</span></div>
             <div class="stat-card"><span class="stat-value">@Overview.Questions</span><span class="stat-label">Questions</span></div>
         </div>
 
         @if (Overview.PendingCourses > 0 || Overview.SuspendedUsers > 0)
         {
             <div class="admin-alerts">
-                <h2>Alertes nécessitant une action</h2>
+                <h2>Alertes nÃ©cessitant une action</h2>
                 @if (Overview.PendingCourses > 0)
                 {
                     <button class="admin-alert" @onclick="GoToCourseApprovals">
@@ -60,7 +60,7 @@ else
                 {
                     <button class="admin-alert" @onclick="GoToUsers">
                         <strong>@Overview.SuspendedUsers compte(s)</strong>
-                        <span>suspendu(s) à vérifier</span>
+                        <span>suspendu(s)  vÃ©rifier</span>
                     </button>
                 }
             </div>
