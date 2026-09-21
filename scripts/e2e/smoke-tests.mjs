@@ -61,6 +61,15 @@ try {
   await page.waitForTimeout(2500);
   const instructorHeadings = await page.locator('h1, h2').allTextContents();
   assert(instructorHeadings.some((heading) => heading.toLowerCase().includes('cours')), `Le parcours instructeur doit afficher le formulaire de cours. Titres: ${instructorHeadings.join(' | ')}`);
+  await page.locator('button.btn-primary').first().click();
+  await page.getByRole('alert').waitFor();
+  assert((await page.getByRole('alert').textContent()).includes('titre'), 'La création vide doit afficher la validation métier.');
+
+  await loginAs('admin@eduplatform.com', 'Admin123!');
+  await page.goto(`${baseUrl}/admin/users`);
+  await page.getByRole('heading', { name: 'Gestion des utilisateurs' }).waitFor();
+  await page.goto(`${baseUrl}/admin/reviews`);
+  await page.getByRole('heading', { name: 'Modération des avis' }).waitFor();
 
   console.log('E2E smoke tests passed: public, student, instructor and admin flows.');
 } finally {

@@ -11,7 +11,7 @@ Phase 1: Fondations et Sécurité       [??????????] 100% ? TERMINÉE
 Phase 2: Auth Client Blazor           [??????????] 100% ? TERMINÉE
 Phase 3: Complétion Interface Web     [??????????] 100% ? TERMINÉE
 Phase 4: Fonctionnalités Avancées     [??????????] 45% ? EN COURS
-Phase 5: Tests et Qualité             [??????????] 70% ? EN COURS
+Phase 5: Tests et Qualité             [??????????] 80% ? EN COURS
 Phase 6: DevOps et Déploiement        [??????????]  0% ? à VENIR
 Phase 7: Monitoring et Observabilité  [??????????]  0% ? à VENIR
 Phase 8: Monétisation                 [??????????]  0% ?? OPTIONNEL
@@ -194,7 +194,7 @@ Phase 11: Mobile                      [??????????]  0% ?? FUTUR
 - [x] Signalement d'un avis par un apprenant avec motif
 - [x] Historique des signalements dans l'espace admin
 
-### 5.1 Couverture et validation — 70%
+### 5.1 Couverture et validation — 80%
 - [x] Tests d'authentification et de paiement
 - [x] Tests de validation des uploads vidéo
 - [x] Tests du contrôleur API de signalement d'avis avec EF InMemory
@@ -203,7 +203,8 @@ Phase 11: Mobile                      [??????????]  0% ?? FUTUR
 - [x] Smoke test Playwright automatisé : catalogue, recherche, filtres et détail
 - [x] Smoke test Playwright authentifié : connexion étudiant et progression
 - [x] Smoke test Playwright par rôle : instructeur et administrateur
-- [ ] Tests end-to-end des actions métier profondes (création, modération, publication)
+- [x] Validation E2E d'une création de cours vide et accès aux écrans admin
+- [ ] Tests end-to-end des actions métier persistantes (création, modération, publication)
 
 ---
 
