@@ -1,4 +1,5 @@
 using EduPlatform.Core.Models;
+using EduPlatform.Core.Services;
 using EduPlatform.Data.Cache;
 using EduPlatform.Data.Cassandra.Repositories;
 using EduPlatform.Data.SqlServer;
@@ -567,22 +568,14 @@ namespace EduPlatform.API.Controllers
                 return NotFound();
             if (!User.IsInRole("Admin") && course.InstructorId != userId)
                 return Forbid();
-            const long maxVideoSize = 100_000_000;
-            if (video == null || video.Length == 0)
+            if (video is null)
                 return BadRequest(new { message = "Sélectionnez une vidéo." });
-            if (video.Length > maxVideoSize)
-                return BadRequest(new { message = "La vidéo ne doit pas dépasser 100 Mo." });
+            var validationError = CourseMediaValidator.ValidateVideo(
+                video.FileName, video.ContentType, video.Length);
+            if (validationError is not null)
+                return BadRequest(new { message = validationError });
 
             var extension = Path.GetExtension(video.FileName).ToLowerInvariant();
-            var allowedContentTypes = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
-            {
-                [".mp4"] = ["video/mp4"],
-                [".webm"] = ["video/webm"],
-                [".ogg"] = ["video/ogg"]
-            };
-            if (!allowedContentTypes.TryGetValue(extension, out var contentTypes)
-                || !contentTypes.Contains(video.ContentType, StringComparer.OrdinalIgnoreCase))
-                return BadRequest(new { message = "Formats acceptés : mp4, webm, ogg." });
 
             var webRoot = _environment.WebRootPath ??
                 Path.Combine(_environment.ContentRootPath, "wwwroot");
