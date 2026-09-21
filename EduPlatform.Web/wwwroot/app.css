@@ -1087,6 +1087,51 @@ a {
     font-weight: 600;
 }
 
+.reviews-heading {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.reviews-heading h2 {
+    margin-right: auto;
+}
+
+.reviews-heading strong,
+.review-stars {
+    color: #d97706;
+}
+
+.review-form {
+    display: grid;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.review-form select,
+.review-form textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-sizing: border-box;
+}
+
+.review-item {
+    padding: 14px 0;
+    border-top: 1px solid var(--border);
+}
+
+.review-item small {
+    margin-left: 8px;
+    color: var(--text-secondary);
+}
+
+.review-item p {
+    margin: 8px 0 0;
+}
+
 /* ===== PRICING ===== */
 .pricing-grid {
     display: grid;
