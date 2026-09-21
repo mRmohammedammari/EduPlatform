@@ -176,8 +176,11 @@ Phase 11: Mobile                      [??????????]  0% ?? FUTUR
 - [x] Gestion Cours : workflow d'approbation (soumission ? validation admin ? publication)
 - [x] Gestion Cours : modération et catalogue de catégories structurées
 
-### 3.5 Composants Réutilisables — 0%
-- [ ] Aucun composant Blazor partagé (CourseCard, Modal, LoadingSpinner, Toast, Pagination, SearchBar, Rating) — chaque page duplique son propre balisage
+### 3.5 Composants Réutilisables — 70%
+- [x] CourseCard partagé entre l'exploration et les recommandations
+- [x] LoadingState, AlertMessage et StarRating partagés
+- [x] SearchBar partagé avec soumission clavier et filtrage par query string
+- [ ] Modal, Toast et Pagination
 
 ---
 
@@ -190,8 +193,9 @@ Phase 11: Mobile                      [??????????]  0% ?? FUTUR
 
 2. **Admin : moderation et gestion des categories/tags**
 
-3. **Composants réutilisables** (0%)
-  - CourseCard, Modal, LoadingSpinner, Toast, Pagination, SearchBar, Rating
+3. **Composants réutilisables** (70%)
+  - Terminé : CourseCard, LoadingState, AlertMessage, StarRating et SearchBar
+  - Restant : Modal, Toast et Pagination
 
 4. **Phase 4 : évaluations de cours**
   - Notes, commentaires et modération des avis
