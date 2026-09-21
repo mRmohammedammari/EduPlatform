@@ -62,11 +62,11 @@ else
 
         @if (!string.IsNullOrWhiteSpace(ErrorMessage))
         {
-            <div class="alert-error">@ErrorMessage</div>
+            <AlertMessage Message="@ErrorMessage" />
         }
         @if (!string.IsNullOrWhiteSpace(SuccessMessage))
         {
-            <div class="alert-success">@SuccessMessage</div>
+            <AlertMessage Message="@SuccessMessage" Tone="AlertMessage.AlertTone.Success" />
         }
         <button class="btn-primary" @onclick="CreateCourse" disabled="@IsSaving">
             @(IsSaving ? "Création..." : "Créer le cours")

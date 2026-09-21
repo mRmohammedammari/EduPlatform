@@ -1,0 +1,17 @@
+@if (!string.IsNullOrWhiteSpace(Message))
+{
+    <div class="@(Tone == AlertTone.Success ? "alert-success" : "alert-error")" role="alert">
+        @Message
+    </div>
+}
+
+@code {
+    [Parameter] public string Message { get; set; } = string.Empty;
+    [Parameter] public AlertTone Tone { get; set; } = AlertTone.Error;
+
+    public enum AlertTone
+    {
+        Error,
+        Success
+    }
+}

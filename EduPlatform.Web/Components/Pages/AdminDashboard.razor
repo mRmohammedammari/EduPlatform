@@ -26,7 +26,7 @@ else
     }
     else if (!string.IsNullOrWhiteSpace(ErrorMessage))
     {
-        <div class="alert-error">@ErrorMessage</div>
+        <AlertMessage Message="@ErrorMessage" />
     }
     else if (Overview != null)
     {
