@@ -190,11 +190,11 @@ Phase 11: Mobile                      [??????????]  0% ?? FUTUR
 
 2. **Admin : moderation et gestion des categories/tags**
 
-3. **Composants réutilisables** (0%)
+3. **Composants rÃ©utilisables** (0%)
   - CourseCard, Modal, LoadingSpinner, Toast, Pagination, SearchBar, Rating
 
-4. **Phase 4 : évaluations de cours**
-  - Notes, commentaires et modération des avis
+4. **Phase 4 : Ã©valuations de cours**
+  - Notes, commentaires et modÃ©ration des avis
 
 ### Semaine prochaine
 
