@@ -171,7 +171,7 @@ Phase 11: Mobile                      [??????????]  0% ?? FUTUR
 
 ### 3.4 Pages Administrateur — ~85%
 - [x] Dashboard Admin : métriques globales + cours en attente de validation
-- [ ] Dashboard Admin : utilisateurs actifs, revenus, alertes système
+- [x] Dashboard Admin : utilisateurs actifs, inscriptions récentes et alertes opérationnelles (revenus non applicable)
 - [x] Gestion Utilisateurs : liste, modification des rôles, recherche/filtres, suspension/réactivation
 - [x] Gestion Cours : workflow d'approbation (soumission ? validation admin ? publication)
 - [ ] Gestion Cours : approbation, modération, catégories/tags structurés (non commencé)

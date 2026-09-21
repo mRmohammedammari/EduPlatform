@@ -40,9 +40,12 @@ public class AdminController : ControllerBase
     [HttpGet("overview")]
     public async Task<IActionResult> GetOverview()
     {
+        var recentThreshold = DateTime.UtcNow.AddDays(-30);
         return Ok(new
         {
             users = await _db.Users.CountAsync(),
+            activeUsers = await _db.Users.CountAsync(user => !user.IsSuspended),
+            suspendedUsers = await _db.Users.CountAsync(user => user.IsSuspended),
             students = await _db.Users.CountAsync(user => user.Role == UserRole.Student),
             instructors = await _db.Users.CountAsync(user => user.Role == UserRole.Instructor),
             courses = await _db.Courses.CountAsync(),
@@ -50,6 +53,8 @@ public class AdminController : ControllerBase
             pendingCourses = await _db.Courses.CountAsync(course => course.Status == CourseStatus.PendingReview),
             modules = await _db.Modules.CountAsync(),
             enrollments = await _db.Enrollments.CountAsync(),
+            recentEnrollments = await _db.Enrollments.CountAsync(
+                enrollment => enrollment.EnrolledAt >= recentThreshold),
             questions = await _db.Questions.CountAsync()
         });
     }

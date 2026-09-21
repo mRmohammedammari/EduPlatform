@@ -32,6 +32,8 @@ else
     {
         <div class="stats-grid">
             <div class="stat-card"><span class="stat-value">@Overview.Users</span><span class="stat-label">Utilisateurs</span></div>
+            <div class="stat-card"><span class="stat-value">@Overview.ActiveUsers</span><span class="stat-label">Comptes actifs</span></div>
+            <div class="stat-card"><span class="stat-value">@Overview.SuspendedUsers</span><span class="stat-label">Comptes suspendus</span></div>
             <div class="stat-card"><span class="stat-value">@Overview.Students</span><span class="stat-label">Ã‰tudiants</span></div>
             <div class="stat-card"><span class="stat-value">@Overview.Instructors</span><span class="stat-label">Enseignants</span></div>
             <div class="stat-card"><span class="stat-value">@Overview.Courses</span><span class="stat-label">Cours</span></div>
@@ -39,8 +41,30 @@ else
             <div class="stat-card"><span class="stat-value">@Overview.PendingCourses</span><span class="stat-label">En attente de validation</span></div>
             <div class="stat-card"><span class="stat-value">@Overview.Modules</span><span class="stat-label">Modules</span></div>
             <div class="stat-card"><span class="stat-value">@Overview.Enrollments</span><span class="stat-label">Inscriptions</span></div>
+            <div class="stat-card"><span class="stat-value">@Overview.RecentEnrollments</span><span class="stat-label">Inscriptions récentes</span></div>
             <div class="stat-card"><span class="stat-value">@Overview.Questions</span><span class="stat-label">Questions</span></div>
         </div>
+
+        @if (Overview.PendingCourses > 0 || Overview.SuspendedUsers > 0)
+        {
+            <div class="admin-alerts">
+                <h2>Alertes nécessitant une action</h2>
+                @if (Overview.PendingCourses > 0)
+                {
+                    <button class="admin-alert" @onclick="GoToCourseApprovals">
+                        <strong>@Overview.PendingCourses cours</strong>
+                        <span>en attente de validation</span>
+                    </button>
+                }
+                @if (Overview.SuspendedUsers > 0)
+                {
+                    <button class="admin-alert" @onclick="GoToUsers">
+                        <strong>@Overview.SuspendedUsers compte(s)</strong>
+                        <span>suspendu(s) à vérifier</span>
+                    </button>
+                }
+            </div>
+        }
 
         <button class="btn-primary" @onclick="GoToUsers">GÃ©rer les utilisateurs</button>
         <button class="btn-primary" @onclick="GoToCourseApprovals">Cours Ã  valider (@Overview.PendingCourses)</button>
@@ -130,6 +154,8 @@ else
     private sealed class OverviewDto
     {
         public int Users { get; set; }
+        public int ActiveUsers { get; set; }
+        public int SuspendedUsers { get; set; }
         public int Students { get; set; }
         public int Instructors { get; set; }
         public int Courses { get; set; }
@@ -137,6 +163,7 @@ else
         public int PendingCourses { get; set; }
         public int Modules { get; set; }
         public int Enrollments { get; set; }
+        public int RecentEnrollments { get; set; }
         public int Questions { get; set; }
     }
 }

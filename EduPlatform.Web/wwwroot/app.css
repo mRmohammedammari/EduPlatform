@@ -703,6 +703,36 @@ a {
     border-bottom: 0;
 }
 
+.admin-alerts {
+    margin: 24px 0;
+    padding: 20px;
+    border: 1px solid #fed7aa;
+    border-radius: 12px;
+    background: #fff7ed;
+}
+
+.admin-alerts h2 {
+    margin: 0 0 12px;
+    font-size: 18px;
+}
+
+.admin-alert {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    padding: 12px 0;
+    border: 0;
+    border-bottom: 1px solid #fed7aa;
+    background: transparent;
+    color: #9a3412;
+    cursor: pointer;
+    text-align: left;
+}
+
+.admin-alert:last-child {
+    border-bottom: 0;
+}
+
 /* ===== STATS ===== */
 .stats-grid {
     display: grid;
