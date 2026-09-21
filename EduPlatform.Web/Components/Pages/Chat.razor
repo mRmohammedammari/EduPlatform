@@ -4,6 +4,7 @@
 @inject IHttpClientFactory HttpClientFactory
 @inject EduPlatform.Web.Services.AuthStateService AuthState
 @inject NavigationManager Nav
+@inject IJSRuntime JS
 
 @if (!AuthState.IsAuthenticated)
 {
@@ -60,7 +61,7 @@ else
 }
 
 @code {
-    private readonly Guid SessionId = Guid.NewGuid();
+    private Guid SessionId;
     private readonly List<ChatMessageDto> Messages = new();
     private string DraftMessage = string.Empty;
     private string ErrorMessage = string.Empty;
@@ -98,6 +99,7 @@ else
 
         try
         {
+            SessionId = await RestoreSessionIdAsync();
             var history = await CreateAuthorizedClient().GetFromJsonAsync<List<ChatMessageDto>>(
                 $"api/chatbot/history/{SessionId}");
             if (history != null)
@@ -154,6 +156,18 @@ else
     }
 
     private HttpClient CreateAuthorizedClient() => HttpClientFactory.CreateAuthorizedClient(AuthState);
+
+    private async Task<Guid> RestoreSessionIdAsync()
+    {
+        var storageKey = $"eduplatform-chat-session-{AuthState.UserId}";
+        var stored = await JS.InvokeAsync<string?>("localStorage.getItem", storageKey);
+        if (Guid.TryParse(stored, out var sessionId))
+            return sessionId;
+
+        var newSessionId = Guid.NewGuid();
+        await JS.InvokeVoidAsync("localStorage.setItem", storageKey, newSessionId.ToString());
+        return newSessionId;
+    }
 
     private void GoToLogin() => Nav.NavigateTo("/login");
 

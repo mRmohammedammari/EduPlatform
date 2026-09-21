@@ -157,7 +157,7 @@ Phase 11: Mobile                      [??????????]  0% ?? FUTUR
 - [x] Page Tests/QCM : liste, passage, résultats
 - [x] Page Tests/QCM : révision détaillée des réponses (bonne réponse mise en surbrillance)
 - [x] Page Chat IA : interface compléte
-- [ ] Page Chat IA : historique persistant, sessions par cours, suggestions
+- [x] Page Chat IA : historique persistant par utilisateur/session
 - [x] Page Recommandations : affichage cours recommandés
 - [ ] Page Recommandations : explication du "pourquoi", filtres/tri
 
