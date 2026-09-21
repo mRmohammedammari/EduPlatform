@@ -38,7 +38,17 @@ try {
   assert(await page.locator('h1').first().textContent() === 'ASP.NET Core et Blazor', 'Le détail du cours doit être ouvert.');
   assert(await page.locator('.course-reviews').count() === 1, 'Le détail doit afficher la section des avis.');
 
-  console.log('E2E smoke tests passed: catalogue, recherche, filtres et détail du cours.');
+  await page.goto(`${baseUrl}/login`);
+  await page.waitForTimeout(2500);
+  await page.locator('input[type="email"]').fill('student@eduplatform.com');
+  await page.locator('input[type="password"]').fill('Student123!');
+  await page.getByRole('button', { name: 'Se connecter' }).click();
+  await page.waitForURL('**/courses');
+  await page.goto(`${baseUrl}/progress`);
+  await page.getByRole('heading', { name: 'Ma progression' }).waitFor();
+  assert(await page.getByRole('heading', { name: 'Badges' }).count() === 1, 'La progression authentifiée doit afficher les badges.');
+
+  console.log('E2E smoke tests passed: catalogue, recherche, filtres, détail et parcours étudiant authentifié.');
 } finally {
   await browser.close();
 }
