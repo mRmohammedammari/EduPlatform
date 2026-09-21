@@ -11,7 +11,7 @@ Phase 1: Fondations et Sécurité       [??????????] 100% ? TERMINÉE
 Phase 2: Auth Client Blazor           [??????????] 100% ? TERMINÉE
 Phase 3: Complétion Interface Web     [??????????] 100% ? TERMINÉE
 Phase 4: Fonctionnalités Avancées     [??????????] 45% ? EN COURS
-Phase 5: Tests et Qualité             [??????????] 35% ? EN COURS
+Phase 5: Tests et Qualité             [??????????] 40% ? EN COURS
 Phase 6: DevOps et Déploiement        [??????????]  0% ? à VENIR
 Phase 7: Monitoring et Observabilité  [??????????]  0% ? à VENIR
 Phase 8: Monétisation                 [??????????]  0% ?? OPTIONNEL
@@ -194,10 +194,11 @@ Phase 11: Mobile                      [??????????]  0% ?? FUTUR
 - [x] Signalement d'un avis par un apprenant avec motif
 - [x] Historique des signalements dans l'espace admin
 
-### 5.1 Couverture et validation — 35%
+### 5.1 Couverture et validation — 40%
 - [x] Tests d'authentification et de paiement
 - [x] Tests de validation des uploads vidéo
 - [x] Tests du contrôleur API de signalement d'avis avec EF InMemory
+- [x] Tests du contrôleur admin de modération des avis
 - [x] Smoke test manuel E2E public : recherche, filtre et ouverture d'un cours
 - [ ] Tests end-to-end des parcours Web
 
@@ -223,7 +224,7 @@ Phase 11: Mobile                      [??????????]  0% ?? FUTUR
 ### Semaine prochaine
 
 5. **Phase 4** : stockage objet/CDN et transcodage des médias
-6. **Phase 5** : tests unitaires et d'intégration (11 tests automatisés actuellement)
+6. **Phase 5** : tests unitaires et d'intégration (13 tests automatisés actuellement)
 
 ---
 
@@ -234,7 +235,7 @@ Phase 11: Mobile                      [??????????]  0% ?? FUTUR
 | **Documentation** | 10 | 10 | 100% |
 | **Scripts Infrastructure** | 7 | 10 | 70% |
 | **Configuration** | 3 | 6 | 50% |
-| **Tests** | 11 | 11 | 100% |
+| **Tests** | 13 | 13 | 100% |
 | **Features** | Phases 1-3 | Phases 1-3 | 100% |
 
 ---
