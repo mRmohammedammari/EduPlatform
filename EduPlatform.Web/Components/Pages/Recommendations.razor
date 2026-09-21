@@ -83,21 +83,15 @@ else
             <div class="CourseList-grid">
                 @foreach (var course in FilteredCourses)
                 {
-                    <article class="course-card" @onclick="() => GoToCourse(course.Id)">
-                        <div class="course-card-image" style="@GetCoverStyle(course.Category)">
-                            <span class="course-cover-tag">@course.Category</span>
-                        </div>
-                        <div class="course-info">
-                            <div class="course-card-topline">
-                                <span class="badge">@course.Level</span>
-                                <span class="course-duration">❱ @course.DurationMinutes min</span>
-                            </div>
-                            <h3>@course.Title</h3>
-                            <p>@course.Description</p>
-                            <p class="recommendation-reason">@course.RecommendationReason</p>
-                            <button class="btn-primary">Voir le cours →</button>
-                        </div>
-                    </article>
+                    <CourseCard CourseId="@course.Id"
+                                Title="@course.Title"
+                                Description="@course.Description"
+                                Category="@course.Category"
+                                Level="@course.Level"
+                                DurationMinutes="@course.DurationMinutes"
+                                CoverStyle="@GetCoverStyle(course.Category)"
+                                Reason="@course.RecommendationReason"
+                                OnSelected="GoToCourse" />
                 }
             </div>
         }
