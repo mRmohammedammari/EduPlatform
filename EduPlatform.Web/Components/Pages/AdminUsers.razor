@@ -30,8 +30,8 @@ else
     else
     {
         <div class="admin-users-filters">
-            <input type="text" class="admin-users-search" placeholder="Rechercher par nom ou email..." @bind="SearchTerm" @bind:event="oninput" />
-            <select @bind="RoleFilter">
+            <input type="text" class="admin-users-search" placeholder="Rechercher par nom ou email..." @bind="SearchTerm" @bind:event="oninput" @bind:after="ResetPage" />
+            <select @bind="RoleFilter" @bind:after="ResetPage">
                 <option value="">Tous les rôles</option>
                 <option value="Student">Étudiants</option>
                 <option value="Instructor">Enseignants</option>
@@ -41,7 +41,7 @@ else
         </div>
 
         <div class="course-section">
-            @foreach (var user in FilteredUsers)
+            @foreach (var user in PagedUsers)
             {
                 <div class="activity-row">
                     <div>
@@ -71,6 +71,10 @@ else
                 </div>
             }
         </div>
+            <Pagination CurrentPage="@CurrentPage"
+                    TotalItems="@FilteredUsersList.Count"
+                    PageSize="@PageSize"
+                    PageChanged="ChangePage" />
     }
 }
 
@@ -106,12 +110,20 @@ else
     private string ToastMessage = string.Empty;
     private Toast.ToastTone ToastTone = Toast.ToastTone.Success;
     private bool IsToastVisible;
+    private const int PageSize = 10;
+    private int CurrentPage = 1;
 
     private IEnumerable<UserDto> FilteredUsers => Users.Where(u =>
         (string.IsNullOrWhiteSpace(RoleFilter) || u.Role == RoleFilter) &&
         (string.IsNullOrWhiteSpace(SearchTerm) ||
             $"{u.FirstName} {u.LastName}".Contains(SearchTerm, StringComparison.OrdinalIgnoreCase) ||
             u.Email.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase)));
+
+    private List<UserDto> FilteredUsersList => FilteredUsers.ToList();
+
+    private IEnumerable<UserDto> PagedUsers => FilteredUsersList
+        .Skip((Math.Max(1, CurrentPage) - 1) * PageSize)
+        .Take(PageSize);
 
     protected override void OnInitialized()
     {
@@ -253,6 +265,17 @@ else
     {
         IsToastVisible = false;
         ToastMessage = string.Empty;
+    }
+
+    private Task ChangePage(int page)
+    {
+        CurrentPage = page;
+        return Task.CompletedTask;
+    }
+
+    private void ResetPage()
+    {
+        CurrentPage = 1;
     }
 
     private sealed class UserDto

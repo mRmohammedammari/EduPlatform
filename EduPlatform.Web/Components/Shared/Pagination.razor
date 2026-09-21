@@ -1,0 +1,23 @@
+@if (TotalPages > 1)
+{
+    <nav class="pagination" aria-label="Pagination">
+        <button type="button" class="pagination-button" disabled="@(CurrentPage <= 1)" @onclick="PreviousPage">Précédent</button>
+        <span aria-live="polite">Page @CurrentPage sur @TotalPages</span>
+        <button type="button" class="pagination-button" disabled="@(CurrentPage >= TotalPages)" @onclick="NextPage">Suivant</button>
+    </nav>
+}
+
+@code {
+    [Parameter] public int CurrentPage { get; set; } = 1;
+    [Parameter] public int TotalItems { get; set; }
+    [Parameter] public int PageSize { get; set; } = 10;
+    [Parameter] public EventCallback<int> PageChanged { get; set; }
+
+    private int TotalPages => Math.Max(1, (int)Math.Ceiling(TotalItems / (double)Math.Max(1, PageSize)));
+
+    private Task PreviousPage() => ChangePage(Math.Max(1, CurrentPage - 1));
+
+    private Task NextPage() => ChangePage(Math.Min(TotalPages, CurrentPage + 1));
+
+    private Task ChangePage(int page) => PageChanged.InvokeAsync(page);
+}

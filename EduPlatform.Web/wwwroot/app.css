@@ -121,6 +121,10 @@ a {
 .toast-info { background: #185adb; }
 .toast-dismiss { border: 0; background: transparent; color: inherit; font-size: 22px; line-height: 1; cursor: pointer; }
 
+.pagination { display: flex; align-items: center; justify-content: center; gap: 16px; margin: 24px 0; color: #5f6878; font-size: 14px; }
+.pagination-button { min-width: 100px; padding: 8px 14px; border: 1px solid #dfe3ea; border-radius: 8px; background: #fff; color: var(--primary); cursor: pointer; }
+.pagination-button:disabled { cursor: not-allowed; opacity: .5; }
+
 .btn-enroll {
     background: var(--success);
     color: white;
