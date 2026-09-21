@@ -20,7 +20,7 @@ else
 
     @if (IsLoading)
     {
-        <p>Chargement de votre progression...</p>
+        <LoadingState Message="Chargement de votre progression..." />
     }
     else if (Summary == null)
     {
@@ -111,8 +111,8 @@ else
         new("🎓", "Premier pas", Enrollments.Count >= 1),
         new("📚", "Multi-formations", Enrollments.Count >= 3),
         new("🔥", "En bonne voie", (Summary?.AverageProgress ?? 0) >= 50),
-        new("🏆", "Premier cours terminé", Enrollments.Any(e => e.ProgressPercent >= 100)),
-        new("⭐", "Sans faute", Enrollments.Any() && Enrollments.All(e => e.ProgressPercent >= 100)),
+        new("🝆", "Premier cours terminé", Enrollments.Any(e => e.ProgressPercent >= 100)),
+        new("⭝", "Sans faute", Enrollments.Any() && Enrollments.All(e => e.ProgressPercent >= 100)),
     };
 
     private void GoToLogin()

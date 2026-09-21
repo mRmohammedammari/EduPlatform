@@ -49,7 +49,7 @@
 
     @if (IsLoading)
     {
-        <p class="explore-empty">⏳ Chargement des cours...</p>
+        <LoadingState Message="Chargement des cours..." CssClass="explore-empty" />
     }
     else if (VisibleCourses.Any())
     {
