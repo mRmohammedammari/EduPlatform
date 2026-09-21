@@ -73,6 +73,37 @@ public class ReviewsController : ControllerBase
         return Ok(review);
     }
 
+    [HttpPost("{reviewId:guid}/report")]
+    public async Task<IActionResult> Report(Guid reviewId, [FromBody] ReviewReportDto dto)
+    {
+        var userId = GetUserId();
+        var review = await _db.CourseReviews.FirstOrDefaultAsync(item => item.Id == reviewId);
+        if (review is null)
+            return NotFound();
+        if (review.UserId == userId)
+            return BadRequest(new { message = "Vous ne pouvez pas signaler votre propre avis." });
+        if (string.IsNullOrWhiteSpace(dto.Reason) || dto.Reason.Trim().Length > 1000)
+            return BadRequest(new { message = "Le motif du signalement est obligatoire et limité à 1000 caractères." });
+
+        var enrolled = await _db.Enrollments.AnyAsync(enrollment =>
+            enrollment.CourseId == review.CourseId && enrollment.UserId == userId);
+        if (!enrolled)
+            return Forbid();
+
+        if (await _db.CourseReviewReports.AnyAsync(report =>
+                report.ReviewId == reviewId && report.ReporterId == userId))
+            return Conflict(new { message = "Cet avis a déjà été signalé." });
+
+        _db.CourseReviewReports.Add(new CourseReviewReport
+        {
+            ReviewId = reviewId,
+            ReporterId = userId,
+            Reason = dto.Reason.Trim()
+        });
+        await _db.SaveChangesAsync();
+        return NoContent();
+    }
+
     private Guid GetUserId() => Guid.Parse(User.FindFirst(
         System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
 }
@@ -81,4 +112,9 @@ public class ReviewDto
 {
     public int Rating { get; set; }
     public string Comment { get; set; } = string.Empty;
+}
+
+public class ReviewReportDto
+{
+    public string Reason { get; set; } = string.Empty;
 }

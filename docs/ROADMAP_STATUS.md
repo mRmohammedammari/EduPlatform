@@ -10,7 +10,7 @@
 Phase 1: Fondations et Sécurité       [??????????] 100% ? TERMINÉE
 Phase 2: Auth Client Blazor           [??????????] 100% ? TERMINÉE
 Phase 3: Complétion Interface Web     [??????????] 55% ? EN COURS
-Phase 4: Fonctionnalités Avancées     [??????????] 25% ? EN COURS
+Phase 4: Fonctionnalités Avancées     [??????????] 35% ? EN COURS
 Phase 5: Tests et Qualité             [??????????]  0% ? à VENIR
 Phase 6: DevOps et Déploiement        [??????????]  0% ? à VENIR
 Phase 7: Monitoring et Observabilité  [??????????]  0% ? à VENIR
@@ -184,13 +184,13 @@ Phase 11: Mobile                      [??????????]  0% ?? FUTUR
 - [x] Toast réutilisable pour les retours d'action
 - [x] Pagination réutilisable pour les listes volumineuses
 
-### 4.1 Évaluations et modération — 25%
+### 4.1 Évaluations et modération — 50%
 - [x] Notes et commentaires par les apprenants inscrits
 - [x] Affichage de la moyenne et des avis sur le détail d'un cours
 - [x] Liste admin des avis avec pagination
 - [x] Suppression admin avec confirmation et retour toast
-- [ ] Signalement d'un avis par un apprenant
-- [ ] Historique des actions de modération
+- [x] Signalement d'un avis par un apprenant avec motif
+- [x] Historique des signalements dans l'espace admin
 
 ---
 

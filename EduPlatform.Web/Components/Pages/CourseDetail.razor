@@ -40,6 +40,10 @@
                         <button class="btn-secondary" @onclick="SubmitReview">Publier mon avis</button>
                     </div>
                 }
+                @if (!string.IsNullOrWhiteSpace(ReviewMessage))
+                {
+                    <div class="alert-error">@ReviewMessage</div>
+                }
                 @foreach (var review in Reviews.Reviews)
                 {
                     <div class="review-item">
@@ -47,6 +51,21 @@
                         <StarRating Rating="@review.Rating" />
                         <small>@review.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")</small>
                         <p>@review.Comment</p>
+                        @if (IsEnrolled && !IsPreview)
+                        {
+                            @if (ReportingReviewId == review.Id)
+                            {
+                                <div class="review-report-form">
+                                    <textarea @bind="ReportReason" rows="2" placeholder="Pourquoi signalez-vous cet avis ?"></textarea>
+                                    <button class="btn-secondary btn-small" @onclick="ReportReview">Envoyer le signalement</button>
+                                    <button class="btn-secondary btn-small" @onclick="CancelReport">Annuler</button>
+                                </div>
+                            }
+                            else
+                            {
+                                <button class="btn-secondary btn-small" @onclick="() => StartReport(review.Id)">Signaler</button>
+                            }
+                        }
                     </div>
                 }
             </div>
@@ -239,6 +258,9 @@ else
     private ReviewSummary? Reviews;
     private int ReviewRating;
     private string ReviewComment = string.Empty;
+    private string ReviewMessage = string.Empty;
+    private Guid? ReportingReviewId;
+    private string ReportReason = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
@@ -272,6 +294,42 @@ else
         {
             Reviews = await client.GetFromJsonAsync<ReviewSummary>($"api/reviews/course/{CourseId}");
             ReviewComment = string.Empty;
+        }
+    }
+
+    private void StartReport(Guid reviewId)
+    {
+        ReportingReviewId = reviewId;
+        ReportReason = string.Empty;
+        ReviewMessage = string.Empty;
+    }
+
+    private void CancelReport()
+    {
+        ReportingReviewId = null;
+        ReportReason = string.Empty;
+    }
+
+    private async Task ReportReview()
+    {
+        if (ReportingReviewId is null || string.IsNullOrWhiteSpace(ReportReason))
+        {
+            ReviewMessage = "Le motif du signalement est obligatoire.";
+            return;
+        }
+
+        var client = HttpClientFactory.CreateAuthorizedClient(AuthState);
+        var response = await client.PostAsJsonAsync(
+            $"api/reviews/{ReportingReviewId}/report", new { reason = ReportReason });
+        if (response.IsSuccessStatusCode)
+        {
+            ReviewMessage = "Merci, votre signalement a été transmis aux administrateurs.";
+            CancelReport();
+        }
+        else
+        {
+            var body = await response.Content.ReadFromJsonAsync<Dictionary<string, string>>();
+            ReviewMessage = body?.GetValueOrDefault("message") ?? "Le signalement n'a pas pu être envoyé.";
         }
     }
 
@@ -385,6 +443,7 @@ else
 
     private class ReviewDto
     {
+        public Guid Id { get; set; }
         public int Rating { get; set; }
         public string Comment { get; set; } = string.Empty;
         public string UserName { get; set; } = string.Empty;

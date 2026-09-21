@@ -133,6 +133,10 @@ a {
 .review-moderation-header p { margin: 4px 0 0; color: #6b7280; font-size: 13px; }
 .review-moderation-item > p { margin: 14px 0; color: #374151; }
 .review-moderation-footer { color: #6b7280; }
+.review-reports { margin: 14px 0; padding: 12px; border-left: 3px solid #d97706; background: #fff8eb; color: #7c4a03; font-size: 13px; }
+.review-reports p { margin: 6px 0 0; }
+.review-report-form { display: grid; gap: 8px; margin-top: 10px; max-width: 520px; }
+.review-report-form textarea { width: 100%; padding: 8px; border: 1px solid #dfe3ea; border-radius: 8px; resize: vertical; }
 
 .btn-enroll {
     background: var(--success);

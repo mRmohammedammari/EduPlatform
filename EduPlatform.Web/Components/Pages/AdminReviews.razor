@@ -45,6 +45,16 @@ else
                         <StarRating Rating="@review.Rating" />
                     </div>
                     <p>@review.Comment</p>
+                    @if (review.Reports.Count > 0)
+                    {
+                        <div class="review-reports">
+                            <strong>@review.Reports.Count signalement(s)</strong>
+                            @foreach (var report in review.Reports)
+                            {
+                                <p>@report.ReporterName · @report.Reason · @report.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</p>
+                            }
+                        </div>
+                    }
                     <div class="review-moderation-footer">
                         <small>@review.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</small>
                         <button class="btn-secondary btn-small" @onclick="() => RequestDelete(review)">Supprimer</button>
@@ -226,5 +236,13 @@ else
         public string CourseTitle { get; set; } = string.Empty;
         public string UserName { get; set; } = string.Empty;
         public string UserEmail { get; set; } = string.Empty;
+        public List<ReportDto> Reports { get; set; } = new();
+    }
+
+    private sealed class ReportDto
+    {
+        public string Reason { get; set; } = string.Empty;
+        public DateTime CreatedAt { get; set; }
+        public string ReporterName { get; set; } = string.Empty;
     }
 }

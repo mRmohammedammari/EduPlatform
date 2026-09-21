@@ -19,6 +19,7 @@ namespace EduPlatform.Data.SqlServer
         public DbSet<RefreshToken> RefreshTokens { get; set; }
         public DbSet<CourseCategory> CourseCategories { get; set; }
         public DbSet<CourseReview> CourseReviews { get; set; }
+        public DbSet<CourseReviewReport> CourseReviewReports { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -112,6 +113,21 @@ namespace EduPlatform.Data.SqlServer
                 entity.HasOne(review => review.User)
                     .WithMany()
                     .HasForeignKey(review => review.UserId);
+            });
+
+            modelBuilder.Entity<CourseReviewReport>(entity =>
+            {
+                entity.HasKey(report => report.Id);
+                entity.Property(report => report.Reason).IsRequired().HasMaxLength(1000);
+                entity.HasIndex(report => new { report.ReviewId, report.ReporterId }).IsUnique();
+                entity.HasOne(report => report.Review)
+                    .WithMany()
+                    .HasForeignKey(report => report.ReviewId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne(report => report.Reporter)
+                    .WithMany()
+                    .HasForeignKey(report => report.ReporterId)
+                    .OnDelete(DeleteBehavior.Restrict);
             });
         }
     }

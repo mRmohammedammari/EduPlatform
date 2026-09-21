@@ -74,7 +74,17 @@ public class AdminController : ControllerBase
                 review.CreatedAt,
                 CourseTitle = review.Course.Title,
                 UserName = review.User.FirstName + " " + review.User.LastName,
-                UserEmail = review.User.Email
+                UserEmail = review.User.Email,
+                Reports = _db.CourseReviewReports
+                    .Where(report => report.ReviewId == review.Id)
+                    .OrderByDescending(report => report.CreatedAt)
+                    .Select(report => new
+                    {
+                        report.Reason,
+                        report.CreatedAt,
+                        ReporterName = report.Reporter.FirstName + " " + report.Reporter.LastName
+                    })
+                    .ToList()
             })
             .ToListAsync());
     }
