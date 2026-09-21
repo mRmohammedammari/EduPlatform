@@ -41,6 +41,7 @@ else
         <button class="btn-secondary" @onclick="ToggleArchive">
             @(Course.IsArchived ? "Restaurer le cours" : "Archiver le cours")
         </button>
+        <button class="btn-secondary" @onclick="PreviewCourse">Prévisualiser</button>
 
         @if (Course.Status == "Rejected" && !string.IsNullOrWhiteSpace(Course.RejectionReason))
         {
@@ -466,6 +467,11 @@ else
         MessagingStudentId = studentId;
         MessageText = string.Empty;
         MessageStatus = string.Empty;
+    }
+
+    private void PreviewCourse()
+    {
+        Nav.NavigateTo($"/courses/{CourseId}?preview=true");
     }
 
     private async Task SendMessage(Guid studentId)

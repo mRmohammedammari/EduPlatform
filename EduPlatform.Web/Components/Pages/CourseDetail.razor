@@ -17,11 +17,21 @@
             </div>
         </div>
 
-        @if (IsEnrolled)
+        @if (IsPreview)
         {
-            <div class="enrolled-banner">
-                Vous êtes inscrit à ce cours (Plan : @EnrolledPlan)
+            <div class="preview-banner">
+                Prévisualisation instructeur : ce cours n'est pas présenté comme une inscription apprenant.
             </div>
+        }
+
+        @if (IsEnrolled || IsPreview)
+        {
+            @if (IsEnrolled)
+            {
+                <div class="enrolled-banner">
+                    Vous êtes inscrit à ce cours (Plan : @EnrolledPlan)
+                </div>
+            }
 
             <div class="course-section">
                 <h2>Modules du cours</h2>
@@ -43,11 +53,14 @@
                 }
             </div>
 
-            <div class="course-section">
-                <button class="btn-primary" @onclick="GoToLearning">Commencer le cours</button>
-                <button class="btn-primary" @onclick="GoToTest">Passer le test</button>
-                <button class="btn-secondary" @onclick="GoToCertificate">Certificat</button>
-            </div>
+            @if (IsEnrolled)
+            {
+                <div class="course-section">
+                    <button class="btn-primary" @onclick="GoToLearning">Commencer le cours</button>
+                    <button class="btn-primary" @onclick="GoToTest">Passer le test</button>
+                    <button class="btn-secondary" @onclick="GoToCertificate">Certificat</button>
+                </div>
+            }
         }
         else
         {
@@ -177,6 +190,8 @@ else
     private CourseDto? Course;
     private bool IsLoading = true;
     private bool IsEnrolled = false;
+    private bool IsPreview => Nav.ToAbsoluteUri(Nav.Uri).Query
+        .Contains("preview=true", StringComparison.OrdinalIgnoreCase);
     private string EnrolledPlan = "";
     private string SelectedPlan = "";
     private bool ShowPayment = false;
