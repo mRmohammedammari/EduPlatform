@@ -78,6 +78,19 @@ else
             <input type="number" min="1" @bind="Course.DurationMinutes" />
             <input type="number" min="0" step="0.01" @bind="Course.Price" />
         </div>
+        <div class="form-group">
+            <label>Image de couverture</label>
+            @if (!string.IsNullOrWhiteSpace(Course.ThumbnailUrl))
+            {
+                <img src="@Course.ThumbnailUrl" alt="Miniature du cours" class="thumbnail-preview" />
+            }
+            <InputFile OnChange="SelectThumbnail" accept="image/png,image/jpeg,image/webp" />
+            @if (SelectedThumbnail != null)
+            {
+                <span>@SelectedThumbnail.Name</span>
+                <button class="btn-secondary btn-small" @onclick="UploadThumbnail" disabled="@IsSaving">Téléverser</button>
+            }
+        </div>
         <button class="btn-secondary" @onclick="SaveCourse" disabled="@IsSaving">Enregistrer les informations</button>
     </div>
     }
@@ -358,6 +371,7 @@ else
     private Guid? EditingModuleId;
     private CreateModuleDto EditingModule = new();
     private IBrowserFile? SelectedVideo;
+    private IBrowserFile? SelectedThumbnail;
     private List<QuestionDto> Questions = new();
     private AnalyticsDto? Analytics;
     private QuestionDto NewQuestion = new() { Points = 1 };
@@ -910,6 +924,52 @@ else
     private void SelectVideo(InputFileChangeEventArgs args)
     {
         SelectedVideo = args.File;
+    }
+
+    private void SelectThumbnail(InputFileChangeEventArgs args)
+    {
+        SelectedThumbnail = args.File;
+    }
+
+    private async Task UploadThumbnail()
+    {
+        if (Course == null || SelectedThumbnail == null)
+            return;
+
+        IsSaving = true;
+        ErrorMessage = string.Empty;
+        try
+        {
+            using var content = new MultipartFormDataContent();
+            await using var stream = SelectedThumbnail.OpenReadStream(10_000_000);
+            using var fileContent = new StreamContent(stream);
+            fileContent.Headers.ContentType =
+                new System.Net.Http.Headers.MediaTypeHeaderValue(SelectedThumbnail.ContentType);
+            content.Add(fileContent, "thumbnail", SelectedThumbnail.Name);
+
+            var response = await CreateAuthorizedClient().PostAsync(
+                $"api/courses/{CourseId}/thumbnail", content);
+            if (!response.IsSuccessStatusCode)
+            {
+                ErrorMessage = "Le téléversement de l'image a échoué.";
+                return;
+            }
+
+            var updated = await response.Content.ReadFromJsonAsync<CourseDto>();
+            if (updated != null)
+                Course.ThumbnailUrl = updated.ThumbnailUrl;
+
+            SuccessMessage = "Image téléversée avec succès.";
+            SelectedThumbnail = null;
+        }
+        catch
+        {
+            ErrorMessage = "Erreur de connexion.";
+        }
+        finally
+        {
+            IsSaving = false;
+        }
     }
 
     private async Task UploadVideo()

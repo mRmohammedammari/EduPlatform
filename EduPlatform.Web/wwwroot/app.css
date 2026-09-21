@@ -706,6 +706,16 @@ a {
     margin-bottom: 16px;
 }
 
+.thumbnail-preview {
+    display: block;
+    max-width: 240px;
+    max-height: 140px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    margin-bottom: 10px;
+}
+
 .qcm-options {
     display: flex;
     flex-direction: column;

@@ -1,4 +1,4 @@
-﻿using EduPlatform.Core.Models;
+using EduPlatform.Core.Models;
 using EduPlatform.Data.Cache;
 using EduPlatform.Data.Cassandra.Repositories;
 using EduPlatform.Data.SqlServer;
@@ -160,6 +160,7 @@ namespace EduPlatform.API.Controllers
             await _db.SaveChangesAsync();
 
             await _cache.RemoveAsync(CacheService.CourseListKey());
+            await _cache.RemoveAsync(CacheService.CourseStatsKey());
             return CreatedAtAction(nameof(GetById), new { id = course.Id }, course);
         }
 
@@ -192,6 +193,7 @@ namespace EduPlatform.API.Controllers
             await _db.SaveChangesAsync();
             await _cache.RemoveAsync(CacheService.CourseKey(id));
             await _cache.RemoveAsync(CacheService.CourseListKey());
+            await _cache.RemoveAsync(CacheService.CourseStatsKey());
 
             return Ok(module);
         }
@@ -222,6 +224,7 @@ namespace EduPlatform.API.Controllers
             await _db.SaveChangesAsync();
             await _cache.RemoveAsync(CacheService.CourseKey(id));
             await _cache.RemoveAsync(CacheService.CourseListKey());
+            await _cache.RemoveAsync(CacheService.CourseStatsKey());
 
             return Ok(course);
         }
@@ -293,6 +296,7 @@ namespace EduPlatform.API.Controllers
             await _db.SaveChangesAsync();
             await _cache.RemoveAsync(CacheService.CourseKey(id));
             await _cache.RemoveAsync(CacheService.CourseListKey());
+            await _cache.RemoveAsync(CacheService.CourseStatsKey());
 
             return Ok(course);
         }
@@ -340,6 +344,7 @@ namespace EduPlatform.API.Controllers
             await _db.SaveChangesAsync();
             await _cache.RemoveAsync(CacheService.CourseKey(id));
             await _cache.RemoveAsync(CacheService.CourseListKey());
+            await _cache.RemoveAsync(CacheService.CourseStatsKey());
 
             return Ok(course);
         }
@@ -361,6 +366,7 @@ namespace EduPlatform.API.Controllers
             await _db.SaveChangesAsync();
             await _cache.RemoveAsync(CacheService.CourseKey(id));
             await _cache.RemoveAsync(CacheService.CourseListKey());
+            await _cache.RemoveAsync(CacheService.CourseStatsKey());
 
             return Ok(course);
         }
@@ -383,6 +389,7 @@ namespace EduPlatform.API.Controllers
             await _db.SaveChangesAsync();
             await _cache.RemoveAsync(CacheService.CourseKey(id));
             await _cache.RemoveAsync(CacheService.CourseListKey());
+            await _cache.RemoveAsync(CacheService.CourseStatsKey());
 
             return Ok(course);
         }
@@ -405,6 +412,7 @@ namespace EduPlatform.API.Controllers
             await _db.SaveChangesAsync();
             await _cache.RemoveAsync(CacheService.CourseKey(id));
             await _cache.RemoveAsync(CacheService.CourseListKey());
+            await _cache.RemoveAsync(CacheService.CourseStatsKey());
 
             return Ok(course);
         }
@@ -425,6 +433,7 @@ namespace EduPlatform.API.Controllers
             await _db.SaveChangesAsync();
             await _cache.RemoveAsync(CacheService.CourseKey(id));
             await _cache.RemoveAsync(CacheService.CourseListKey());
+            await _cache.RemoveAsync(CacheService.CourseStatsKey());
 
             return NoContent();
         }
@@ -448,6 +457,7 @@ namespace EduPlatform.API.Controllers
             await _db.SaveChangesAsync();
             await _cache.RemoveAsync(CacheService.CourseKey(courseId));
             await _cache.RemoveAsync(CacheService.CourseListKey());
+            await _cache.RemoveAsync(CacheService.CourseStatsKey());
 
             return NoContent();
         }
@@ -481,6 +491,7 @@ namespace EduPlatform.API.Controllers
             await _db.SaveChangesAsync();
             await _cache.RemoveAsync(CacheService.CourseKey(courseId));
             await _cache.RemoveAsync(CacheService.CourseListKey());
+            await _cache.RemoveAsync(CacheService.CourseStatsKey());
 
             return Ok(module);
         }
@@ -530,8 +541,53 @@ namespace EduPlatform.API.Controllers
             await _db.SaveChangesAsync();
             await _cache.RemoveAsync(CacheService.CourseKey(courseId));
             await _cache.RemoveAsync(CacheService.CourseListKey());
+            await _cache.RemoveAsync(CacheService.CourseStatsKey());
 
             return Ok(module);
+        }
+
+        [HttpPost("{id:guid}/thumbnail")]
+        [Authorize(Roles = "Instructor,Admin")]
+        [RequestSizeLimit(10_000_000)]
+        public async Task<IActionResult> UploadThumbnail(Guid id, IFormFile thumbnail)
+        {
+            var userId = Guid.Parse(User.FindFirst(
+                System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+            var course = await _db.Courses.FindAsync(id);
+            if (course == null)
+                return NotFound();
+            if (!User.IsInRole("Admin") && course.InstructorId != userId)
+                return Forbid();
+            if (thumbnail == null || thumbnail.Length == 0)
+                return BadRequest(new { message = "Sélectionnez une image." });
+
+            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
+            var extension = Path.GetExtension(thumbnail.FileName).ToLowerInvariant();
+            if (!allowedExtensions.Contains(extension))
+                return BadRequest(new { message = "Formats acceptés : jpg, png, webp." });
+
+            var webRoot = _environment.WebRootPath ??
+                Path.Combine(_environment.ContentRootPath, "wwwroot");
+            var relativeDirectory = Path.Combine("uploads", "courses", id.ToString());
+            var directory = Path.Combine(webRoot, relativeDirectory);
+            Directory.CreateDirectory(directory);
+
+            var fileName = $"thumbnail{extension}";
+            var filePath = Path.Combine(directory, fileName);
+            await using (var stream = System.IO.File.Create(filePath))
+            {
+                await thumbnail.CopyToAsync(stream);
+            }
+
+            var publicBaseUrl = _configuration["PublicBaseUrl"]
+                ?? $"{Request.Scheme}://{Request.Host}";
+            course.ThumbnailUrl = $"{publicBaseUrl.TrimEnd('/')}/uploads/courses/{id}/{fileName}?v={DateTime.UtcNow.Ticks}";
+            await _db.SaveChangesAsync();
+            await _cache.RemoveAsync(CacheService.CourseKey(id));
+            await _cache.RemoveAsync(CacheService.CourseListKey());
+            await _cache.RemoveAsync(CacheService.CourseStatsKey());
+
+            return Ok(course);
         }
 
         private static bool IsValidCourse(CreateCourseDto dto)
