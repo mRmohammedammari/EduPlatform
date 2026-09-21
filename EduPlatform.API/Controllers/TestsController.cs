@@ -150,6 +150,15 @@ namespace EduPlatform.API.Controllers
                 e.UserId == userId && e.CourseId == courseId);
         }
 
+        /// <summary>Bounds best-effort side calls (Cassandra/Kafka) so an unreachable broker can't hang the request.</summary>
+        private static async Task WithTimeoutAsync(Task task, int seconds = 3)
+        {
+            var completed = await Task.WhenAny(task, Task.Delay(TimeSpan.FromSeconds(seconds)));
+            if (completed != task)
+                throw new TimeoutException();
+            await task;
+        }
+
         [HttpPost("{courseId:guid}/submit")]
         public async Task<IActionResult> Submit(
             Guid courseId,
@@ -211,9 +220,27 @@ namespace EduPlatform.API.Controllers
                 PageUrl = $"/courses/{courseId}/test",
                 DeviceType = "web"
             };
-            try { await _activityRepo.LogActivityAsync(activity); } catch { }
-            try { await _eventProducer.PublishActivityAsync(activity); } catch { }
-            try { await _eventProducer.PublishTestResultAsync(result); } catch { }
+            try { await WithTimeoutAsync(_activityRepo.LogActivityAsync(activity)); } catch { }
+            _ = Task.Run(async () =>
+            {
+                try { await WithTimeoutAsync(_eventProducer.PublishActivityAsync(activity)); } catch { }
+                try { await WithTimeoutAsync(_eventProducer.PublishTestResultAsync(result)); } catch { }
+            });
+
+            var details = questions.Select(question =>
+            {
+                submission.Answers.TryGetValue(question.Id.ToString(), out var userAnswer);
+                return new
+                {
+                    questionId = question.Id,
+                    text = question.Text,
+                    options = question.Options,
+                    userAnswer,
+                    correctAnswer = question.CorrectAnswer,
+                    isCorrect = userAnswer == question.CorrectAnswer,
+                    points = question.Points
+                };
+            }).ToList();
 
             return Ok(new
             {
@@ -222,7 +249,8 @@ namespace EduPlatform.API.Controllers
                 passed,
                 percentage = maxScore > 0
                     ? Math.Round((totalScore / maxScore) * 100, 1)
-                    : 0
+                    : 0,
+                details
             });
         }
 

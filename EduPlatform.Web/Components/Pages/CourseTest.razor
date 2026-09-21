@@ -35,6 +35,32 @@ else if (Result != null)
                 <button class="btn-primary" @onclick="ResetTest">Recommencer</button>
             </div>
         </div>
+
+        <div class="course-section">
+            <h2>Révision des réponses</h2>
+            @foreach (var detail in Result.Details.Select((value, index) => new { value, index }))
+            {
+                <div class="test-question answer-review @(detail.value.IsCorrect ? "correct" : "incorrect")">
+                    <h3>@(detail.index + 1). @detail.value.Text</h3>
+                    @foreach (var option in detail.value.Options)
+                    {
+                        var isUserChoice = option == detail.value.UserAnswer;
+                        var isCorrectChoice = option == detail.value.CorrectAnswer;
+                        <div class="review-option @(isCorrectChoice ? "review-correct" : "") @(isUserChoice && !isCorrectChoice ? "review-wrong" : "")">
+                            @option
+                            @if (isCorrectChoice)
+                            {
+                                <span class="review-tag">✓ Bonne réponse</span>
+                            }
+                            else if (isUserChoice)
+                            {
+                                <span class="review-tag">Votre réponse</span>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+        </div>
     </div>
 }
 else if (Questions.Count == 0)
@@ -139,7 +165,7 @@ else
         }
         catch
         {
-            ErrorMessage = "Impossible de charger le test. R�essayez plus tard.";
+            ErrorMessage = "Impossible de charger le test. Réessayez plus tard.";
         }
         finally
         {
@@ -222,5 +248,17 @@ else
         public decimal MaxScore { get; set; }
         public bool Passed { get; set; }
         public decimal Percentage { get; set; }
+        public List<AnswerDetailDto> Details { get; set; } = new();
+    }
+
+    private sealed class AnswerDetailDto
+    {
+        public Guid QuestionId { get; set; }
+        public string Text { get; set; } = string.Empty;
+        public List<string> Options { get; set; } = new();
+        public string? UserAnswer { get; set; }
+        public string CorrectAnswer { get; set; } = string.Empty;
+        public bool IsCorrect { get; set; }
+        public int Points { get; set; }
     }
 }
