@@ -567,12 +567,21 @@ namespace EduPlatform.API.Controllers
                 return NotFound();
             if (!User.IsInRole("Admin") && course.InstructorId != userId)
                 return Forbid();
+            const long maxVideoSize = 100_000_000;
             if (video == null || video.Length == 0)
                 return BadRequest(new { message = "Sélectionnez une vidéo." });
+            if (video.Length > maxVideoSize)
+                return BadRequest(new { message = "La vidéo ne doit pas dépasser 100 Mo." });
 
-            var allowedExtensions = new[] { ".mp4", ".webm", ".ogg" };
             var extension = Path.GetExtension(video.FileName).ToLowerInvariant();
-            if (!allowedExtensions.Contains(extension))
+            var allowedContentTypes = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
+            {
+                [".mp4"] = ["video/mp4"],
+                [".webm"] = ["video/webm"],
+                [".ogg"] = ["video/ogg"]
+            };
+            if (!allowedContentTypes.TryGetValue(extension, out var contentTypes)
+                || !contentTypes.Contains(video.ContentType, StringComparer.OrdinalIgnoreCase))
                 return BadRequest(new { message = "Formats acceptés : mp4, webm, ogg." });
 
             var webRoot = _environment.WebRootPath ??

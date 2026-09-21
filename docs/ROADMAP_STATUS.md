@@ -10,7 +10,7 @@
 Phase 1: Fondations et Sécurité       [??????????] 100% ? TERMINÉE
 Phase 2: Auth Client Blazor           [??????????] 100% ? TERMINÉE
 Phase 3: Complétion Interface Web     [??????????] 55% ? EN COURS
-Phase 4: Fonctionnalités Avancées     [??????????] 35% ? EN COURS
+Phase 4: Fonctionnalités Avancées     [??????????] 45% ? EN COURS
 Phase 5: Tests et Qualité             [??????????]  0% ? à VENIR
 Phase 6: DevOps et Déploiement        [??????????]  0% ? à VENIR
 Phase 7: Monitoring et Observabilité  [??????????]  0% ? à VENIR
@@ -166,6 +166,8 @@ Phase 11: Mobile                      [??????????]  0% ?? FUTUR
 - [x] Dashboard Instructeur : analytics avancées (inscriptions, tentatives, score moyen, taux de réussite)
 - [x] Création/édition de cours : formulaire, modules, QCM (onglets), workflow de validation admin
 - [x] Création/édition de cours : upload de thumbnail (fichier réel jpg/png/webp) avec aperçu
+- [x] Création/édition de cours : upload vidéo de module (mp4/webm/ogg, 100 Mo maximum)
+- [x] Apprentissage : lecteur vidéo HTML5 pour les vidéos hébergées
 - [x] Création/édition de cours : prévisualisation complète du cours
 - [x] Gestion des Étudiants : liste des inscrits avec progression + messagerie (notifications)
 
@@ -208,12 +210,12 @@ Phase 11: Mobile                      [??????????]  0% ?? FUTUR
   - Terminé : Modal de confirmation
   - Tous les composants prévus sont livrés
 
-4. **Phase 4 : upload de médias**
-  - Vid�os de cours et contr�les de taille/type
+4. **Phase 4 : optimisation des médias**
+  - Stockage objet/CDN et transcodage vidéo
 
 ### Semaine prochaine
 
-5. **Phase 4** : upload de médias (thumbnails/vidéos), système d'Évaluation des cours
+5. **Phase 4** : stockage objet/CDN et transcodage des médias
 6. **Phase 5** : tests unitaires (couverture actuelle : `EduPlatform.Tests` limité — quelques tests de paiement)
 
 ---
