@@ -49,8 +49,39 @@ else
         }
         else
         {
+            <div class="explore-toolbar">
+                <div class="filters">
+                    <select class="explore-select" @bind="CategoryFilter">
+                        <option value="">Toutes les catégories</option>
+                        @foreach (var category in Categories)
+                        {
+                            <option value="@category">@category</option>
+                        }
+                    </select>
+                    <select class="explore-select" @bind="LevelFilter">
+                        <option value="">Tous les niveaux</option>
+                        @foreach (var level in Levels)
+                        {
+                            <option value="@level">@level</option>
+                        }
+                    </select>
+                    <select class="explore-select" @bind="SortOrder">
+                        <option value="recommended">Pertinence</option>
+                        <option value="title">Titre</option>
+                        <option value="duration-asc">Durée croissante</option>
+                        <option value="duration-desc">Durée décroissante</option>
+                    </select>
+                </div>
+                <span class="recommendation-count">@FilteredCourses.Count() recommandation(s)</span>
+            </div>
+
+            @if (!FilteredCourses.Any())
+            {
+                <div class="explore-empty">Aucun cours ne correspond à vos filtres.</div>
+            }
+
             <div class="CourseList-grid">
-                @foreach (var course in Courses)
+                @foreach (var course in FilteredCourses)
                 {
                     <article class="course-card" @onclick="() => GoToCourse(course.Id)">
                         <div class="course-card-image" style="@GetCoverStyle(course.Category)">
@@ -77,6 +108,39 @@ else
     private string ErrorMessage = string.Empty;
     private List<CourseDto> Courses = new();
     private bool DataLoaded;
+    private string CategoryFilter = string.Empty;
+    private string LevelFilter = string.Empty;
+    private string SortOrder = "recommended";
+
+    private IEnumerable<CourseDto> FilteredCourses
+    {
+        get
+        {
+            var filtered = Courses
+                .Where(course => string.IsNullOrWhiteSpace(CategoryFilter) || course.Category == CategoryFilter)
+                .Where(course => string.IsNullOrWhiteSpace(LevelFilter) || course.Level == LevelFilter);
+
+            return SortOrder switch
+            {
+                "title" => filtered.OrderBy(course => course.Title),
+                "duration-asc" => filtered.OrderBy(course => course.DurationMinutes),
+                "duration-desc" => filtered.OrderByDescending(course => course.DurationMinutes),
+                _ => filtered
+            };
+        }
+    }
+
+    private IEnumerable<string> Categories => Courses
+        .Select(course => course.Category)
+        .Where(category => !string.IsNullOrWhiteSpace(category))
+        .Distinct()
+        .OrderBy(category => category);
+
+    private IEnumerable<string> Levels => Courses
+        .Select(course => course.Level)
+        .Where(level => !string.IsNullOrWhiteSpace(level))
+        .Distinct()
+        .OrderBy(level => level);
 
     protected override void OnInitialized()
     {
