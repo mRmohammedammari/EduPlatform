@@ -166,7 +166,7 @@ Phase 11: Mobile                      [??????????]  0% ?? FUTUR
 - [x] Dashboard Instructeur : analytics avancées (inscriptions, tentatives, score moyen, taux de réussite)
 - [x] Création/édition de cours : formulaire, modules, QCM (onglets), workflow de validation admin
 - [x] Création/édition de cours : upload de thumbnail (fichier réel jpg/png/webp) avec aperçu
-- [ ] Création/édition de cours : prévisualisation complète du cours
+- [x] Création/édition de cours : prévisualisation complète du cours
 - [x] Gestion des Étudiants : liste des inscrits avec progression + messagerie (notifications)
 
 ### 3.4 Pages Administrateur — ~85%
