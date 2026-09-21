@@ -176,12 +176,13 @@ Phase 11: Mobile                      [??????????]  0% ?? FUTUR
 - [x] Gestion Cours : workflow d'approbation (soumission ? validation admin ? publication)
 - [x] Gestion Cours : modération et catalogue de catégories structurées
 
-### 3.5 Composants Réutilisables — 80%
+### 3.5 Composants Réutilisables — 90%
 - [x] CourseCard partagé entre l'exploration et les recommandations
 - [x] LoadingState, AlertMessage et StarRating partagés
 - [x] SearchBar partagé avec soumission clavier et filtrage par query string
 - [x] Modal de confirmation réutilisable pour les actions administratives
-- [ ] Toast et Pagination
+- [x] Toast réutilisable pour les retours d'action
+- [ ] Pagination
 
 ---
 
@@ -194,10 +195,10 @@ Phase 11: Mobile                      [??????????]  0% ?? FUTUR
 
 2. **Admin : moderation et gestion des categories/tags**
 
-3. **Composants réutilisables** (80%)
+3. **Composants réutilisables** (90%)
   - Terminé : CourseCard, LoadingState, AlertMessage, StarRating et SearchBar
   - Terminé : Modal de confirmation
-  - Restant : Toast et Pagination
+  - Restant : Pagination
 
 4. **Phase 4 : évaluations de cours**
   - Notes, commentaires et modération des avis

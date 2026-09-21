@@ -1,0 +1,23 @@
+@if (IsVisible && !string.IsNullOrWhiteSpace(Message))
+{
+    <div class="toast toast-@Tone.ToString().ToLowerInvariant()" role="status" aria-live="polite">
+        <span>@Message</span>
+        <button type="button" class="toast-dismiss" aria-label="Fermer la notification" @onclick="Dismiss">×</button>
+    </div>
+}
+
+@code {
+    [Parameter] public string Message { get; set; } = string.Empty;
+    [Parameter] public ToastTone Tone { get; set; } = ToastTone.Success;
+    [Parameter] public bool IsVisible { get; set; }
+    [Parameter] public EventCallback OnDismiss { get; set; }
+
+    public enum ToastTone
+    {
+        Success,
+        Error,
+        Info
+    }
+
+    private Task Dismiss() => OnDismiss.InvokeAsync();
+}

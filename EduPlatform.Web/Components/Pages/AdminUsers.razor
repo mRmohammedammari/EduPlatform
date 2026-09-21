@@ -86,6 +86,11 @@ else
     }
 </Modal>
 
+<Toast Message="@ToastMessage"
+    Tone="@ToastTone"
+    IsVisible="@IsToastVisible"
+    OnDismiss="DismissToast" />
+
 @code {
     private bool IsLoading = true;
     private string ErrorMessage = string.Empty;
@@ -98,6 +103,9 @@ else
     private bool PendingSuspension;
     private bool IsSuspensionModalOpen;
     private bool IsSuspensionInProgress;
+    private string ToastMessage = string.Empty;
+    private Toast.ToastTone ToastTone = Toast.ToastTone.Success;
+    private bool IsToastVisible;
 
     private IEnumerable<UserDto> FilteredUsers => Users.Where(u =>
         (string.IsNullOrWhiteSpace(RoleFilter) || u.Role == RoleFilter) &&
@@ -169,13 +177,13 @@ else
             var response = await CreateAuthorizedClient().PutAsJsonAsync(
                 $"api/admin/users/{userId}/role", new { role });
             if (!response.IsSuccessStatusCode)
-                ErrorMessage = "La modification du rôle a échouée.";
+                ShowToast("La modification du rôle a échouée.", Toast.ToastTone.Error);
             else
-                ErrorMessage = string.Empty;
+                ShowToast("Rôle mis à jour.");
         }
         catch
         {
-            ErrorMessage = "Erreur de connexion.";
+            ShowToast("Erreur de connexion.", Toast.ToastTone.Error);
         }
     }
 
@@ -221,17 +229,30 @@ else
             if (response.IsSuccessStatusCode)
             {
                 user.IsSuspended = suspend;
-                ErrorMessage = string.Empty;
+                ShowToast(suspend ? "Utilisateur suspendu." : "Utilisateur réactivé.");
             }
             else
             {
-                ErrorMessage = "L'opération a échoué.";
+                ShowToast("L'opération a échoué.", Toast.ToastTone.Error);
             }
         }
         catch
         {
-            ErrorMessage = "Erreur de connexion.";
+            ShowToast("Erreur de connexion.", Toast.ToastTone.Error);
         }
+    }
+
+    private void ShowToast(string message, Toast.ToastTone tone = Toast.ToastTone.Success)
+    {
+        ToastMessage = message;
+        ToastTone = tone;
+        IsToastVisible = true;
+    }
+
+    private void DismissToast()
+    {
+        IsToastVisible = false;
+        ToastMessage = string.Empty;
     }
 
     private sealed class UserDto
