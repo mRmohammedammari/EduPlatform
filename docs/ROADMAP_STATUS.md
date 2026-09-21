@@ -138,7 +138,7 @@ Phase 11: Mobile                      [??????????]  0% ?? FUTUR
 
 ---
 
-## ?? Phase 3: Complétion Interface Web (75% - EN COURS)
+## ?? Phase 3: Complétion Interface Web (80% - EN COURS)
 
 **Durée estimée:** 2-3 semaines  
 **Priorité:** ?? HAUTE
@@ -161,11 +161,12 @@ Phase 11: Mobile                      [??????????]  0% ?? FUTUR
 - [x] Page Recommandations : affichage cours recommandés
 - [ ] Page Recommandations : explication du "pourquoi", filtres/tri
 
-### 3.3 Pages Instructeurs — ~80%
+### 3.3 Pages Instructeurs — ~90%
 - [x] Dashboard Instructeur : vue d'ensemble des cours créés
 - [ ] Dashboard Instructeur : feedback Étudiants, analytics avancées
 - [x] Création/édition de cours : formulaire, modules, QCM (onglets), workflow de validation admin
-- [ ] Création/édition de cours : upload de thumbnail (URL uniquement), prévisualisation
+- [x] Création/édition de cours : upload de thumbnail (fichier réel jpg/png/webp) avec aperçu
+- [ ] Création/édition de cours : prévisualisation complète du cours
 - [x] Gestion des Étudiants : liste des inscrits avec progression + messagerie (notifications)
 
 ### 3.4 Pages Administrateur — ~85%
