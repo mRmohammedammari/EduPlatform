@@ -159,7 +159,7 @@ Phase 11: Mobile                      [??????????]  0% ?? FUTUR
 - [x] Page Chat IA : interface compléte
 - [x] Page Chat IA : historique persistant par utilisateur/session
 - [x] Page Recommandations : affichage cours recommandés
-- [ ] Page Recommandations : explication du "pourquoi", filtres/tri
+- [x] Page Recommandations : explication du pourquoi, filtres/tri
 
 ### 3.3 Pages Instructeurs — ~90%
 - [x] Dashboard Instructeur : vue d'ensemble des cours créés
@@ -185,15 +185,16 @@ Phase 11: Mobile                      [??????????]  0% ?? FUTUR
 
 ### Priorité HAUTE — Combler les vrais manques de la Phase 3
 
-1. **Instructeurs : Gestion des Étudiants** (non commencé)
-   - Liste des inscrits par cours, progression individuelle, communication
+1. **Instructeurs : previsualisation complete des cours**
+   - Voir le cours comme un apprenant avant publication
 
-2. **Composants réutilisables** (0%)
-   - CourseCard, Modal, LoadingSpinner, Toast, Pagination, SearchBar, Rating
+2. **Admin : moderation et gestion des categories/tags**
 
-3. **Édition de profil** (Profile.razor est actuellement en lecture seule)
+3. **Composants r�utilisables** (0%)
+  - CourseCard, Modal, LoadingSpinner, Toast, Pagination, SearchBar, Rating
 
-4. **Admin : recherche/filtres + suspension de comptes** dans la gestion des utilisateurs
+4. **Phase 4 : �valuations de cours**
+  - Notes, commentaires et mod�ration des avis
 
 ### Semaine prochaine
 
