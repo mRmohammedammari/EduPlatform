@@ -94,6 +94,7 @@ else
                             </div>
                             <h3>@course.Title</h3>
                             <p>@course.Description</p>
+                            <p class="recommendation-reason">@course.RecommendationReason</p>
                             <button class="btn-primary">Voir le cours →</button>
                         </div>
                     </article>
@@ -220,5 +221,6 @@ else
         public string Category { get; set; } = string.Empty;
         public string Level { get; set; } = string.Empty;
         public int DurationMinutes { get; set; }
+        public string RecommendationReason { get; set; } = string.Empty;
     }
 }

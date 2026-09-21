@@ -33,6 +33,11 @@ namespace EduPlatform.API.Controllers
                 .Select(e => e.CourseId)
                 .ToListAsync();
 
+            var enrolledProfile = await _db.Courses
+                .Where(course => enrolledCourseIds.Contains(course.Id))
+                .Select(course => new { course.Category, course.Level })
+                .ToListAsync();
+
             var availableCourseIds = await _db.Courses
                 .Where(c => c.IsPublished && !enrolledCourseIds.Contains(c.Id))
                 .Select(c => c.Id)
@@ -45,7 +50,33 @@ namespace EduPlatform.API.Controllers
                 .Where(c => recommendedIds.Contains(c.Id))
                 .ToListAsync();
 
-            return Ok(courses);
+            return Ok(courses.Select(course => new
+            {
+                course.Id,
+                course.Title,
+                course.Description,
+                course.Category,
+                course.Level,
+                course.DurationMinutes,
+                course.ThumbnailUrl,
+                RecommendationReason = GetRecommendationReason(
+                    course.Category,
+                    course.Level,
+                    enrolledProfile.Select(item => (item.Category, item.Level)))
+            }));
+        }
+
+        private static string GetRecommendationReason(
+            string category,
+            string level,
+            IEnumerable<(string Category, string Level)> enrolledProfile)
+        {
+            var profile = enrolledProfile.ToList();
+            if (profile.Any(item => item.Category == category))
+                return $"Parce que vous apprenez déjà dans la catégorie {category}.";
+            if (profile.Any(item => item.Level == level))
+                return $"Parce que ce cours correspond à votre niveau {level}.";
+            return "Sélectionné selon votre parcours et les cours disponibles.";
         }
 
         [HttpPost("train")]
