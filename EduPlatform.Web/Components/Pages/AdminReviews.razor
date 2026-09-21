@@ -1,0 +1,230 @@
+@page "/admin/reviews"
+@rendermode InteractiveServer
+@implements IDisposable
+@inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager Nav
+@inject EduPlatform.Web.Services.AuthStateService AuthState
+
+@if (!IsAdmin)
+{
+    <div class="profile-container">
+        <div class="alert-error">Cette page est réservée aux administrateurs.</div>
+        <button class="btn-primary" @onclick="GoToHome">Retour à l'accueil</button>
+    </div>
+}
+else
+{
+    <div class="page-header">
+        <h1>Modération des avis</h1>
+        <p>Consultez les avis publiés et supprimez ceux qui ne respectent pas les règles.</p>
+    </div>
+
+    @if (IsLoading)
+    {
+        <LoadingState Message="Chargement des avis..." />
+    }
+    else if (!string.IsNullOrWhiteSpace(ErrorMessage))
+    {
+        <AlertMessage Message="@ErrorMessage" />
+    }
+    else if (FilteredReviews.Count == 0)
+    {
+        <div class="course-section"><p>Aucun avis à modérer.</p></div>
+    }
+    else
+    {
+        <div class="course-section">
+            @foreach (var review in PagedReviews)
+            {
+                <article class="review-moderation-item">
+                    <div class="review-moderation-header">
+                        <div>
+                            <strong>@review.CourseTitle</strong>
+                            <p>@review.UserName · @review.UserEmail</p>
+                        </div>
+                        <StarRating Rating="@review.Rating" />
+                    </div>
+                    <p>@review.Comment</p>
+                    <div class="review-moderation-footer">
+                        <small>@review.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</small>
+                        <button class="btn-secondary btn-small" @onclick="() => RequestDelete(review)">Supprimer</button>
+                    </div>
+                </article>
+            }
+        </div>
+        <Pagination CurrentPage="@CurrentPage"
+                    TotalItems="@FilteredReviews.Count"
+                    PageSize="@PageSize"
+                    PageChanged="ChangePage" />
+    }
+}
+
+<Modal IsOpen="@IsDeleteModalOpen"
+       Title="Supprimer l'avis"
+       ConfirmText="Supprimer"
+       IsBusy="@IsDeleteInProgress"
+       OnClose="CloseDeleteModal"
+       OnConfirm="ConfirmDelete">
+    @if (PendingReview is not null)
+    {
+        <p>Supprimer définitivement l'avis de <strong>@PendingReview.UserName</strong> pour « @PendingReview.CourseTitle » ?</p>
+    }
+</Modal>
+
+<Toast Message="@ToastMessage"
+       Tone="@ToastTone"
+       IsVisible="@IsToastVisible"
+       OnDismiss="DismissToast" />
+
+@code {
+    private const int PageSize = 10;
+    private bool IsLoading = true;
+    private bool DataLoaded;
+    private string ErrorMessage = string.Empty;
+    private List<ReviewDto> Reviews = new();
+    private int CurrentPage = 1;
+    private ReviewDto? PendingReview;
+    private bool IsDeleteModalOpen;
+    private bool IsDeleteInProgress;
+    private string ToastMessage = string.Empty;
+    private Toast.ToastTone ToastTone = Toast.ToastTone.Success;
+    private bool IsToastVisible;
+    private bool IsAdmin => AuthState.IsAuthenticated && AuthState.Role == "Admin";
+
+    private List<ReviewDto> FilteredReviews => Reviews;
+    private IEnumerable<ReviewDto> PagedReviews => FilteredReviews
+        .Skip((CurrentPage - 1) * PageSize)
+        .Take(PageSize);
+
+    protected override void OnInitialized()
+    {
+        AuthState.OnChange += OnAuthStateChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await AuthState.InitializeAsync();
+            await EvaluateAuthStateAsync();
+        }
+    }
+
+    private async void OnAuthStateChanged()
+    {
+        await InvokeAsync(async () =>
+        {
+            await EvaluateAuthStateAsync();
+            StateHasChanged();
+        });
+    }
+
+    private async Task EvaluateAuthStateAsync()
+    {
+        if (!IsAdmin)
+        {
+            IsLoading = false;
+            return;
+        }
+        if (DataLoaded)
+            return;
+        DataLoaded = true;
+
+        try
+        {
+            Reviews = await CreateAuthorizedClient().GetFromJsonAsync<List<ReviewDto>>(
+                "api/admin/reviews") ?? new();
+        }
+        catch
+        {
+            ErrorMessage = "Impossible de charger les avis.";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private void RequestDelete(ReviewDto review)
+    {
+        PendingReview = review;
+        IsDeleteModalOpen = true;
+    }
+
+    private void CloseDeleteModal()
+    {
+        if (!IsDeleteInProgress)
+        {
+            IsDeleteModalOpen = false;
+            PendingReview = null;
+        }
+    }
+
+    private async Task ConfirmDelete()
+    {
+        if (PendingReview is null)
+            return;
+
+        IsDeleteInProgress = true;
+        try
+        {
+            var response = await CreateAuthorizedClient().DeleteAsync($"api/admin/reviews/{PendingReview.Id}");
+            if (response.IsSuccessStatusCode)
+            {
+                Reviews.Remove(PendingReview);
+                ShowToast("Avis supprimé.");
+                CloseDeleteModal();
+            }
+            else
+            {
+                ShowToast("La suppression a échoué.", Toast.ToastTone.Error);
+            }
+        }
+        catch
+        {
+            ShowToast("Erreur de connexion.", Toast.ToastTone.Error);
+        }
+        finally
+        {
+            IsDeleteInProgress = false;
+        }
+    }
+
+    private Task ChangePage(int page)
+    {
+        CurrentPage = page;
+        return Task.CompletedTask;
+    }
+
+    private void ShowToast(string message, Toast.ToastTone tone = Toast.ToastTone.Success)
+    {
+        ToastMessage = message;
+        ToastTone = tone;
+        IsToastVisible = true;
+    }
+
+    private void DismissToast()
+    {
+        IsToastVisible = false;
+        ToastMessage = string.Empty;
+    }
+
+    private HttpClient CreateAuthorizedClient() => HttpClientFactory.CreateAuthorizedClient(AuthState);
+    private void GoToHome() => Nav.NavigateTo("/");
+
+    public void Dispose()
+    {
+        AuthState.OnChange -= OnAuthStateChanged;
+    }
+
+    private sealed class ReviewDto
+    {
+        public Guid Id { get; set; }
+        public int Rating { get; set; }
+        public string Comment { get; set; } = string.Empty;
+        public DateTime CreatedAt { get; set; }
+        public string CourseTitle { get; set; } = string.Empty;
+        public string UserName { get; set; } = string.Empty;
+        public string UserEmail { get; set; } = string.Empty;
+    }
+}

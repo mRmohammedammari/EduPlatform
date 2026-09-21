@@ -10,7 +10,7 @@
 Phase 1: Fondations et Sécurité       [??????????] 100% ? TERMINÉE
 Phase 2: Auth Client Blazor           [??????????] 100% ? TERMINÉE
 Phase 3: Complétion Interface Web     [??????????] 55% ? EN COURS
-Phase 4: Fonctionnalités Avancées     [??????????]  0% ? à VENIR
+Phase 4: Fonctionnalités Avancées     [??????????] 25% ? EN COURS
 Phase 5: Tests et Qualité             [??????????]  0% ? à VENIR
 Phase 6: DevOps et Déploiement        [??????????]  0% ? à VENIR
 Phase 7: Monitoring et Observabilité  [??????????]  0% ? à VENIR
@@ -184,24 +184,32 @@ Phase 11: Mobile                      [??????????]  0% ?? FUTUR
 - [x] Toast réutilisable pour les retours d'action
 - [x] Pagination réutilisable pour les listes volumineuses
 
+### 4.1 Évaluations et modération — 25%
+- [x] Notes et commentaires par les apprenants inscrits
+- [x] Affichage de la moyenne et des avis sur le détail d'un cours
+- [x] Liste admin des avis avec pagination
+- [x] Suppression admin avec confirmation et retour toast
+- [ ] Signalement d'un avis par un apprenant
+- [ ] Historique des actions de modération
+
 ---
 
 ## ?? Prochaines Actions Recommandées
 
-### Priorité HAUTE — Combler les vrais manques de la Phase 3
+### Priorité HAUTE — Avancer sur la Phase 4
 
 1. **Instructeurs : previsualisation complete des cours**
    - Voir le cours comme un apprenant avant publication
 
-2. **Admin : moderation et gestion des categories/tags**
+2. **Phase 4 : signalement et historique de mod�ration des avis**
 
 3. **Composants réutilisables** (100%)
   - Terminé : CourseCard, LoadingState, AlertMessage, StarRating et SearchBar
   - Terminé : Modal de confirmation
   - Tous les composants prévus sont livrés
 
-4. **Phase 4 : évaluations de cours**
-  - Notes, commentaires et modération des avis
+4. **Phase 4 : upload de médias**
+  - Vid�os de cours et contr�les de taille/type
 
 ### Semaine prochaine
 

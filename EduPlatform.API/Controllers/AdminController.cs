@@ -59,6 +59,38 @@ public class AdminController : ControllerBase
         });
     }
 
+    [HttpGet("reviews")]
+    public async Task<IActionResult> GetReviews()
+    {
+        return Ok(await _db.CourseReviews
+            .Include(review => review.Course)
+            .Include(review => review.User)
+            .OrderByDescending(review => review.CreatedAt)
+            .Select(review => new
+            {
+                review.Id,
+                review.Rating,
+                review.Comment,
+                review.CreatedAt,
+                CourseTitle = review.Course.Title,
+                UserName = review.User.FirstName + " " + review.User.LastName,
+                UserEmail = review.User.Email
+            })
+            .ToListAsync());
+    }
+
+    [HttpDelete("reviews/{id:guid}")]
+    public async Task<IActionResult> DeleteReview(Guid id)
+    {
+        var review = await _db.CourseReviews.FindAsync(id);
+        if (review is null)
+            return NotFound();
+
+        _db.CourseReviews.Remove(review);
+        await _db.SaveChangesAsync();
+        return NoContent();
+    }
+
     [HttpGet("categories")]
     public async Task<IActionResult> GetCategories()
     {

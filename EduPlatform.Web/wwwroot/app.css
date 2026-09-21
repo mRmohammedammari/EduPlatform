@@ -125,6 +125,15 @@ a {
 .pagination-button { min-width: 100px; padding: 8px 14px; border: 1px solid #dfe3ea; border-radius: 8px; background: #fff; color: var(--primary); cursor: pointer; }
 .pagination-button:disabled { cursor: not-allowed; opacity: .5; }
 
+.review-moderation-item { padding: 18px 0; border-bottom: 1px solid #e7ebf2; }
+.review-moderation-item:first-child { padding-top: 0; }
+.review-moderation-item:last-child { padding-bottom: 0; border-bottom: 0; }
+.review-moderation-header,
+.review-moderation-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.review-moderation-header p { margin: 4px 0 0; color: #6b7280; font-size: 13px; }
+.review-moderation-item > p { margin: 14px 0; color: #374151; }
+.review-moderation-footer { color: #6b7280; }
+
 .btn-enroll {
     background: var(--success);
     color: white;
