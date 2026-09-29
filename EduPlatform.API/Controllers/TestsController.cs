@@ -4,7 +4,9 @@ using EduPlatform.Data.Cassandra.Repositories;
 using EduPlatform.Data.SqlServer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using EduPlatform.API.Hubs;
 
 namespace EduPlatform.API.Controllers
 {
@@ -17,17 +19,20 @@ namespace EduPlatform.API.Controllers
         private readonly TestResultRepository _testRepo;
         private readonly ActivityRepository _activityRepo;
         private readonly EventProducer _eventProducer;
+        private readonly IHubContext<NotificationsHub> _notificationsHub;
 
         public TestsController(
             EduDbContext db,
             TestResultRepository testRepo,
             ActivityRepository activityRepo,
-            EventProducer eventProducer)
+            EventProducer eventProducer,
+            IHubContext<NotificationsHub> notificationsHub)
         {
             _db = db;
             _testRepo = testRepo;
             _activityRepo = activityRepo;
             _eventProducer = eventProducer;
+            _notificationsHub = notificationsHub;
         }
 
         [HttpGet("{courseId:guid}")]
@@ -203,13 +208,15 @@ namespace EduPlatform.API.Controllers
             };
             await _testRepo.SaveResultAsync(result);
 
-            _db.Notifications.Add(new Notification
+            var notification = new Notification
             {
                 UserId = userId,
                 Title = passed ? "Test réussi" : "Test terminé",
                 Message = $"Votre score est de {totalScore}/{maxScore} ({(maxScore > 0 ? Math.Round(totalScore / maxScore * 100, 1) : 0)} %)."
-            });
+            };
+            _db.Notifications.Add(notification);
             await _db.SaveChangesAsync();
+            await _notificationsHub.Clients.User(userId.ToString()).SendAsync("ReceiveNotification", notification);
 
             var activity = new UserActivityEvent
             {

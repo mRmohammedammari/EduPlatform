@@ -258,15 +258,19 @@ dotnet test --filter Category=Integration
 - HTTPS obligatoire en production
 - Validation des entr�es utilisateur
 - Protection CORS configur�e
+- En-têtes de sécurité de base appliqués (`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`)
 - Secrets g�r�s via User Secrets / Azure Key Vault
 
 ?? **Important**: Ne jamais commiter les cl�s API dans le code source!
 
 ## ?? Monitoring
 
-- Health checks: `https://localhost:7194/health`
-- Metrics: Configuration Prometheus disponible
-- Logs: Serilog (� configurer)
+- Health checks: `https://localhost:7194/health` et `https://localhost:5053/health/details`
+- Metriques Prometheus : `http://localhost:5053/metrics`
+- Monitoring optionnel : `docker compose --profile monitoring up -d prometheus grafana`
+- Grafana : `http://localhost:3000` avec le dashboard API provisionne automatiquement
+- Logs console + fichier journal quotidien dans le dossier `Logs/`
+- Extra journaux de corrélation et d'audit de sécurité pour les requêtes/erreurs sensibles
 
 ## ?? Contribution
 

@@ -12,8 +12,16 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
+using System.Threading.RateLimiting;
+using EduPlatform.API.Logging;
+using EduPlatform.API.Monitoring;
+using EduPlatform.API.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+builder.Logging.AddProvider(new FileLoggerProvider(Path.Combine(AppContext.BaseDirectory, "Logs")));
 
 var dataProtectionPath = builder.Configuration["DataProtection:KeysPath"];
 if (!string.IsNullOrWhiteSpace(dataProtectionPath))
@@ -99,6 +107,17 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     {
         options.Events = new JwtBearerEvents
         {
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"];
+                var path = context.HttpContext.Request.Path;
+                if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs/notifications"))
+                {
+                    context.Token = accessToken;
+                }
+
+                return Task.CompletedTask;
+            },
             OnChallenge = async context =>
             {
                 context.HandleResponse();
@@ -134,7 +153,40 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization();
 builder.Services.AddControllers();
+builder.Services.AddSignalR();
 builder.Services.AddHealthChecks();
+builder.Services.AddSingleton<ApiMetrics>();
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.OnRejected = async (context, cancellationToken) =>
+    {
+        context.HttpContext.Response.Headers.RetryAfter = "60";
+        context.HttpContext.Response.ContentType = "application/json";
+        await context.HttpContext.Response.WriteAsJsonAsync(
+            new { message = "Trop de requêtes. Réessayez dans une minute." },
+            cancellationToken);
+    };
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
+    {
+        var path = httpContext.Request.Path;
+        if (path.StartsWithSegments("/health") || path.StartsWithSegments("/metrics"))
+        {
+            return RateLimitPartition.GetNoLimiter("monitoring");
+        }
+
+        var clientKey = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        return RateLimitPartition.GetFixedWindowLimiter(
+            clientKey,
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 120,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+                AutoReplenishment = true
+            });
+    });
+});
 
 // Swagger
 builder.Services.AddSwaggerGen(c =>
@@ -180,6 +232,8 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
+app.UseHttpsRedirection();
+
 if (builder.Configuration.GetValue<bool>("Database:ApplyMigrations"))
 {
     using var scope = app.Services.CreateScope();
@@ -190,12 +244,20 @@ if (builder.Configuration.GetValue<bool>("Database:ApplyMigrations"))
 app.UseSwagger();
 app.UseSwaggerUI();
 app.UseStaticFiles();
+app.UseMiddleware<SecurityHeadersMiddleware>();
+app.UseRateLimiter();
+app.UseMiddleware<ApiMetricsMiddleware>();
 app.UseMiddleware<RequestCorrelationMiddleware>();
 app.UseMiddleware<SecurityAuditMiddleware>();
 app.UseCors("AllowBlazor");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapHealthChecks("/health");
+app.MapHub<NotificationsHub>("/hubs/notifications");
+app.MapGet("/metrics", (ApiMetrics metrics) =>
+{
+    return Results.Text(metrics.ToPrometheus(), "text/plain; version=0.0.4; charset=utf-8");
+}).AllowAnonymous();
 app.MapControllers();
 
 app.Run();

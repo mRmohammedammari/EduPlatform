@@ -1,8 +1,13 @@
 ﻿using EduPlatform.Web.Services;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
+using EduPlatform.Web.Logging;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+builder.Logging.AddProvider(new FileLoggerProvider(Path.Combine(AppContext.BaseDirectory, "Logs")));
 
 var dataProtectionPath = builder.Configuration["DataProtection:KeysPath"];
 if (!string.IsNullOrWhiteSpace(dataProtectionPath))
@@ -37,6 +42,27 @@ if (!app.Environment.IsDevelopment())
 {
     app.UseHsts();
 }
+
+app.UseHttpsRedirection();
+app.Use(async (context, next) =>
+{
+    context.Response.OnStarting(() =>
+    {
+        context.Response.Headers["X-Content-Type-Options"] = "nosniff";
+        context.Response.Headers["X-Frame-Options"] = "DENY";
+        context.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
+        context.Response.Headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()";
+        context.Response.Headers["X-Permitted-Cross-Domain-Policies"] = "none";
+        if (!context.Response.Headers.ContainsKey("Cache-Control"))
+        {
+            context.Response.Headers["Cache-Control"] = "no-store, max-age=0";
+        }
+
+        return Task.CompletedTask;
+    });
+
+    await next();
+});
 
 app.UseStaticFiles();
 app.UseAntiforgery();

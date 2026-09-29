@@ -1,0 +1,58 @@
+{
+  "annotations": { "list": [] },
+  "editable": false,
+  "graphTooltip": 0,
+  "panels": [
+    {
+      "datasource": { "type": "prometheus", "uid": "eduplatform-prometheus" },
+      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "id": 1,
+      "title": "HTTP requests per second",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "rate(eduplatform_http_requests_total[5m])", "legendFormat": "requests/s", "refId": "A" }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "eduplatform-prometheus" },
+      "fieldConfig": { "defaults": { "unit": "ms" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "id": 2,
+      "title": "Average request duration",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "eduplatform_http_request_duration_milliseconds_average", "legendFormat": "average", "refId": "A" }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "eduplatform-prometheus" },
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "id": 3,
+      "title": "HTTP 5xx errors",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "rate(eduplatform_http_errors_total[5m])", "legendFormat": "errors/s", "refId": "A" }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "eduplatform-prometheus" },
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "id": 4,
+      "title": "Active requests",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "eduplatform_http_active_requests", "legendFormat": "active", "refId": "A" }
+      ]
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["eduplatform", "api"],
+  "templating": { "list": [] },
+  "time": { "from": "now-6h", "to": "now" },
+  "title": "EduPlatform API",
+  "uid": "eduplatform-api",
+  "version": 1
+}

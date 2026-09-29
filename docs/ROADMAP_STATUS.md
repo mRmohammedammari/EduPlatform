@@ -79,8 +79,9 @@ Reste distinct : pages legales et tests accessibilite.
 - [ ] Stockage objet / CDN (actuellement disque local, bloque le scale horizontal)
 - [ ] Transcodage video et streaming adaptatif (HLS/DASH)
 - [ ] Sous-titres (aucun champ de stockage VTT)
-- [ ] Certificat au format PDF telechargeable + verification par QR code
-- [ ] Notifications temps reel (SignalR) et preferences de notification
+- [x] Certificat au format PDF telechargeable + URL de verification publique
+- [x] QR code SVG integre au certificat et lie a la verification publique
+- [x] Notifications temps reel (SignalR)
 - [ ] Ressources telechargeables par cours (PDF, code source)
 - [ ] Distribution des notes (barres 5/4/3/2/1) et analytics de feedback instructeur
 
@@ -149,7 +150,7 @@ Procedure detaillee : [PRODUCTION_READINESS.md](PRODUCTION_READINESS.md).
 
 ---
 
-## Phase 7 - Monitoring et observabilite : 45 %
+## Phase 7 - Monitoring et observabilite : 70 %
 
 ### Livre
 
@@ -157,11 +158,11 @@ Procedure detaillee : [PRODUCTION_READINESS.md](PRODUCTION_READINESS.md).
 - `/health/details` verifie SQL par `CanConnectAsync`, Cassandra/Redis/Kafka par TCP
 - Logs structures avec correlation par `SessionId`
 - `scripts/monitor-health.ps1` avec alertes webhook optionnelles
+- Endpoint `/metrics` compatible Prometheus avec compteurs HTTP de base
+- Profil Compose Prometheus/Grafana avec datasource et dashboard API provisionnes
 
 ### Reste a faire
 
-- [ ] Serilog (le README l'annonce, il n'est pas installe)
-- [ ] Metriques Prometheus et tableau de bord Grafana
 - [ ] Tracing distribue (OpenTelemetry)
 - [ ] Agregation centralisee des logs
 
@@ -175,16 +176,16 @@ mis de cote. Le plan d'integration d'un fournisseur reel est ecrit dans
 
 ---
 
-## Phase 10 - Optimisations et performance : 35 %
+## Phase 10 - Optimisations et performance : 45 %
 
 ### Livre
 
 - Cache Redis (cours, listes, statistiques) avec invalidation ciblee
 - Pagination SQL serveur du catalogue avec recherche, filtres, tri et nombre total de resultats
+- Rate limiting global par adresse IP avec réponse 429 et en-tête `Retry-After`
 
 ### Reste a faire
 
-- [ ] Rate limiting (aucun `AddRateLimiter` dans `Program.cs`)
 - [ ] Optimisation des requetes EF (`AsNoTracking`, projections)
 - [ ] Decoupage de `app.css` (2188 lignes), lazy loading des images, mode sombre
 

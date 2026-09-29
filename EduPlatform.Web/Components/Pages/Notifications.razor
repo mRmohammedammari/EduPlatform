@@ -1,9 +1,11 @@
 @page "/notifications"
 @rendermode InteractiveServer
 @implements IDisposable
+@using Microsoft.JSInterop
 @inject IHttpClientFactory HttpClientFactory
 @inject NavigationManager Nav
 @inject EduPlatform.Web.Services.AuthStateService AuthState
+@inject IJSRuntime JS
 
 @if (!AuthState.IsAuthenticated)
 {
@@ -54,6 +56,7 @@ else
     private bool IsLoading = true;
     private List<NotificationDto> NotificationsList = new();
     private bool DataLoaded;
+    private DotNetObjectReference<Notifications>? NotificationsReference;
 
     protected override void OnInitialized()
     {
@@ -93,6 +96,7 @@ else
         {
             NotificationsList = await CreateAuthorizedClient()
                 .GetFromJsonAsync<List<NotificationDto>>("api/notifications") ?? new();
+            await ConnectToNotificationsAsync();
         }
         finally
         {
@@ -100,9 +104,38 @@ else
         }
     }
 
+    private async Task ConnectToNotificationsAsync()
+    {
+        if (NotificationsReference is not null || string.IsNullOrWhiteSpace(AuthState.Token))
+            return;
+
+        var apiBaseUrl = HttpClientFactory.CreateClient("EduPlatformAPI").BaseAddress;
+        if (apiBaseUrl is null)
+            return;
+
+        NotificationsReference = DotNetObjectReference.Create(this);
+        await JS.InvokeVoidAsync(
+            "eduPlatformSession.notifications.connect",
+            new Uri(apiBaseUrl, "hubs/notifications").ToString(),
+            AuthState.Token,
+            NotificationsReference);
+    }
+
+    [JSInvokable]
+    public async Task ReceiveNotification(NotificationDto notification)
+    {
+        await InvokeAsync(() =>
+        {
+            NotificationsList.Insert(0, notification);
+            StateHasChanged();
+        });
+    }
+
     public void Dispose()
     {
         AuthState.OnChange -= OnAuthStateChanged;
+        NotificationsReference?.Dispose();
+        _ = JS.InvokeVoidAsync("eduPlatformSession.notifications.disconnect");
     }
 
     private async Task MarkAsRead(NotificationDto notification)
@@ -117,7 +150,7 @@ else
 
     private void GoToLogin() => Nav.NavigateTo("/login");
 
-    private sealed class NotificationDto
+    public sealed class NotificationDto
     {
         public Guid Id { get; set; }
         public string Title { get; set; } = string.Empty;

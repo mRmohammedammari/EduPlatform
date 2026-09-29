@@ -1,7 +1,9 @@
 using EduPlatform.Data.SqlServer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using EduPlatform.API.Hubs;
 
 namespace EduPlatform.API.Controllers;
 
@@ -11,10 +13,12 @@ namespace EduPlatform.API.Controllers;
 public class NotificationsController : ControllerBase
 {
     private readonly EduDbContext _db;
+    private readonly IHubContext<NotificationsHub> _hub;
 
-    public NotificationsController(EduDbContext db)
+    public NotificationsController(EduDbContext db, IHubContext<NotificationsHub> hub)
     {
         _db = db;
+        _hub = hub;
     }
 
     [HttpGet]
@@ -66,6 +70,9 @@ public class NotificationsController : ControllerBase
         };
         _db.Notifications.Add(notification);
         await _db.SaveChangesAsync();
+        await _hub.Clients.User(notification.UserId.ToString()).SendAsync(
+            "ReceiveNotification",
+            notification);
 
         return Ok(notification);
     }

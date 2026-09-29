@@ -2520,3 +2520,11 @@ a {
     .video-toolbar { gap: 8px; }
     .learning-actions { flex-direction: column; align-items: stretch; }
 }
+
+.certificate-qr {
+    display: block;
+    width: 144px;
+    height: 144px;
+    margin: 18px auto;
+    image-rendering: crisp-edges;
+}

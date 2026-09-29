@@ -15,12 +15,34 @@ window.eduPlatformSession = {
         document.cookie = "eduplatform-session-id=; max-age=0" + this.cookieOptions();
     },
     download: function (fileName, bytes) {
-        const blob = new Blob([new Uint8Array(bytes)], { type: "text/csv;charset=utf-8" });
+        const blob = new Blob([new Uint8Array(bytes)], { type: "application/octet-stream" });
         const url = URL.createObjectURL(blob);
         const anchor = document.createElement("a");
         anchor.href = url;
         anchor.download = fileName;
         anchor.click();
         URL.revokeObjectURL(url);
+    },
+    notifications: {
+        connection: null,
+        connect: async function (hubUrl, token, dotNetReference) {
+            if (!window.signalR || this.connection) {
+                return;
+            }
+
+            this.connection = new signalR.HubConnectionBuilder()
+                .withUrl(hubUrl, { accessTokenFactory: () => token })
+                .withAutomaticReconnect()
+                .build();
+            this.connection.on("ReceiveNotification", notification =>
+                dotNetReference.invokeMethodAsync("ReceiveNotification", notification));
+            await this.connection.start();
+        },
+        disconnect: async function () {
+            if (this.connection) {
+                await this.connection.stop();
+                this.connection = null;
+            }
+        }
     }
 };

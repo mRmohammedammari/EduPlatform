@@ -4,6 +4,7 @@
 @inject IHttpClientFactory HttpClientFactory
 @inject NavigationManager Nav
 @inject EduPlatform.Web.Services.AuthStateService AuthState
+@inject IJSRuntime JS
 
 @if (!AuthState.IsAuthenticated)
 {
@@ -36,6 +37,9 @@ else if (CertificateData != null)
             <p>Score obtenu : @CertificateData.Score / @CertificateData.MaxScore</p>
             <p>Délivré le @CertificateData.IssuedAt.ToLocalTime().ToString("dd/MM/yyyy")</p>
             <small>Identifiant : @CertificateData.CertificateId</small>
+            <p><a href="@CertificateData.VerificationUrl" target="_blank" rel="noopener">Vérifier ce certificat</a></p>
+            <img class="certificate-qr" src="@CertificateData.QrCodeUrl" alt="QR code de vérification du certificat" />
+            <button class="btn-primary" @onclick="DownloadCertificate">Télécharger le PDF</button>
         </div>
     </div>
 }
@@ -116,6 +120,16 @@ else if (CertificateData != null)
     private void GoToLogin() => Nav.NavigateTo("/login");
     private void GoToCourse() => Nav.NavigateTo($"/courses/{CourseId}");
 
+    private async Task DownloadCertificate()
+    {
+        var response = await CreateAuthorizedClient().GetAsync($"api/certificates/{CourseId}/pdf");
+        if (!response.IsSuccessStatusCode || CertificateData is null)
+            return;
+
+        var content = await response.Content.ReadAsByteArrayAsync();
+        await JS.InvokeVoidAsync("eduPlatformSession.download", $"{CertificateData.CertificateId}.pdf", content);
+    }
+
     private sealed class CertificateDto
     {
         public string CertificateId { get; set; } = string.Empty;
@@ -124,5 +138,7 @@ else if (CertificateData != null)
         public DateTime IssuedAt { get; set; }
         public decimal Score { get; set; }
         public decimal MaxScore { get; set; }
+        public string VerificationUrl { get; set; } = string.Empty;
+        public string QrCodeUrl => $"{VerificationUrl}/qr";
     }
 }

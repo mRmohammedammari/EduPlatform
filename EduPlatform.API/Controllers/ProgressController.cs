@@ -5,7 +5,9 @@ using EduPlatform.Data.Cassandra.Repositories;
 using EduPlatform.Data.SqlServer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using EduPlatform.API.Hubs;
 
 namespace EduPlatform.API.Controllers
 {
@@ -18,17 +20,20 @@ namespace EduPlatform.API.Controllers
         private readonly EventProducer _eventProducer;
         private readonly EduDbContext _db;
         private readonly IPaymentGateway _paymentGateway;
+        private readonly IHubContext<NotificationsHub> _notificationsHub;
 
         public ProgressController(
             ActivityRepository activityRepo,
             EventProducer eventProducer,
             EduDbContext db,
-            IPaymentGateway paymentGateway)
+            IPaymentGateway paymentGateway,
+            IHubContext<NotificationsHub> notificationsHub)
         {
             _activityRepo = activityRepo;
             _eventProducer = eventProducer;
             _db = db;
             _paymentGateway = paymentGateway;
+            _notificationsHub = notificationsHub;
         }
 
         [HttpGet("enrollments")]
@@ -272,13 +277,15 @@ namespace EduPlatform.API.Controllers
                 AmountPaid = expectedAmount,
                 PaymentStatus = "Completed"
             });
-            _db.Notifications.Add(new Notification
+            var notification = new Notification
             {
                 UserId = userId,
                 Title = "Inscription confirmée",
                 Message = $"Vous êtes maintenant inscrit au cours « {course.Title} »."
-            });
+            };
+            _db.Notifications.Add(notification);
             await _db.SaveChangesAsync();
+            await _notificationsHub.Clients.User(userId.ToString()).SendAsync("ReceiveNotification", notification);
 
             var activity = new UserActivityEvent
             {
@@ -312,13 +319,15 @@ namespace EduPlatform.API.Controllers
             };
             if (dto.ActionType == "module_completed")
             {
-                _db.Notifications.Add(new Notification
+                var notification = new Notification
                 {
                     UserId = userId,
                     Title = "Module terminé",
                     Message = "Votre progression a été mise à jour après la fin du module."
-                });
+                };
+                _db.Notifications.Add(notification);
                 await _db.SaveChangesAsync();
+                await _notificationsHub.Clients.User(userId.ToString()).SendAsync("ReceiveNotification", notification);
             }
             await PublishActivityAsync(activity);
 

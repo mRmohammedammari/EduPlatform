@@ -233,7 +233,10 @@ Les effets Kafka/Cassandra lors de la soumission sont best-effort et limites dan
 | `GET /api/notifications` | 50 notifications recentes du compte | Authentifie |
 | `POST /api/notifications/{id}/read` | Marque lue | Propriete verifiee par user ID |
 | `POST /api/notifications/send` | Envoi a apprenant | Instructor/Admin; instructeur limite a ses propres inscrits |
-| `GET /api/certificates/{courseId}` | Certificat JSON si inscrit et test reussi | Authentifie; pas de PDF/QR |
+| `GET /api/certificates/{courseId}` | Certificat JSON si inscrit et test reussi | Authentifie |
+| `GET /api/certificates/{courseId}/pdf` | Telechargement du certificat PDF | Authentifie |
+| `GET /api/certificates/verify/{certificateId}` | Verification publique d'un certificat | Public |
+| `GET /api/certificates/verify/{certificateId}/qr` | QR code SVG vers la verification publique | Public |
 | `POST /api/chatbot/message` | Envoie message et persiste historique | Authentifie; depend d'OpenAI et du schema Cassandra chatbot |
 | `GET /api/chatbot/history/{sessionId}` | Historique chatbot | Authentifie et scope par utilisateur |
 | `GET /health` | Healthcheck ASP.NET generique | Public; Compose l'utilise actuellement |
@@ -368,8 +371,12 @@ Push-Location scripts/e2e; npm ci; npx playwright install chromium; npm test; Po
 
 - `GET /health` est le liveness endpoint mappe par ASP.NET; aucun `AddCheck(...)` n'est enregistre dans `Program.cs`. Il confirme que le process API repond.
 - `GET /health/details` est le readiness endpoint utilise par le healthcheck Compose. Il teste SQL par `CanConnectAsync` (un resultat `false` est unhealthy) et Cassandra/Redis/Kafka par TCP. Cela ne valide ni les tables CQL, ni les lectures/ecritures Kafka/Redis. Utiliser en complement les commandes propres a chaque service.
+- `GET /metrics` expose des metriques Prometheus sans dependance externe : requetes terminees, erreurs HTTP 5xx, requetes actives et duree moyenne/cumulee.
+- L'API applique une limite globale de 120 requetes par minute et par adresse IP. Les reponses limitees sont `429` avec `Retry-After: 60`; `/health`, `/health/details` et `/metrics` sont exclus pour ne pas interrompre les sondes.
+- Le hub SignalR authentifie `/hubs/notifications` diffuse les nouvelles notifications aux utilisateurs connectes; le client Web se reconnecte automatiquement.
 - `RequestCorrelationMiddleware` ajoute le contexte de correlation; `SecurityAuditMiddleware` trace notamment acces refuses/5xx/latence.
-- Serilog, Prometheus, Grafana et OpenTelemetry ne sont pas installes au 2026-09-29.
+- Prometheus et Grafana sont disponibles via le profil Compose optionnel : `docker compose --profile monitoring up -d prometheus grafana`. Le dashboard API est provisionne automatiquement sur `http://localhost:3000`.
+- OpenTelemetry et l'agregation centralisee des logs ne sont pas installes au 2026-09-29.
 
 ### Nginx / TLS
 
