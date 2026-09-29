@@ -196,6 +196,7 @@ dotnet run
 ### Architecture et Technique
 - ??? [**Architecture D�taill�e**](docs/ARCHITECTURE.md)
 - ?? [**API Documentation**](docs/API_DOCUMENTATION.md)
+- [**Etat du projet et guide complet d'exploitation**](docs/PROJECT_OPERATIONS_GUIDE.md) - Architecture, API, bases de donnees, Docker, CI, Kubernetes et reste a faire
 - ?? [**Guide de S�curit�**](docs/SECURITY.md)
 
 ### Infrastructure

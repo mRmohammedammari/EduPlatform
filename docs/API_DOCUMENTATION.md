@@ -1,6 +1,9 @@
 # ?? Documentation API - EduPlatform
 
 ## Base URL
+
+> **Note d'actualisation (2026-09-29) :** plusieurs exemples de ce document sont historiques et ne correspondent plus aux routes, ports, DTO, pagination ou rate limits deployes. Pour la matrice verifiee des endpoints et les procedures d'exploitation, consulter [PROJECT_OPERATIONS_GUIDE.md](PROJECT_OPERATIONS_GUIDE.md) et les attributs des controllers dans `EduPlatform.API/Controllers`.
+
 - **Development:** `https://localhost:7194/api`
 - **Production:** `https://api.eduplatform.com/api`
 
