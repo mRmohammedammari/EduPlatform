@@ -1,8 +1,8 @@
-# ?? EduPlatform - Plateforme Éducative Intelligente
+# ?? EduPlatform - Plateforme ï¿½ducative Intelligente
 
 ## ?? Description
 
-EduPlatform est une plateforme d'apprentissage en ligne moderne propulsée par le Big Data et l'Intelligence Artificielle. Elle offre une expérience personnalisée grâce à des recommandations intelligentes, un chatbot pédagogique et une analyse avancée des données d'apprentissage.
+EduPlatform est une plateforme d'apprentissage en ligne moderne propulsï¿½e par le Big Data et l'Intelligence Artificielle. Elle offre une expï¿½rience personnalisï¿½e grï¿½ce ï¿½ des recommandations intelligentes, un chatbot pï¿½dagogique et une analyse avancï¿½e des donnï¿½es d'apprentissage.
 
 ## ??? Architecture
 
@@ -17,11 +17,11 @@ EduPlatform est une plateforme d'apprentissage en ligne moderne propulsée par le
 **Frontend**
 - Blazor Server (.NET 8)
 - Bootstrap 5
-- CSS personnalisé
+- CSS personnalisï¿½
 
 **Big Data & Analytics**
-- Apache Kafka (événements temps réel)
-- Apache Cassandra (données massives)
+- Apache Kafka (ï¿½vï¿½nements temps rï¿½el)
+- Apache Cassandra (donnï¿½es massives)
 - Redis (cache)
 - ML.NET (recommandations)
 
@@ -29,9 +29,9 @@ EduPlatform est une plateforme d'apprentissage en ligne moderne propulsée par le
 - OpenAI GPT-4o-mini (chatbot)
 - ML.NET (recommandations de cours)
 
-**Base de données**
-- SQL Server (données relationnelles)
-- Cassandra (activités utilisateurs, résultats tests, historique chat)
+**Base de donnï¿½es**
+- SQL Server (donnï¿½es relationnelles)
+- Cassandra (activitï¿½s utilisateurs, rï¿½sultats tests, historique chat)
 - Redis (cache sessions, cours populaires)
 
 ## ?? Structure du Projet
@@ -40,7 +40,7 @@ EduPlatform est une plateforme d'apprentissage en ligne moderne propulsée par le
 EduPlatform/
 ??? EduPlatform.API/              # API REST principale
 ?   ??? Controllers/              # Endpoints API
-?   ??? Services/                 # Services métier
+?   ??? Services/                 # Services mï¿½tier
 ?   ??? Program.cs               # Configuration
 ?
 ??? EduPlatform.Web/              # Interface Blazor
@@ -49,11 +49,11 @@ EduPlatform/
 ?   ?   ??? Layout/              # Layouts
 ?   ??? wwwroot/                 # Assets statiques
 ?
-??? EduPlatform.Core/             # Modèles domaine
-?   ??? Models/                  # Entités métier
+??? EduPlatform.Core/             # Modï¿½les domaine
+?   ??? Models/                  # Entitï¿½s mï¿½tier
 ?   ??? Services/                # Services core
 ?
-??? EduPlatform.Data/             # Accès aux données
+??? EduPlatform.Data/             # Accï¿½s aux donnï¿½es
 ?   ??? SqlServer/               # EF Core DbContext
 ?   ??? Cassandra/               # Repositories Cassandra
 ?   ??? Cache/                   # Service Redis
@@ -65,9 +65,9 @@ EduPlatform/
 ??? docker-compose.yml            # Infrastructure locale
 ```
 
-## ?? Démarrage Rapide
+## ?? Dï¿½marrage Rapide
 
-### Prérequis
+### Prï¿½requis
 
 - .NET 8 SDK
 - Docker Desktop
@@ -75,35 +75,35 @@ EduPlatform/
 
 ### Installation
 
-#### ?? Méthode Rapide (Recommandée)
+#### ?? Mï¿½thode Rapide (Recommandï¿½e)
 
 ```powershell
 # 1. Cloner le repository
 git clone https://github.com/votre-username/EduPlatform.git
 cd EduPlatform
 
-# 2. Définir le mot de passe SQL Server Docker
+# 2. Dï¿½finir le mot de passe SQL Server Docker
 $env:SQLSERVER_SA_PASSWORD = "Choisir-Un-MotDePasse!Sql2026"
 $env:JWT_SECRET_KEY = "Choisir-Une-Cle-JWT-De-32-Caracteres-Minimum!"
 
-# 3. Activer les données de démonstration si nécessaire
+# 3. Activer les donnï¿½es de dï¿½monstration si nï¿½cessaire
 $env:SEED_DEMO_DATA = "true"
 
-# 4. Exécuter le script d'initialisation automatique
+# 4. Exï¿½cuter le script d'initialisation automatique
 .\scripts\init-platform.ps1
 
 # 5. Configurer les secrets
 cd EduPlatform.API
-dotnet user-secrets set "OpenAI:ApiKey" "votre-clé-openai"
-dotnet user-secrets set "Jwt:Key" "votre-clé-jwt-32-caractères-minimum"
+dotnet user-secrets set "OpenAI:ApiKey" "votre-clï¿½-openai"
+dotnet user-secrets set "Jwt:Key" "votre-clï¿½-jwt-32-caractï¿½res-minimum"
 
-# 6. La stack complète est maintenant démarrée
+# 6. La stack complï¿½te est maintenant dï¿½marrï¿½e
 
 # Web: http://localhost:5297
 # API: http://localhost:5053
 ```
 
-Pour le mode développement sans Docker API/Web :
+Pour le mode dï¿½veloppement sans Docker API/Web :
 
 ```powershell
 # API
@@ -116,11 +116,11 @@ cd EduPlatform.Web
 dotnet run
 ```
 
-**Voir le [Guide de Démarrage Rapide](docs/QUICK_START.md) pour plus de détails.**
+**Voir le [Guide de Dï¿½marrage Rapide](docs/QUICK_START.md) pour plus de dï¿½tails.**
 
-#### ?? Méthode Manuelle
+#### ?? Mï¿½thode Manuelle
 
-1. **Démarrer l'infrastructure Docker**
+1. **Dï¿½marrer l'infrastructure Docker**
    ```bash
    docker-compose up -d
    ```
@@ -142,22 +142,22 @@ dotnet run
 
 4. **Configurer SQL Server**
    ```bash
-   # Docker recommandé : SQL Server est créé par docker-compose
+   # Docker recommandï¿½ : SQL Server est crï¿½ï¿½ par docker-compose
    $env:SQLSERVER_SA_PASSWORD = "Choisir-Un-MotDePasse!Sql2026"
    docker compose up -d
 
    # Mode local Windows uniquement
    dotnet ef database update --project EduPlatform.Data --startup-project EduPlatform.API
    
-   # Insérer les données de test (optionnel)
-   # Exécuter scripts/sqlserver/seed-data.sql dans SSMS
+   # Insï¿½rer les donnï¿½es de test (optionnel)
+   # Exï¿½cuter scripts/sqlserver/seed-data.sql dans SSMS
    ```
 
 5. **Configurer les secrets**
    ```bash
    cd EduPlatform.API
-   dotnet user-secrets set "OpenAI:ApiKey" "votre-clé-openai"
-   dotnet user-secrets set "Jwt:Key" "votre-clé-jwt-32-caractères-minimum"
+   dotnet user-secrets set "OpenAI:ApiKey" "votre-clï¿½-openai"
+   dotnet user-secrets set "Jwt:Key" "votre-clï¿½-jwt-32-caractï¿½res-minimum"
    ```
 
 6. **Lancer l'application**
@@ -174,64 +174,69 @@ dotnet run
    dotnet run
    ```
 
-7. **Accéder à l'application**
+7. **Accï¿½der ï¿½ l'application**
    - Frontend: https://localhost:7286
    - API: https://localhost:7194
    - Swagger: https://localhost:7194/swagger
 
-**Comptes de test** (après seed data):
+**Comptes de test** (aprï¿½s seed data):
 - Admin: admin@eduplatform.com / Admin123!
 - Instructeur: instructor@eduplatform.com / Instructor123!
-- Étudiant: student@eduplatform.com / Student123!
+- ï¿½tudiant: student@eduplatform.com / Student123!
 
 ## ?? Documentation
 
 ### Pour Commencer
-- ?? [**Guide de Démarrage Rapide**](docs/QUICK_START.md) - Commencez ici!
-- ?? [**Roadmap**](docs/ROADMAP.md) - Plan de développement complet
+- ?? [**Guide de Dï¿½marrage Rapide**](docs/QUICK_START.md) - Commencez ici!
+- ?? [**Roadmap**](docs/ROADMAP.md) - Plan de dï¿½veloppement complet
 - ?? [**Statut de la Roadmap**](docs/ROADMAP_STATUS.md) - Progression actuelle
+- ?? [**Pistes d'amelioration UI/UX**](docs/IMPROVEMENTS.md) - Ecarts d'affichage identifies et priorises
+- ?? [**Taches restantes**](docs/REMAINING_TASKS.md) - Ce qu'il reste a faire
 
 ### Architecture et Technique
-- ??? [**Architecture Détaillée**](docs/ARCHITECTURE.md)
+- ??? [**Architecture Dï¿½taillï¿½e**](docs/ARCHITECTURE.md)
 - ?? [**API Documentation**](docs/API_DOCUMENTATION.md)
-- ?? [**Guide de Sécurité**](docs/SECURITY.md)
+- ?? [**Guide de Sï¿½curitï¿½**](docs/SECURITY.md)
 
 ### Infrastructure
 - ??? [**Configuration Cassandra**](docs/CASSANDRA_SETUP.md)
 - ? [**Configuration Kafka**](docs/KAFKA_SETUP.md)
 
-### Développement
+### Dï¿½veloppement
 - ?? [**Guide de Tests**](docs/TESTING.md)
-- ?? [**Guide de Déploiement**](docs/DEPLOYMENT.md)
+- ?? [**Guide de Dï¿½ploiement**](docs/DEPLOYMENT.md)
 
-## ?? Fonctionnalités Principales
+## ?? Fonctionnalitï¿½s Principales
 
-### ? Implémentées
+### ? Implï¿½mentï¿½es
 
 - ? Authentification JWT
 - ? Gestion des cours et modules
 - ? Inscription aux cours
 - ? Tests QCM
 - ? Chatbot IA (OpenAI)
-- ? Suivi des activités (Cassandra)
-- ? Événements temps réel (Kafka)
+- ? Suivi des activitï¿½s (Cassandra)
+- ? ï¿½vï¿½nements temps rï¿½el (Kafka)
 - ? Recommandations de cours (ML.NET)
 - ? Cache Redis
-- ? API REST complète
-- ? Espace d'apprentissage texte et vidéo
+- ? API REST complï¿½te
+- ? Espace d'apprentissage texte et vidï¿½o
 - ? Progression et historique des sessions utilisateur
 - ? Espace professeur et gestion des modules
 - ? Gestion des questions QCM et analytics
-- ? Dashboard administrateur et gestion des rôles
-- ? Healthcheck des dépendances
-- ? Déploiement Docker API/Web
+- ? Dashboard administrateur et gestion des rï¿½les
+- ? Healthcheck des dï¿½pendances
+- ? Dï¿½ploiement Docker API/Web
 - ? Notifications in-app
-- ? Certificat de réussite consultable
+- ? Certificat de rï¿½ussite consultable
 
-### ?? En Développement (voir ROADMAP.md)
+### ?? En Dï¿½veloppement (voir ROADMAP.md)
 
-- ?? Paiement réel
-- ?? Tests d'intégration complets
+- ?? Paiement reel *(gele - le paiement actuel est simule et ne doit pas servir en production)*
+- ?? Couverture de code : 47 % mesures, objectif 80 %
+- ?? Stockage objet / CDN et transcodage des medias
+- ?? Certificat TLS de production (les certificats nginx actuels sont auto-signes)
+- ?? Ameliorations d'affichage - voir [IMPROVEMENTS.md](docs/IMPROVEMENTS.md)
 
 ## ?? Tests
 
@@ -242,52 +247,52 @@ dotnet test
 # Tests unitaires
 dotnet test --filter Category=Unit
 
-# Tests d'intégration
+# Tests d'intï¿½gration
 dotnet test --filter Category=Integration
 ```
 
-## ?? Sécurité
+## ?? Sï¿½curitï¿½
 
 - JWT pour l'authentification
 - HTTPS obligatoire en production
-- Validation des entrées utilisateur
-- Protection CORS configurée
-- Secrets gérés via User Secrets / Azure Key Vault
+- Validation des entrï¿½es utilisateur
+- Protection CORS configurï¿½e
+- Secrets gï¿½rï¿½s via User Secrets / Azure Key Vault
 
-?? **Important**: Ne jamais commiter les clés API dans le code source!
+?? **Important**: Ne jamais commiter les clï¿½s API dans le code source!
 
 ## ?? Monitoring
 
 - Health checks: `https://localhost:7194/health`
 - Metrics: Configuration Prometheus disponible
-- Logs: Serilog (à configurer)
+- Logs: Serilog (ï¿½ configurer)
 
 ## ?? Contribution
 
 1. Fork le projet
-2. Créer une branche (`git checkout -b feature/nouvelle-fonctionnalite`)
-3. Commit les changements (`git commit -m 'Ajout nouvelle fonctionnalité'`)
+2. Crï¿½er une branche (`git checkout -b feature/nouvelle-fonctionnalite`)
+3. Commit les changements (`git commit -m 'Ajout nouvelle fonctionnalitï¿½'`)
 4. Push vers la branche (`git push origin feature/nouvelle-fonctionnalite`)
 5. Ouvrir une Pull Request
 
 ## ?? Licence
 
-Ce projet est sous licence MIT - voir le fichier [LICENSE](LICENSE) pour plus de détails.
+Ce projet est sous licence MIT - voir le fichier [LICENSE](LICENSE) pour plus de dï¿½tails.
 
 ## ?? Auteurs
 
-- Votre Nom - Développeur Principal
+- Votre Nom - Dï¿½veloppeur Principal
 
 ## ?? Remerciements
 
 - OpenAI pour l'API GPT
 - Apache Software Foundation (Kafka, Cassandra)
 - Microsoft (.NET, ML.NET)
-- La communauté open source
+- La communautï¿½ open source
 
 ## ?? Support
 
-Pour toute question ou problème:
+Pour toute question ou problï¿½me:
 - Ouvrir une issue sur GitHub
 - Email: support@eduplatform.com
 - Documentation: https://docs.eduplatform.com

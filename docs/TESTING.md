@@ -2,11 +2,11 @@
 
 ## Overview
 
-Ce document décrit la stratégie de tests pour EduPlatform, incluant les tests unitaires, d'intégration et end-to-end.
+Ce document dï¿½crit la stratï¿½gie de tests pour EduPlatform, incluant les tests unitaires, d'intï¿½gration et end-to-end.
 
 ## Smoke E2E public
 
-Le smoke test Playwright couvre le catalogue public, la recherche, les filtres, l'ouverture du détail d'un cours, la connexion étudiant avec accès à la progression, les accès instructeur et administrateur, la validation d'une création de cours vide et le cycle persistant création/archivage/suppression avec séparation des rôles.
+Le smoke test Playwright couvre le catalogue public, la recherche, les filtres, l'ouverture du dï¿½tail d'un cours, la connexion ï¿½tudiant avec accï¿½s ï¿½ la progression, les accï¿½s instructeur et administrateur, la validation d'une crï¿½ation de cours vide et le cycle persistant crï¿½ation/archivage/suppression avec sï¿½paration des rï¿½les.
 
 ```powershell
 Push-Location scripts/e2e
@@ -16,50 +16,87 @@ npm test
 Pop-Location
 ```
 
-La cible par défaut est `http://localhost:5297`. Pour tester une autre instance :
+`npm test` execute les deux suites. Pour n'en lancer qu'une :
+
+```powershell
+npm run test:smoke        # parcours public, etudiant, instructeur, admin
+npm run test:publication  # cycle publication + moderation
+```
+
+La cible par dï¿½faut est `http://localhost:5297`. Pour tester une autre instance :
 
 ```powershell
 $env:EDUPLATFORM_BASE_URL = "http://localhost:5297"
+$env:EDUPLATFORM_API_URL = "http://localhost:5053"
 ```
+
+## E2E publication et moderation (donnees persistantes)
+
+`scripts/e2e/publication-moderation.mjs` deroule le cycle de vie complet d'un cours sur des
+donnees reellement ecrites en base, puis nettoie tout ce qu'il a cree.
+
+Etapes couvertes :
+
+1. Creation d'un cours en brouillon par l'instructeur (statut `Draft`, non publie)
+2. Soumission refusee tant que le cours n'a aucun module (400)
+3. Ajout d'un module, puis soumission a la validation (statut `PendingReview`)
+4. Presence du cours dans la file `/api/courses/pending` cote admin
+5. Rejet sans motif refuse (400), puis rejet motive (statut `Rejected`, motif persiste)
+6. Resoumission apres correction, motif de rejet efface
+7. Approbation interdite a l'instructeur (403), puis approbation admin (statut `Approved`, publie)
+8. Visibilite du cours publie dans le catalogue public anonyme **et** dans l'interface web
+9. Inscription d'un apprenant, depot d'un avis note
+10. Auto-signalement refuse (400), signalement par un second inscrit (204), doublon refuse (409)
+11. Remontee de l'avis et de son motif dans `/api/admin/reviews`
+12. Suppression de l'avis par l'admin (204), disparition cote moderation et cote cours
+13. Depublication : le cours sort du catalogue public
+14. Nettoyage garanti (bloc `finally`) : archivage puis suppression physique du cours
+
+Le test utilise les comptes de demonstration (`instructor@`, `admin@`, `student@`) et exige donc
+une stack demarree avec `SEED_DEMO_DATA=true`. Les identifiants crees sont suffixes par un
+horodatage, deux executions concurrentes ne se marchent pas dessus.
+
+Les deux suites sont executees par le job `compose-integration` de la CI contre une stack
+Docker ephemere.
 
 ---
 
-## ?? Stratégie de Tests
+## ?? Stratï¿½gie de Tests
 
 ### Pyramide de Tests
 
 ```
                     /\
                    /  \
-                  / E2E \          ? Peu nombreux, scénarios critiques
+                  / E2E \          ? Peu nombreux, scï¿½narios critiques
                  /--------\
                 /          \
-               / Integration \    ? Modérément nombreux, interactions
+               / Integration \    ? Modï¿½rï¿½ment nombreux, interactions
               /--------------\
              /                \
-            /   Unit Tests     \  ? Très nombreux, logique métier
+            /   Unit Tests     \  ? Trï¿½s nombreux, logique mï¿½tier
            /____________________\
 ```
 
 **Objectifs de couverture:**
 - Tests unitaires: 80%+ du code
-- Tests d'intégration: Endpoints critiques
+- Tests d'intï¿½gration: Endpoints critiques
 - Tests E2E: Parcours utilisateur principaux
 
 ---
 
 ## ?? Configuration des Projets de Tests
 
-### 1. Créer les projets de tests
+### 1. Crï¿½er les projets de tests
 
 ```bash
 # Tests unitaires
 dotnet new xunit -n EduPlatform.Tests.Unit -o EduPlatform.Tests.Unit
 
-# Tests d'intégration
+# Tests d'intï¿½gration
 dotnet new xunit -n EduPlatform.Tests.Integration -o EduPlatform.Tests.Integration
 
-# Ajouter à la solution
+# Ajouter ï¿½ la solution
 dotnet sln add EduPlatform.Tests.Unit
 dotnet sln add EduPlatform.Tests.Integration
 ```
@@ -99,7 +136,7 @@ dotnet sln add EduPlatform.Tests.Integration
 </Project>
 ```
 
-**Tests d'Intégration (EduPlatform.Tests.Integration.csproj):**
+**Tests d'Intï¿½gration (EduPlatform.Tests.Integration.csproj):**
 
 ```xml
 <Project Sdk="Microsoft.NET.Sdk">
@@ -406,7 +443,7 @@ namespace EduPlatform.Tests.Unit.Controllers
 
 ---
 
-## ?? Tests d'Intégration
+## ?? Tests d'Intï¿½gration
 
 ### Structure du projet
 
@@ -422,7 +459,7 @@ EduPlatform.Tests.Integration/
     ??? HttpClientExtensions.cs
 ```
 
-### Exemple de tests d'intégration
+### Exemple de tests d'intï¿½gration
 
 #### **WebApplicationFactoryFixture.cs**
 
@@ -625,11 +662,11 @@ namespace EduPlatform.Tests.E2E
             // Fill registration form
             await Page.FillAsync("input[type=email]", "e2etest@example.com");
             await Page.FillAsync("input[type=password]", "SecurePassword123!");
-            await Page.FillAsync("input[placeholder*='Prénom']", "E2E");
+            await Page.FillAsync("input[placeholder*='Prï¿½nom']", "E2E");
             await Page.FillAsync("input[placeholder*='Nom']", "Test");
 
             // Submit
-            await Page.ClickAsync("button:has-text('Créer un compte')");
+            await Page.ClickAsync("button:has-text('Crï¿½er un compte')");
 
             // Should be redirected to courses
             await Expect(Page).ToHaveURLAsync(new Regex(".*courses.*"));
@@ -641,7 +678,7 @@ namespace EduPlatform.Tests.E2E
             await Page.ClickAsync("button:has-text('S\\'inscrire')");
 
             // Should see success message
-            await Expect(Page.Locator("text=Inscription réussie")).ToBeVisibleAsync();
+            await Expect(Page.Locator("text=Inscription rï¿½ussie")).ToBeVisibleAsync();
         }
     }
 }
@@ -649,36 +686,49 @@ namespace EduPlatform.Tests.E2E
 
 ---
 
-## ?? Couverture de Code
+## Couverture de Code
 
-### Installer coverlet
+La couverture est collectee par Coverlet et pilotee par `EduPlatform.Tests/coverlet.runsettings`,
+qui restreint la mesure au code metier (API, Core, Data, BigData) et exclut les migrations EF,
+les DTO et le code genere.
+
+### Executer les tests avec couverture
 
 ```bash
-dotnet add package coverlet.collector
+dotnet test EduPlatform.Tests/EduPlatform.Tests.csproj --settings EduPlatform.Tests/coverlet.runsettings --collect:"XPlat Code Coverage" --results-directory TestResults
 ```
 
-### Générer un rapport de couverture
+Les rapports sont ecrits dans `TestResults/<guid>/coverage.cobertura.xml` et `coverage.opencover.xml`.
+
+### Generer le rapport HTML
 
 ```bash
-# Exécuter les tests avec couverture
-dotnet test /p:CollectCoverage=true /p:CoverletOutputFormat=opencover
-
-# Installer ReportGenerator
 dotnet tool install -g dotnet-reportgenerator-globaltool
 
-# Générer le rapport HTML
-reportgenerator \
-  -reports:EduPlatform.Tests.Unit/coverage.opencover.xml \
-  -targetdir:coverage-report \
-  -reporttypes:Html
+reportgenerator -reports:TestResults/**/coverage.cobertura.xml -targetdir:TestResults/coverage-report -reporttypes:"Html;TextSummary"
 
-# Ouvrir le rapport
-start coverage-report/index.html
+start TestResults/coverage-report/index.html
 ```
+
+### Seuil applique en CI
+
+Le job `build-test` echoue si la couverture de lignes passe sous `COVERAGE_THRESHOLD`
+(defini en tete de `.github/workflows/ci.yml`). Il s agit d un **seuil-cliquet** : il ne doit
+jamais baisser. Quand la couverture progresse durablement, relever la valeur du meme montant
+dans le workflow, en un commit dedie.
+
+| Date | Lignes | Branches | Seuil CI |
+|------|--------|----------|----------|
+| 2026-09-29 | 47,1 % | 25,0 % | 45 % |
+
+Couverture par assembly au 2026-09-29 (build Release, celui mesure en CI) :
+Core 96,1 %, Data 66,0 %, API 7,5 %, BigData 0 %.
+L objectif roadmap reste **80 %** ; l ecart principal porte sur les controllers de
+`EduPlatform.API` et sur `EduPlatform.BigData`.
 
 ---
 
-## ?? Exécution des Tests
+## ?? Exï¿½cution des Tests
 
 ### Commandes utiles
 
@@ -689,22 +739,22 @@ dotnet test
 # Tests unitaires uniquement
 dotnet test --filter Category=Unit
 
-# Tests d'intégration uniquement
+# Tests d'intï¿½gration uniquement
 dotnet test --filter Category=Integration
 
-# Exécuter avec logs détaillés
+# Exï¿½cuter avec logs dï¿½taillï¿½s
 dotnet test --logger "console;verbosity=detailed"
 
-# Tests en parallèle
+# Tests en parallï¿½le
 dotnet test --parallel
 
-# Un test spécifique
+# Un test spï¿½cifique
 dotnet test --filter "FullyQualifiedName~AuthServiceTests.HashPassword"
 ```
 
 ### CI/CD avec GitHub Actions
 
-Créer `.github/workflows/tests.yml`:
+Crï¿½er `.github/workflows/tests.yml`:
 
 ```yaml
 name: Tests
@@ -779,11 +829,11 @@ public void Example()
 ```
 
 ### 3. Isolation des tests
-- Chaque test doit être indépendant
-- Utiliser des bases de données distinctes
-- Nettoyer après chaque test
+- Chaque test doit ï¿½tre indï¿½pendant
+- Utiliser des bases de donnï¿½es distinctes
+- Nettoyer aprï¿½s chaque test
 
-### 4. Tests paramétrés
+### 4. Tests paramï¿½trï¿½s
 ```csharp
 [Theory]
 [InlineData("", false)]
@@ -803,10 +853,10 @@ public void ValidateEmail_ShouldReturnExpectedResult(string email, bool expected
 - [ ] Tests unitaires pour tous les services
 - [ ] Tests unitaires pour tous les controllers
 - [ ] Tests unitaires pour tous les repositories
-- [ ] Tests d'intégration pour les endpoints API
+- [ ] Tests d'intï¿½gration pour les endpoints API
 - [ ] Tests E2E pour les parcours utilisateur critiques
 - [ ] Couverture de code > 80%
 - [ ] Tests dans la CI/CD pipeline
-- [ ] Documentation des scénarios de test
+- [ ] Documentation des scï¿½narios de test
 
-**Dernière mise à jour:** 2026-08-24
+**Derniï¿½re mise ï¿½ jour:** 2026-08-24

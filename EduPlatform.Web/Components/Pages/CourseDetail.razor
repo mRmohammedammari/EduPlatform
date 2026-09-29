@@ -3,120 +3,105 @@
 @inject IHttpClientFactory HttpClientFactory
 @inject NavigationManager Nav
 @inject EduPlatform.Web.Services.AuthStateService AuthState
+@using System.Globalization
 
 @if (Course != null)
 {
+    <PageTitle>@Course.Title - EduPlatform</PageTitle>
+
     <div class="course-detail-container">
+
+        @* --- 1. En-tete : ce qu'est le cours, sa note, son volume --- *@
         <div class="course-hero-card">
-            <span class="badge">@Course.Level</span>
-            <h1>@Course.Title</h1>
-            <p>@Course.Description</p>
-            <div class="course-meta">
-                <span>@Course.DurationMinutes min</span>
-                <span>@Course.Category</span>
+            <div class="course-hero-copy">
+                <span class="badge">@Course.Level</span>
+                <h1>@Course.Title</h1>
+                <p>@Course.Description</p>
+
+                <div class="course-meta">
+                    @if (Reviews is { TotalReviews: > 0 })
+                    {
+                        <span class="course-meta-rating">
+                            <StarRating Rating="@Reviews.AverageRating" ReviewCount="@Reviews.TotalReviews" />
+                            <strong>@Reviews.AverageRating.ToString("0.0", CultureInfo.InvariantCulture)</strong>
+                            <a href="#avis">(@Reviews.TotalReviews avis)</a>
+                        </span>
+                    }
+                    <span>@FormatDuration(Course.DurationMinutes)</span>
+                    <span>@Course.Modules.Count module@(Course.Modules.Count > 1 ? "s" : "")</span>
+                    <span>@Course.Category</span>
+                </div>
             </div>
+
+            <CourseCover Title="@Course.Title"
+                         Category="@Course.Category"
+                         ThumbnailUrl="@Course.ThumbnailUrl"
+                         CssClass="course-hero-cover" />
         </div>
 
-        @if (Reviews is not null)
-        {
-            <div class="course-section course-reviews">
-                <div class="reviews-heading">
-                    <h2>Avis des apprenants</h2>
-                    <strong><StarRating Rating="@Reviews.AverageRating" /> @Reviews.AverageRating.ToString("0.0")</strong>
-                    <span>(@Reviews.TotalReviews avis)</span>
-                </div>
-                @if (IsEnrolled && !IsPreview)
-                {
-                    <div class="review-form">
-                        <select @bind="ReviewRating">
-                            <option value="0">Votre note</option>
-                            <option value="5">5 - Excellent</option>
-                            <option value="4">4 - Très bien</option>
-                            <option value="3">3 - Bien</option>
-                            <option value="2">2 - À améliorer</option>
-                            <option value="1">1 - Décevant</option>
-                        </select>
-                        <textarea @bind="ReviewComment" rows="3" placeholder="Votre commentaire"></textarea>
-                        <button class="btn-secondary" @onclick="SubmitReview">Publier mon avis</button>
-                    </div>
-                }
-                @if (!string.IsNullOrWhiteSpace(ReviewMessage))
-                {
-                    <div class="alert-error">@ReviewMessage</div>
-                }
-                @foreach (var review in Reviews.Reviews)
-                {
-                    <div class="review-item">
-                        <strong>@review.UserName</strong>
-                        <StarRating Rating="@review.Rating" />
-                        <small>@review.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")</small>
-                        <p>@review.Comment</p>
-                        @if (IsEnrolled && !IsPreview)
-                        {
-                            @if (ReportingReviewId == review.Id)
-                            {
-                                <div class="review-report-form">
-                                    <textarea @bind="ReportReason" rows="2" placeholder="Pourquoi signalez-vous cet avis ?"></textarea>
-                                    <button class="btn-secondary btn-small" @onclick="ReportReview">Envoyer le signalement</button>
-                                    <button class="btn-secondary btn-small" @onclick="CancelReport">Annuler</button>
-                                </div>
-                            }
-                            else
-                            {
-                                <button class="btn-secondary btn-small" @onclick="() => StartReport(review.Id)">Signaler</button>
-                            }
-                        }
-                    </div>
-                }
-            </div>
-        }
-
+        @* --- 2. Bandeaux d'etat --- *@
         @if (IsPreview)
         {
             <div class="preview-banner">
                 Prévisualisation instructeur : ce cours n'est pas présenté comme une inscription apprenant.
             </div>
         }
-
-        @if (IsEnrolled || IsPreview)
+        else if (IsEnrolled)
         {
-            @if (IsEnrolled)
-            {
-                <div class="enrolled-banner">
-                    Vous êtes inscrit à ce cours (Plan : @EnrolledPlan)
-                </div>
-            }
+            <div class="enrolled-banner">
+                Vous êtes inscrit à ce cours@(string.IsNullOrWhiteSpace(EnrolledPlan) ? "" : $" (Plan : {EnrolledPlan})")
+            </div>
+        }
 
-            <div class="course-section">
-                <h2>Modules du cours</h2>
-                @if (Course.Modules != null && Course.Modules.Any())
-                {
-                    <ul class="modules-list">
-                        @foreach (var module in Course.Modules)
-                        {
-                            <li class="module-item">
-                                <span>@module.Title</span>
-                                <span>@module.DurationMinutes min</span>
-                            </li>
-                        }
-                    </ul>
-                }
-                else
-                {
-                    <p>Aucun module disponible.</p>
-                }
+        @* --- 3. Programme : desormais visible AVANT les avis, et aussi pour les
+               visiteurs non inscrits. C'est l'information qui declenche l'inscription ;
+               elle etait auparavant reservee aux inscrits. --- *@
+        <div class="course-section course-syllabus">
+            <div class="section-title-row">
+                <h2>Programme du cours</h2>
+                <span class="syllabus-summary">
+                    @Course.Modules.Count module@(Course.Modules.Count > 1 ? "s" : "") &middot; @FormatDuration(Course.DurationMinutes)
+                </span>
             </div>
 
-            @if (IsEnrolled)
+            @if (Course.Modules.Any())
             {
-                <div class="course-section">
-                    <button class="btn-primary" @onclick="GoToLearning">Commencer le cours</button>
-                    <button class="btn-primary" @onclick="GoToTest">Passer le test</button>
-                    <button class="btn-secondary" @onclick="GoToCertificate">Certificat</button>
-                </div>
+                <ol class="modules-list">
+                    @foreach (var module in Course.Modules.OrderBy(m => m.Order))
+                    {
+                        <li class="module-item @(CanOpenModules ? "is-open" : "is-locked")">
+                            <span class="module-item-index">@module.Order</span>
+                            <span class="module-item-title">@module.Title</span>
+                            <span class="module-item-duration">@FormatDuration(module.DurationMinutes)</span>
+                            @if (!CanOpenModules)
+                            {
+                                <span class="module-item-lock" title="Accessible après inscription" aria-label="Accessible après inscription">&#128274;</span>
+                            }
+                        </li>
+                    }
+                </ol>
+
+                @if (!CanOpenModules)
+                {
+                    <p class="syllabus-hint">Inscrivez-vous pour accéder au contenu des modules.</p>
+                }
             }
+            else
+            {
+                <p>Le programme de ce cours n'est pas encore publié.</p>
+            }
+        </div>
+
+        @* --- 4. Action : apprendre si inscrit, sinon choisir un plan --- *@
+        @if (IsEnrolled && !IsPreview)
+        {
+            <div class="course-section course-actions">
+                <button class="btn-primary" @onclick="GoToLearning">Commencer le cours</button>
+                <button class="btn-primary" @onclick="GoToTest">Passer le test</button>
+                <button class="btn-secondary" @onclick="GoToCertificate">Certificat</button>
+            </div>
         }
-        else
+        else if (!IsPreview)
         {
             @if (!ShowPayment)
             {
@@ -228,17 +213,124 @@
                 </div>
             }
         }
+
+        @* --- 5. Avis : deplaces en fin de page. Ils etaient affiches avant meme
+               le programme, donc avant que le visiteur sache ce que contient le cours. --- *@
+        @if (Reviews is not null)
+        {
+            <div class="course-section course-reviews" id="avis">
+                <div class="reviews-heading">
+                    <h2>Avis des apprenants</h2>
+                    @if (Reviews.TotalReviews > 0)
+                    {
+                        <strong>
+                            <StarRating Rating="@Reviews.AverageRating" ReviewCount="@Reviews.TotalReviews" />
+                            @Reviews.AverageRating.ToString("0.0", CultureInfo.InvariantCulture)
+                        </strong>
+                        <span>(@Reviews.TotalReviews avis)</span>
+                    }
+                </div>
+
+                @if (Reviews.TotalReviews > 0)
+                {
+                    @* Distribution des notes : la roadmap la prevoyait, seule la moyenne etait affichee. *@
+                    <div class="rating-distribution">
+                        @for (var star = 5; star >= 1; star--)
+                        {
+                            var count = Reviews.Reviews.Count(review => review.Rating == star);
+                            var percent = Reviews.TotalReviews == 0 ? 0 : count * 100 / Reviews.TotalReviews;
+                            <div class="rating-bar-row">
+                                <span class="rating-bar-label">@star &#9733;</span>
+                                <span class="rating-bar" role="img" aria-label="@($"{star} étoiles : {count} avis")">
+                                    <span class="rating-bar-fill" style="width: @percent%"></span>
+                                </span>
+                                <span class="rating-bar-count">@count</span>
+                            </div>
+                        }
+                    </div>
+                }
+
+                @if (IsEnrolled && !IsPreview)
+                {
+                    <div class="review-form">
+                        <span class="review-form-label">Votre note</span>
+                        @* Etoiles cliquables : la note passait par un <select>, peu engageant. *@
+                        <div class="review-rating-input" role="radiogroup" aria-label="Votre note">
+                            @for (var star = 1; star <= 5; star++)
+                            {
+                                var value = star;
+                                <button type="button"
+                                        class="review-star-button @(ReviewRating >= value ? "is-active" : "")"
+                                        role="radio"
+                                        aria-checked="@(ReviewRating == value)"
+                                        aria-label="@($"{value} sur 5")"
+                                        @onclick="() => ReviewRating = value">
+                                    @(ReviewRating >= value ? "?" : "?")
+                                </button>
+                            }
+                        </div>
+                        <textarea @bind="ReviewComment" rows="3" placeholder="Votre commentaire" aria-label="Votre commentaire"></textarea>
+                        <button class="btn-secondary" @onclick="SubmitReview" disabled="@(ReviewRating < 1)">Publier mon avis</button>
+                    </div>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(ReviewMessage))
+                {
+                    <div class="alert-error" role="alert">@ReviewMessage</div>
+                }
+
+                @if (Reviews.TotalReviews == 0)
+                {
+                    <p class="reviews-empty">Aucun avis pour le moment. Soyez le premier à partager votre retour.</p>
+                }
+
+                @foreach (var review in VisibleReviews)
+                {
+                    <div class="review-item">
+                        <strong>@review.UserName</strong>
+                        <StarRating Rating="@review.Rating" />
+                        <small>@review.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")</small>
+                        <p>@review.Comment</p>
+                        @if (IsEnrolled && !IsPreview)
+                        {
+                            @if (ReportingReviewId == review.Id)
+                            {
+                                <div class="review-report-form">
+                                    <textarea @bind="ReportReason" rows="2" placeholder="Pourquoi signalez-vous cet avis ?" aria-label="Motif du signalement"></textarea>
+                                    <button class="btn-secondary btn-small" @onclick="ReportReview">Envoyer le signalement</button>
+                                    <button class="btn-secondary btn-small" @onclick="CancelReport">Annuler</button>
+                                </div>
+                            }
+                            else
+                            {
+                                <button class="btn-secondary btn-small" @onclick="() => StartReport(review.Id)">Signaler</button>
+                            }
+                        }
+                    </div>
+                }
+
+                @* Les avis etaient tous rendus d'un bloc, sans limite. *@
+                @if (Reviews.Reviews.Count > VisibleReviewCount)
+                {
+                    <button class="btn-secondary" @onclick="ShowMoreReviews">
+                        Voir plus d'avis (@(Reviews.Reviews.Count - VisibleReviewCount) restants)
+                    </button>
+                }
+            </div>
+        }
     </div>
 }
 else if (IsLoading)
 {
-    <p>Chargement...</p>
+    <LoadingState Message="Chargement du cours..." />
 }
 else
 {
-    <p>Cours introuvable.</p>
+    <div class="course-detail-container">
+        <AlertMessage Message="Ce cours est introuvable ou n'est plus disponible." />
+        <button class="btn-primary" @onclick='() => Nav.NavigateTo("/explore")'>Retour au catalogue</button>
+    </div>
 }
-
 @code {
     [Parameter] public Guid CourseId { get; set; }
     private CourseDto? Course;
@@ -261,6 +353,32 @@ else
     private string ReviewMessage = string.Empty;
     private Guid? ReportingReviewId;
     private string ReportReason = string.Empty;
+
+    private const int ReviewPageSize = 5;
+    private int VisibleReviewCount = ReviewPageSize;
+
+    private IEnumerable<ReviewDto> VisibleReviews =>
+        (Reviews?.Reviews ?? new List<ReviewDto>()).Take(VisibleReviewCount);
+
+    private void ShowMoreReviews() => VisibleReviewCount += ReviewPageSize;
+
+    /// <summary>
+    /// Le contenu des modules n'est ouvrable que par un inscrit ou en previsualisation
+    /// instructeur. Le programme reste visible dans les deux cas, seul l'acces differe.
+    /// </summary>
+    private bool CanOpenModules => IsEnrolled || IsPreview;
+
+    private static string FormatDuration(int minutes)
+    {
+        if (minutes <= 0)
+            return "Durée à préciser";
+        if (minutes < 60)
+            return $"{minutes} min";
+
+        var hours = minutes / 60;
+        var rest = minutes % 60;
+        return rest == 0 ? $"{hours} h" : $"{hours} h {rest:00}";
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -323,13 +441,13 @@ else
             $"api/reviews/{ReportingReviewId}/report", new { reason = ReportReason });
         if (response.IsSuccessStatusCode)
         {
-            ReviewMessage = "Merci, votre signalement a �t� transmis aux administrateurs.";
+            ReviewMessage = "Merci, votre signalement a été transmis aux administrateurs.";
             CancelReport();
         }
         else
         {
             var body = await response.Content.ReadFromJsonAsync<Dictionary<string, string>>();
-            ReviewMessage = body?.GetValueOrDefault("message") ?? "Le signalement n'a pas pu �tre envoy�.";
+            ReviewMessage = body?.GetValueOrDefault("message") ?? "Le signalement n'a pas pu être envoyé.";
         }
     }
 
@@ -368,7 +486,7 @@ else
 
         if (SelectedPlan != "Free" && (string.IsNullOrWhiteSpace(CardNumber) || CardNumber.Replace(" ", "").Length < 16))
         {
-            PaymentError = "Veuillez entrer un num�ro de carte valide.";
+            PaymentError = "Veuillez entrer un numéro de carte valide.";
             return;
         }
 
@@ -403,7 +521,7 @@ else
         }
         catch
         {
-            PaymentError = "Erreur de connexion. R�essayez.";
+            PaymentError = "Erreur de connexion. Réessayez.";
         }
         finally
         {
@@ -424,6 +542,7 @@ else
         public string Level { get; set; } = string.Empty;
         public int DurationMinutes { get; set; }
         public decimal Price { get; set; }
+        public string ThumbnailUrl { get; set; } = string.Empty;
         public List<ModuleDto> Modules { get; set; } = new();
     }
 
@@ -432,6 +551,7 @@ else
         public Guid Id { get; set; }
         public string Title { get; set; } = string.Empty;
         public int DurationMinutes { get; set; }
+        public int Order { get; set; }
     }
 
     private class ReviewSummary

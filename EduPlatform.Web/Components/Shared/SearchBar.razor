@@ -1,6 +1,20 @@
-<form class="public-search" @onsubmit="Submit" @onsubmit:preventDefault="true">
-    <span aria-hidden="true">??</span>
-    <input value="@CurrentValue" @oninput="OnInput" @onkeydown="OnKeyDown" placeholder="@Placeholder" aria-label="@AriaLabel" />
+@*
+    Champ de recherche reutilisable. L'icone etait perdue a l'encodage ("??") :
+    elle passe par une reference de caractere HTML.
+*@
+
+<form class="public-search @CssClass" @onsubmit="Submit" @onsubmit:preventDefault="true" role="search">
+    <span class="search-icon" aria-hidden="true">&#128269;</span>
+    <input value="@CurrentValue"
+           @oninput="OnInput"
+           @onkeydown="OnKeyDown"
+           type="search"
+           placeholder="@Placeholder"
+           aria-label="@AriaLabel" />
+    @if (!string.IsNullOrEmpty(CurrentValue))
+    {
+        <button type="button" class="search-clear" aria-label="Effacer la recherche" @onclick="Clear">&times;</button>
+    }
     <button type="submit" class="search-submit" aria-label="Lancer la recherche">Rechercher</button>
 </form>
 
@@ -10,6 +24,7 @@
     [Parameter] public EventCallback<string> Submitted { get; set; }
     [Parameter] public string Placeholder { get; set; } = "Rechercher";
     [Parameter] public string AriaLabel { get; set; } = "Rechercher";
+    [Parameter] public string CssClass { get; set; } = string.Empty;
 
     private string CurrentValue { get; set; } = string.Empty;
 
@@ -29,6 +44,13 @@
     {
         if (args.Key == "Enter")
             await Submit();
+    }
+
+    private async Task Clear()
+    {
+        CurrentValue = string.Empty;
+        await ValueChanged.InvokeAsync(CurrentValue);
+        await Submitted.InvokeAsync(CurrentValue);
     }
 
     private Task Submit() => Submitted.InvokeAsync(CurrentValue.Trim());

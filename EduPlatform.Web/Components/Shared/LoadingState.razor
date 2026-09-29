@@ -1,4 +1,12 @@
-<p class="@CssClass">? @Message</p>
+@*
+    Indicateur de chargement. Le glyphe precedent etait perdu a l'encodage et
+    s'affichait en "?" ; il est remplace par un spinner CSS.
+*@
+
+<p class="@CssClass" role="status" aria-live="polite">
+    <span class="loading-spinner" aria-hidden="true"></span>
+    @Message
+</p>
 
 @code {
     [Parameter] public string Message { get; set; } = "Chargement...";

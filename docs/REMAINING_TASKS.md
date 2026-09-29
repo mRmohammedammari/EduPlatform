@@ -19,8 +19,8 @@
 - [x] Gestion des questions et reponses
 - [x] Publication des cours
 - [x] Archivage doux des cours
-- [x] Restauration des cours archivés
-- [x] Suppression physique contrôlée des cours archivés
+- [x] Restauration des cours archivï¿½s
+- [x] Suppression physique contrï¿½lï¿½e des cours archivï¿½s
 
 ## Priorite 3 - Suivi et administration
 
@@ -36,24 +36,49 @@
 - [x] Tests unitaires de base
 - [x] Smoke tests d'integration API/Web
 - [x] Tests d'integration automatises avec environnement ephemere Docker
+- [x] Tests E2E de publication et moderation avec donnees persistantes
+      (`scripts/e2e/publication-moderation.mjs`, executes en CI)
+- [x] Mesure de la couverture de code (Coverlet + rapport CI + seuil-cliquet)
+- [ ] Porter la couverture de 47 % a 80 % (manque surtout les controllers `EduPlatform.API`
+      et `EduPlatform.BigData`)
 - [x] Healthchecks SQL Server, Cassandra, Redis et Kafka
 - [x] Logs structures et correlation par SessionId
 - [x] Retirer les secrets de `appsettings.json`
 - [x] Remplacer les cles JWT de developpement en production
 - [x] Cookie de session Secure en HTTPS
-- [x] HTTPS complet pour le déploiement public (reverse proxy Nginx + TLS)
+- [x] HTTPS complet pour le dï¿½ploiement public (reverse proxy Nginx + TLS)
 - [x] Gerer proprement les erreurs 401 et 403
 
 ## Priorite 5 - Mise en production
 
 - [x] Ajouter API et Web au `docker-compose.yml`
-- [x] SQL Server conteneurisé pour Docker
+- [x] SQL Server conteneurisï¿½ pour Docker
 - [x] Configurer les migrations au deploiement
 - [x] Configurer sauvegardes et restauration
 - [x] Pipeline CI/CD build, tests et images Docker
 - [x] Monitoring health et alertes webhook optionnelles
-- [ ] Remplacer le paiement simule par un fournisseur reel
-- [x] Certificat de réussite consultable
+- [ ] Remplacer le paiement simule par un fournisseur reel *(gele, decision produit)*
+- [x] Certificat de rï¿½ussite consultable
+- [ ] Certificat TLS emis par une autorite reconnue (les certificats nginx actuels sont
+      auto-signes, dev uniquement) - **necessite un nom de domaine public**
+- [ ] Retirer l'exposition directe des ports 5053 et 5297 en production
+- [ ] Stockage objet / CDN pour les medias (prealable au scale horizontal)
+
+## Priorite 6 - Qualite d'affichage
+
+Analyse detaillee et priorisation : [IMPROVEMENTS.md](IMPROVEMENTS.md).
+
+- [ ] Assainir le HTML des modules rendu par `MarkupString` (XSS stocke) - **securite**
+- [ ] Passer l'integration YouTube sur `youtube-nocookie.com` - **RGPD**
+- [ ] Afficher `ThumbnailUrl` sur les cartes, le catalogue et la home
+- [ ] Afficher les notes et avis sur les cartes de cours
+- [ ] Categories de la page d'accueil depuis `CourseCategory` au lieu du code en dur
+- [ ] Retirer la statistique fictive Â« +42% Â» de la page d'accueil
+- [ ] Rapatrier les images Unsplash en local
+- [ ] Champ de recherche et pagination dans le catalogue
+- [ ] Deplacer le footer dans `MainLayout`
+- [ ] Pages CGU, confidentialite et contact
+- [ ] Reprise de lecture video et completion automatique a 90 %
 
 ## Deja realise
 

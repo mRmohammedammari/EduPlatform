@@ -13,6 +13,12 @@
     <main class="main-content">
         @Body
     </main>
+    @* Le footer vit ici et non dans Home.razor : il doit apparaitre sur tout le site.
+       Il reste masque dans l'espace applicatif, ou la navigation passe par la sidebar. *@
+    @if (IsPublicRoute)
+    {
+        <SiteFooter />
+    }
 </div>
 
 @code {

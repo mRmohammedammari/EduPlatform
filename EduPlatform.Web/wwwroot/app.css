@@ -1535,3 +1535,630 @@ a {
 @media (max-width: 560px) { .public-header { flex-wrap: wrap; gap: 10px 14px; padding: 12px 16px; } .public-nav-link, .public-teach { display: none; } .public-search { order: 5; flex-basis: 100%; } .public-login, .public-signup { padding: 8px 10px; } }
 @media (max-width: 720px) { .login-container { flex-direction: column; gap: 28px; padding: 42px 20px; align-items: stretch; } .auth-context { max-width: none; } .auth-context h1 { font-size: 36px; } .login-card { max-width: none; padding: 28px; } }
 @media (max-width: 560px) { .explore-hero { display: block; padding: 42px 20px 30px; } .explore-metrics { margin-top: 18px; } .explore-recommendations { margin-top: 8px; } .explore-toolbar { display: block; padding: 22px 20px 0; } .explore-toolbar .filters { margin-top: 12px; flex-wrap: wrap; } .CourseList-grid { grid-template-columns: 1fr; padding-left: 20px; padding-right: 20px; } .explore-empty { padding-left: 20px; padding-right: 20px; } }
+/* ============================================================
+   LOT 1 - Coherence d'affichage (2026-09-29)
+   Vignettes de cours, notes, accessibilite au clavier,
+   etats de chargement et filtres actifs du catalogue.
+   ============================================================ */
+
+/* --- Utilitaires --- */
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* --- Couverture de cours (vignette ou degrade) --- */
+.course-cover {
+    position: relative;
+    overflow: hidden;
+    background-color: #1f2937;
+}
+
+.course-cover img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform .35s ease;
+}
+
+.course-cover .course-cover-tag {
+    position: relative;
+    z-index: 1;
+}
+
+/* La vignette a besoin d'un voile : la pastille de categorie est en blanc. */
+.course-cover.has-thumbnail::before {
+    content: "";
+    position: absolute;
+    inset: 40% 0 0;
+    background: linear-gradient(transparent, rgba(11, 17, 29, .72));
+    z-index: 0;
+}
+
+.course-card:hover .course-cover img,
+.market-course-card:hover .course-cover img {
+    transform: scale(1.05);
+}
+
+/* Le bloc de couverture du catalogue garde sa hauteur et son ancrage bas. */
+.course-cover.course-card-image {
+    height: 180px;
+    display: flex;
+    align-items: flex-end;
+    padding: 16px;
+}
+
+.course-cover.market-course-cover {
+    width: 100%;
+    height: 150px;
+    display: block;
+}
+
+.course-cover.category-tile-cover {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+
+/* --- Notes sur les cartes --- */
+.course-card-rating {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin: 0 0 10px;
+    font-size: 13px;
+    color: #5d6777;
+}
+
+.course-card-rating strong {
+    color: #b45309;
+    font-size: 14px;
+}
+
+.course-card-noreview {
+    color: #8b95a5;
+    font-style: italic;
+    font-size: 12px;
+}
+
+.review-star.is-filled {
+    color: #d97706;
+}
+
+.review-star.is-empty {
+    color: #d8dee9;
+}
+
+/* --- Carte de cours : description bornee et pied de carte --- */
+.course-card-description {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    /* Sans cette borne, les cartes d'une meme grille avaient des hauteurs differentes. */
+    min-height: 3.6em;
+}
+
+.course-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+.course-card-facts {
+    display: flex;
+    gap: 12px;
+    color: #778091;
+    font-size: 12px;
+}
+
+.course-card-enrolled-tag {
+    background: #dcfce7;
+    color: #15803d;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    padding: 5px 9px;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+
+.course-card.is-enrolled {
+    border-color: #86efac;
+}
+
+/* --- Focus clavier : les cartes sont desormais atteignables au clavier --- */
+.course-card:focus-visible,
+.market-course-card:focus-visible,
+.category-tile:focus-visible,
+.filter-chip:focus-visible,
+.filter-chip-reset:focus-visible {
+    outline: 3px solid #6d28d9;
+    outline-offset: 3px;
+}
+
+/* --- Tuiles de categorie --- */
+.category-tile small {
+    position: absolute;
+    z-index: 1;
+    bottom: 48px;
+    left: 18px;
+    color: #e6eaf2;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+/* --- Recherche dans le catalogue --- */
+.public-search.explore-search {
+    flex: 0 1 300px;
+    max-width: 320px;
+    height: 44px;
+    border-radius: 12px;
+    background: #fff;
+    border-color: #dfe3ea;
+}
+
+.search-icon {
+    font-size: 16px;
+    line-height: 1;
+}
+
+.public-search .search-clear {
+    border: 0;
+    background: transparent;
+    color: #6b7280;
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 4px;
+}
+
+.public-search .search-clear:hover {
+    color: #111827;
+}
+
+/* --- Filtres actifs --- */
+.explore-active-filters {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 16px 32px 0;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    color: #5f6878;
+    font-size: 13px;
+}
+
+.filter-chip,
+.filter-chip-reset {
+    border: 1px solid #dfe3ea;
+    background: #fff;
+    border-radius: 999px;
+    padding: 6px 12px;
+    font-size: 12px;
+    color: #1f2937;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.filter-chip:hover {
+    border-color: #6d28d9;
+    color: #6d28d9;
+}
+
+.filter-chip-reset {
+    border-style: dashed;
+    color: #6d28d9;
+}
+
+/* --- Chargement --- */
+.loading-spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    margin-right: 8px;
+    vertical-align: -2px;
+    border: 2px solid #c7d2fe;
+    border-top-color: #6d28d9;
+    border-radius: 50%;
+    animation: eduplatform-spin .7s linear infinite;
+}
+
+@keyframes eduplatform-spin {
+    to { transform: rotate(360deg); }
+}
+
+.course-card-skeleton {
+    background: #fff;
+    border: 1px solid #e7ebf2;
+    border-radius: 18px;
+    overflow: hidden;
+    padding-bottom: 20px;
+}
+
+.skeleton-cover {
+    height: 180px;
+}
+
+.skeleton-line {
+    height: 12px;
+    border-radius: 6px;
+    margin: 14px 18px 0;
+}
+
+.skeleton-line-short {
+    width: 45%;
+}
+
+.skeleton-cover,
+.skeleton-line {
+    background: linear-gradient(90deg, #eef1f6 25%, #e2e7ef 37%, #eef1f6 63%);
+    background-size: 400% 100%;
+    animation: eduplatform-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes eduplatform-shimmer {
+    0% { background-position: 100% 50%; }
+    100% { background-position: 0 50%; }
+}
+
+/* Respecte le reglage systeme de reduction des animations. */
+@media (prefers-reduced-motion: reduce) {
+    .loading-spinner,
+    .skeleton-cover,
+    .skeleton-line,
+    .course-cover img,
+    .course-card,
+    .market-course-card {
+        animation: none !important;
+        transition: none !important;
+    }
+}
+
+/* --- Pied de page --- */
+.footer-legal {
+    grid-column: 1 / -1;
+    border-top: 1px solid rgba(255, 255, 255, .12);
+    padding-top: 18px;
+}
+
+.footer-legal small {
+    color: #8e97a6;
+    font-size: 12px;
+}
+
+/* --- Bande de confiance --- */
+.market-trust div b {
+    font-weight: 700;
+}
+
+@media (max-width: 900px) {
+    .explore-toolbar { flex-wrap: wrap; }
+    .explore-toolbar .filters { flex-wrap: wrap; width: 100%; }
+    .public-search.explore-search { flex-basis: 100%; max-width: none; }
+}
+
+
+/* ============================================================
+   LOT 3 - Parcours d'inscription (2026-09-29)
+   Detail du cours reorganise, programme visible, bandeau de reprise.
+   ============================================================ */
+
+/* --- En-tete du detail de cours --- */
+.course-hero-card {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 28px;
+    align-items: center;
+}
+
+.course-hero-copy {
+    min-width: 0;
+}
+
+.course-cover.course-hero-cover {
+    height: 220px;
+    border-radius: 16px;
+}
+
+.course-meta {
+    flex-wrap: wrap;
+}
+
+.course-meta-rating {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.course-meta-rating strong {
+    color: #b45309;
+}
+
+.course-meta-rating a {
+    color: #6d28d9;
+    font-size: 12px;
+}
+
+/* --- Programme --- */
+.section-title-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 14px;
+    margin-bottom: 14px;
+}
+
+.syllabus-summary {
+    color: #6b7280;
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+.course-syllabus .modules-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    counter-reset: none;
+}
+
+.course-syllabus .module-item {
+    display: grid;
+    grid-template-columns: 30px 1fr auto auto;
+    align-items: center;
+    gap: 12px;
+    padding: 13px 4px;
+    border-bottom: 1px solid #eef1f6;
+}
+
+.course-syllabus .module-item:last-child {
+    border-bottom: 0;
+}
+
+.module-item-index {
+    width: 26px;
+    height: 26px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: #f2ebff;
+    color: #6d28d9;
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.module-item-title {
+    color: #1b2232;
+    font-weight: 600;
+    min-width: 0;
+}
+
+.module-item-duration {
+    color: #6b7280;
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+/* Le module verrouille reste lisible : c'est l'argument d'inscription. */
+.module-item.is-locked .module-item-title {
+    color: #4b5563;
+}
+
+.module-item-lock {
+    font-size: 13px;
+    opacity: .55;
+}
+
+.syllabus-hint {
+    margin-top: 14px;
+    color: #6d28d9;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.course-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+/* --- Distribution des notes --- */
+.rating-distribution {
+    display: grid;
+    gap: 6px;
+    margin: 16px 0 22px;
+    max-width: 380px;
+}
+
+.rating-bar-row {
+    display: grid;
+    grid-template-columns: 40px 1fr 28px;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+    color: #5f6878;
+}
+
+.rating-bar-label {
+    color: #b45309;
+    white-space: nowrap;
+}
+
+.rating-bar {
+    display: block;
+    height: 8px;
+    border-radius: 4px;
+    background: #eef1f6;
+    overflow: hidden;
+}
+
+.rating-bar-fill {
+    display: block;
+    height: 100%;
+    background: #f59e0b;
+    border-radius: 4px;
+}
+
+.rating-bar-count {
+    text-align: right;
+}
+
+.reviews-empty {
+    color: #6b7280;
+    font-style: italic;
+}
+
+/* --- Saisie de la note en etoiles --- */
+.review-form-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: #374151;
+}
+
+.review-rating-input {
+    display: flex;
+    gap: 4px;
+}
+
+.review-star-button {
+    border: 0;
+    background: transparent;
+    font-size: 26px;
+    line-height: 1;
+    color: #d8dee9;
+    cursor: pointer;
+    padding: 0 2px;
+    transition: transform .12s ease, color .12s ease;
+}
+
+.review-star-button.is-active {
+    color: #d97706;
+}
+
+.review-star-button:hover {
+    transform: scale(1.15);
+}
+
+.review-star-button:focus-visible {
+    outline: 2px solid #6d28d9;
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
+/* --- Bandeau « reprendre » de la page d'accueil --- */
+.continue-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+}
+
+.continue-card {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    background: #fff;
+    border: 1px solid #e7ebf2;
+    border-radius: 16px;
+    padding: 12px;
+    cursor: pointer;
+    transition: transform .2s ease, box-shadow .2s ease;
+    text-align: left;
+}
+
+.continue-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 14px 26px rgba(15, 23, 42, .08);
+}
+
+.continue-card:focus-visible {
+    outline: 3px solid #6d28d9;
+    outline-offset: 3px;
+}
+
+.course-cover.continue-cover {
+    flex: 0 0 96px;
+    width: 96px;
+    height: 72px;
+    border-radius: 12px;
+}
+
+.continue-copy {
+    min-width: 0;
+    flex: 1;
+}
+
+.continue-copy h3 {
+    font-size: 15px;
+    line-height: 1.3;
+    color: #192335;
+    margin: 0 0 8px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.continue-progress {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.continue-bar {
+    display: block;
+    flex: 1;
+    height: 6px;
+    border-radius: 3px;
+    background: #eef1f6;
+    overflow: hidden;
+}
+
+.continue-bar-fill {
+    display: block;
+    height: 100%;
+    border-radius: 3px;
+    background: linear-gradient(90deg, #6d28d9, #22d3ee);
+}
+
+.continue-progress small {
+    color: #6b7280;
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+.continue-cta {
+    color: #6d28d9;
+    font-size: 12px;
+    font-weight: 800;
+}
+
+@media (max-width: 900px) {
+    .course-hero-card { grid-template-columns: 1fr; }
+    .course-cover.course-hero-cover { height: 180px; order: -1; }
+    .continue-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 560px) {
+    .continue-grid { grid-template-columns: 1fr; }
+    .course-syllabus .module-item { grid-template-columns: 26px 1fr auto; row-gap: 4px; }
+    .module-item-lock { display: none; }
+    .section-title-row { flex-direction: column; align-items: flex-start; gap: 4px; }
+}

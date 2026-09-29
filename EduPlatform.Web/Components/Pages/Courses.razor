@@ -1,4 +1,4 @@
-﻿@page "/courses"
+@page "/courses"
 @page "/explore"
 @rendermode InteractiveServer
 @inject IHttpClientFactory HttpClientFactory
@@ -6,10 +6,12 @@
 
 @using Microsoft.AspNetCore.Components
 
+<PageTitle>Explorer les cours - EduPlatform</PageTitle>
+
 <div class="explore-page">
     <section class="explore-hero">
         <div class="explore-copy">
-            <span class="eyebrow dark">EXPLORER EDUPlatform</span>
+            <span class="eyebrow dark">EXPLORER EDUPLATFORM</span>
             <h1>Un nouveau sujet à portée de clic.</h1>
             <p>Parcourez les formations publiées, filtrez par niveau et trouvez le prochain cours qui vous fera progresser.</p>
         </div>
@@ -28,9 +30,12 @@
     </section>
 
     <div class="explore-toolbar">
-        <strong>@VisibleCourses.Count() cours disponibles</strong>
+        <strong>@MatchCount cours disponibles</strong>
+
         <div class="filters">
-            <select class="explore-select" @bind="SelectedCategory" @bind:after="LoadCourseList">
+            @* L'ordre des <select> est contractuel : les tests E2E ciblent categorie puis niveau. *@
+            <select class="explore-select" aria-label="Filtrer par catégorie"
+                    @bind="SelectedCategory" @bind:after="ApplyFilters">
                 <option value="">Toutes les catégories</option>
                 @foreach (var category in AvailableCategories)
                 {
@@ -38,23 +43,71 @@
                 }
             </select>
 
-            <select class="explore-select" @bind="SelectedLevel" @bind:after="LoadCourseList">
+            <select class="explore-select" aria-label="Filtrer par niveau"
+                    @bind="SelectedLevel" @bind:after="ApplyFilters">
                 <option value="">Tous les niveaux</option>
                 <option value="Debutant">Débutant</option>
                 <option value="Intermediaire">Intermédiaire</option>
                 <option value="Avance">Avancé</option>
             </select>
+
+            <select class="explore-select" aria-label="Trier les résultats"
+                    @bind="SelectedSort" @bind:after="ApplyFilters">
+                <option value="recent">Les plus récents</option>
+                <option value="rating">Les mieux notés</option>
+                <option value="popular">Les plus suivis</option>
+                <option value="title">Titre (A-Z)</option>
+                <option value="duration-asc">Durée croissante</option>
+                <option value="duration-desc">Durée décroissante</option>
+            </select>
+
+            <SearchBar Value="@SearchTerm"
+                       Submitted="ApplySearch"
+                       Placeholder="Rechercher dans le catalogue"
+                       AriaLabel="Rechercher dans le catalogue"
+                       CssClass="explore-search" />
         </div>
     </div>
 
+    @if (ActiveFilters.Any())
+    {
+        <div class="explore-active-filters">
+            <span>Filtres actifs :</span>
+            @foreach (var filter in ActiveFilters)
+            {
+                <button type="button" class="filter-chip" @onclick="() => ClearFilter(filter.Key)">
+                    @filter.Value <span aria-hidden="true">&times;</span>
+                    <span class="visually-hidden">Retirer ce filtre</span>
+                </button>
+            }
+            <button type="button" class="filter-chip-reset" @onclick="ClearAllFilters">Tout effacer</button>
+        </div>
+    }
+
     @if (IsLoading)
     {
-        <LoadingState Message="Chargement des cours..." CssClass="explore-empty" />
+        <div class="CourseList-grid" aria-busy="true" aria-live="polite">
+            @* Squelettes plutot qu'un simple texte : la grille ne saute pas au chargement. *@
+            @for (var index = 0; index < 6; index++)
+            {
+                <div class="course-card-skeleton">
+                    <div class="skeleton-cover"></div>
+                    <div class="skeleton-line skeleton-line-short"></div>
+                    <div class="skeleton-line"></div>
+                    <div class="skeleton-line"></div>
+                </div>
+            }
+        </div>
     }
-    else if (VisibleCourses.Any())
+    else if (LoadFailed)
+    {
+        <AlertMessage Message="Impossible de charger le catalogue. Vérifiez votre connexion puis réessayez." />
+        <button class="btn-primary" @onclick="LoadCourseList">Réessayer</button>
+    }
+    else if (PagedCourses.Any())
     {
         <div class="CourseList-grid">
-            @foreach (var course in VisibleCourses)
+            @foreach (var course in PagedCourses)
             {
                 <CourseCard CourseId="@course.Id"
                             Title="@course.Title"
@@ -62,38 +115,137 @@
                             Category="@course.Category"
                             Level="@course.Level"
                             DurationMinutes="@course.DurationMinutes"
-                            CoverStyle="@GetCoverStyle(course.Category)"
+                            ThumbnailUrl="@course.ThumbnailUrl"
+                            AverageRating="@course.AverageRating"
+                            ReviewCount="@course.ReviewCount"
+                            ModuleCount="@course.ModuleCount"
+                            EnrollmentCount="@course.EnrollmentCount"
                             OnSelected="GoToCourse" />
             }
         </div>
+
+        <Pagination CurrentPage="@CurrentPage"
+                    TotalItems="@MatchCount"
+                    PageSize="@PageSize"
+                    PageChanged="GoToPage" />
     }
     else
     {
-        <p class="explore-empty">Aucun cours disponible pour le moment.</p>
+        <div class="explore-empty">
+            <p>Aucun cours ne correspond à votre recherche.</p>
+            @if (ActiveFilters.Any())
+            {
+                <button class="btn-secondary" @onclick="ClearAllFilters">Effacer les filtres</button>
+            }
+        </div>
     }
 </div>
 
 @code {
+    private const int PageSize = 12;
+
     private List<CourseDto>? CourseList;
     private CourseStatsDto? Stats;
     private bool IsLoading = true;
-    private string SelectedCategory = string.Empty;
-    private string SelectedLevel = string.Empty;
+    private bool LoadFailed;
     private List<string> AvailableCategories = new();
 
+    // Tout l'etat de navigation vit dans l'URL : une recherche filtree est partageable,
+    // et le retour arriere du navigateur restitue la selection precedente.
     [SupplyParameterFromQuery(Name = "search")]
-    public string SearchTerm { get; set; } = string.Empty;
+    public string? SearchTermQuery { get; set; }
 
-    private IEnumerable<CourseDto> VisibleCourses => (CourseList ?? new List<CourseDto>())
-        .Where(course => string.IsNullOrWhiteSpace(SearchTerm)
-            || course.Title.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase)
-            || course.Description.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase)
-            || course.Category.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase));
+    [SupplyParameterFromQuery(Name = "category")]
+    public string? CategoryQuery { get; set; }
 
-    protected override async Task OnInitializedAsync()
+    [SupplyParameterFromQuery(Name = "level")]
+    public string? LevelQuery { get; set; }
+
+    [SupplyParameterFromQuery(Name = "sort")]
+    public string? SortQuery { get; set; }
+
+    [SupplyParameterFromQuery(Name = "page")]
+    public int? PageQuery { get; set; }
+
+    private string SearchTerm = string.Empty;
+    private string SelectedCategory = string.Empty;
+    private string SelectedLevel = string.Empty;
+    private string SelectedSort = "recent";
+    private int CurrentPage = 1;
+
+    private string? LoadedCategory;
+    private string? LoadedLevel;
+
+    private IEnumerable<CourseDto> MatchingCourses
     {
-        await LoadCourseList();
+        get
+        {
+            var courses = (CourseList ?? new List<CourseDto>()).AsEnumerable();
 
+            if (!string.IsNullOrWhiteSpace(SearchTerm))
+            {
+                courses = courses.Where(course =>
+                    course.Title.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase)
+                    || course.Description.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase)
+                    || course.Category.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase));
+            }
+
+            return SelectedSort switch
+            {
+                "rating" => courses
+                    .OrderByDescending(course => course.ReviewCount > 0 ? course.AverageRating : -1)
+                    .ThenByDescending(course => course.ReviewCount),
+                "popular" => courses.OrderByDescending(course => course.EnrollmentCount),
+                "title" => courses.OrderBy(course => course.Title, StringComparer.CurrentCultureIgnoreCase),
+                "duration-asc" => courses.OrderBy(course => course.DurationMinutes),
+                "duration-desc" => courses.OrderByDescending(course => course.DurationMinutes),
+                _ => courses.OrderByDescending(course => course.CreatedAt)
+            };
+        }
+    }
+
+    private int MatchCount => MatchingCourses.Count();
+
+    private int TotalPages => Math.Max(1, (int)Math.Ceiling(MatchCount / (double)PageSize));
+
+    private IEnumerable<CourseDto> PagedCourses => MatchingCourses
+        .Skip((Math.Clamp(CurrentPage, 1, TotalPages) - 1) * PageSize)
+        .Take(PageSize);
+
+    private Dictionary<string, string> ActiveFilters
+    {
+        get
+        {
+            var filters = new Dictionary<string, string>();
+            if (!string.IsNullOrWhiteSpace(SearchTerm))
+                filters["search"] = $"« {SearchTerm} »";
+            if (!string.IsNullOrWhiteSpace(SelectedCategory))
+                filters["category"] = SelectedCategory;
+            if (!string.IsNullOrWhiteSpace(SelectedLevel))
+                filters["level"] = LevelLabel(SelectedLevel);
+            return filters;
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        SearchTerm = SearchTermQuery ?? string.Empty;
+        SelectedCategory = CategoryQuery ?? string.Empty;
+        SelectedLevel = LevelQuery ?? string.Empty;
+        SelectedSort = string.IsNullOrWhiteSpace(SortQuery) ? "recent" : SortQuery;
+        CurrentPage = Math.Max(1, PageQuery ?? 1);
+
+        // Le tri, la recherche et la pagination s'appliquent en memoire ;
+        // seuls categorie et niveau declenchent un nouvel appel API.
+        if (CourseList is null || LoadedCategory != SelectedCategory || LoadedLevel != SelectedLevel)
+            await LoadCourseList();
+
+        if (Stats is null)
+            await LoadStats();
+    }
+
+    private async Task LoadStats()
+    {
         try
         {
             var httpClient = HttpClientFactory.CreateClient("EduPlatformAPI");
@@ -110,24 +262,27 @@
     private async Task LoadCourseList()
     {
         IsLoading = true;
+        LoadFailed = false;
         try
         {
             var httpClient = HttpClientFactory.CreateClient("EduPlatformAPI");
-            var url = $"api/courses?category={SelectedCategory}&level={SelectedLevel}";
-            CourseList = await httpClient.GetFromJsonAsync<List<CourseDto>>(url);
+            var url = "api/courses"
+                + $"?category={Uri.EscapeDataString(SelectedCategory)}"
+                + $"&level={Uri.EscapeDataString(SelectedLevel)}";
+
+            CourseList = await httpClient.GetFromJsonAsync<List<CourseDto>>(url) ?? new List<CourseDto>();
+            LoadedCategory = SelectedCategory;
+            LoadedLevel = SelectedLevel;
+
             if (string.IsNullOrWhiteSpace(SelectedCategory) && string.IsNullOrWhiteSpace(SelectedLevel))
-            {
-                AvailableCategories = (CourseList ?? new List<CourseDto>())
-                    .Select(course => course.Category)
-                    .Where(category => !string.IsNullOrWhiteSpace(category))
-                    .Distinct(StringComparer.OrdinalIgnoreCase)
-                    .OrderBy(category => category)
-                    .ToList();
-            }
+                await LoadCategories();
         }
         catch (Exception)
         {
+            // Distingue l'echec d'appel d'un catalogue reellement vide : afficher
+            // « aucun cours disponible » sur une erreur reseau etait trompeur.
             CourseList = new List<CourseDto>();
+            LoadFailed = true;
         }
         finally
         {
@@ -135,24 +290,87 @@
         }
     }
 
-    private string GetCoverStyle(string category)
+    private async Task LoadCategories()
     {
-        return category switch
+        try
         {
-            "Informatique" => "background: linear-gradient(135deg, #5b5df6 0%, #8b5cf6 100%);",
-            "Economie" => "background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%);",
-            "Physique" => "background: linear-gradient(135deg, #10b981 0%, #14b8a6 100%);",
-            "Langues" => "background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);",
-            _ => "background: linear-gradient(135deg, #1f2937 0%, #6d28d9 100%);"
-        };
+            var httpClient = HttpClientFactory.CreateClient("EduPlatformAPI");
+            var categories = await httpClient
+                .GetFromJsonAsync<List<CategoryDto>>("api/courses/categories");
+            AvailableCategories = (categories ?? new List<CategoryDto>())
+                .Select(category => category.Name)
+                .ToList();
+        }
+        catch (Exception)
+        {
+            // Repli sur les categories presentes dans la page courante.
+            AvailableCategories = (CourseList ?? new List<CourseDto>())
+                .Select(course => course.Category)
+                .Where(category => !string.IsNullOrWhiteSpace(category))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(category => category)
+                .ToList();
+        }
     }
 
-    private void GoToCourse(Guid id)
+    private void ApplyFilters() => Navigate(page: 1);
+
+    private void ApplySearch(string term)
     {
-        Nav.NavigateTo($"/courses/{id}");
+        SearchTerm = term;
+        Navigate(page: 1);
     }
 
-    private class CourseDto
+    private void GoToPage(int page) => Navigate(page);
+
+    private void ClearFilter(string key)
+    {
+        switch (key)
+        {
+            case "search": SearchTerm = string.Empty; break;
+            case "category": SelectedCategory = string.Empty; break;
+            case "level": SelectedLevel = string.Empty; break;
+        }
+        Navigate(page: 1);
+    }
+
+    private void ClearAllFilters()
+    {
+        SearchTerm = string.Empty;
+        SelectedCategory = string.Empty;
+        SelectedLevel = string.Empty;
+        Navigate(page: 1);
+    }
+
+    private void Navigate(int page)
+    {
+        var parameters = new List<string>();
+        if (!string.IsNullOrWhiteSpace(SearchTerm))
+            parameters.Add($"search={Uri.EscapeDataString(SearchTerm)}");
+        if (!string.IsNullOrWhiteSpace(SelectedCategory))
+            parameters.Add($"category={Uri.EscapeDataString(SelectedCategory)}");
+        if (!string.IsNullOrWhiteSpace(SelectedLevel))
+            parameters.Add($"level={Uri.EscapeDataString(SelectedLevel)}");
+        if (SelectedSort != "recent")
+            parameters.Add($"sort={Uri.EscapeDataString(SelectedSort)}");
+        if (page > 1)
+            parameters.Add($"page={page}");
+
+        var query = parameters.Count == 0 ? string.Empty : "?" + string.Join("&", parameters);
+        Nav.NavigateTo($"/explore{query}");
+    }
+
+    private static string LevelLabel(string level) => level switch
+    {
+        "Debutant" => "Débutant",
+        "Intermediaire" => "Intermédiaire",
+        "Avance" => "Avancé",
+        _ => level
+    };
+
+    private void GoToCourse(Guid id) => Nav.NavigateTo($"/courses/{id}");
+
+    private sealed class CourseDto
     {
         public Guid Id { get; set; }
         public string Title { get; set; } = string.Empty;
@@ -160,9 +378,22 @@
         public string Category { get; set; } = string.Empty;
         public string Level { get; set; } = string.Empty;
         public int DurationMinutes { get; set; }
+        public string ThumbnailUrl { get; set; } = string.Empty;
+        public DateTime CreatedAt { get; set; }
+        public int ModuleCount { get; set; }
+        public int EnrollmentCount { get; set; }
+        public double AverageRating { get; set; }
+        public int ReviewCount { get; set; }
     }
 
-    private class CourseStatsDto
+    private sealed class CategoryDto
+    {
+        public string Name { get; set; } = string.Empty;
+        public int CourseCount { get; set; }
+        public string ThumbnailUrl { get; set; } = string.Empty;
+    }
+
+    private sealed class CourseStatsDto
     {
         public int PublishedCourses { get; set; }
         public int Categories { get; set; }

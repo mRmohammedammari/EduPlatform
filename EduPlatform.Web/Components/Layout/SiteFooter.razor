@@ -1,0 +1,31 @@
+@*
+    Pied de page du site. Il etait auparavant ecrit directement dans Home.razor
+    et n'apparaissait donc que sur la page d'accueil.
+*@
+
+<footer class="market-footer">
+    <div>
+        <a class="market-logo footer-logo" href="/">Edu<span>Platform</span></a>
+        <p>Apprendre avec méthode. Grandir avec confiance.</p>
+    </div>
+    <div>
+        <strong>Explorer</strong>
+        <a href="/explore">Tous les cours</a>
+        <a href="/recommendations">Recommandations</a>
+        <a href="/register">Créer un compte</a>
+    </div>
+    <div>
+        <strong>La plateforme</strong>
+        <a href="/activity">Votre activité</a>
+        <a href="/progress">Votre progression</a>
+        <a href="/notifications">Notifications</a>
+    </div>
+    <div>
+        <strong>Pour les enseignants</strong>
+        <a href="/instructor">Créer un cours</a>
+        <a href="/login">Se connecter</a>
+    </div>
+    <div class="footer-legal">
+        <small>&copy; @DateTime.UtcNow.Year EduPlatform</small>
+    </div>
+</footer>

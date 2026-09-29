@@ -20,6 +20,7 @@ namespace EduPlatform.Data.SqlServer
         public DbSet<CourseCategory> CourseCategories { get; set; }
         public DbSet<CourseReview> CourseReviews { get; set; }
         public DbSet<CourseReviewReport> CourseReviewReports { get; set; }
+        public DbSet<ModuleProgress> ModuleProgresses { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -127,6 +128,29 @@ namespace EduPlatform.Data.SqlServer
                 entity.HasOne(report => report.Reporter)
                     .WithMany()
                     .HasForeignKey(report => report.ReporterId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            modelBuilder.Entity<ModuleProgress>(entity =>
+            {
+                entity.HasKey(progress => progress.Id);
+
+                // Un seul enregistrement par couple apprenant/module.
+                entity.HasIndex(progress => new { progress.UserId, progress.ModuleId }).IsUnique();
+
+                // Index de lecture pour la barre laterale d'un cours.
+                entity.HasIndex(progress => new { progress.UserId, progress.CourseId });
+
+                entity.HasOne(progress => progress.Module)
+                    .WithMany()
+                    .HasForeignKey(progress => progress.ModuleId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                // Restrict cote utilisateur : la suppression d'un compte doit etre
+                // un acte explicite, pas un effet de bord d'une cascade.
+                entity.HasOne(progress => progress.User)
+                    .WithMany()
+                    .HasForeignKey(progress => progress.UserId)
                     .OnDelete(DeleteBehavior.Restrict);
             });
         }

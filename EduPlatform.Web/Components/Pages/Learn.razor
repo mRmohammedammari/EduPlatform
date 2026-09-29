@@ -72,10 +72,12 @@ else
                     </div>
                 }
 
-                @if (!string.IsNullOrWhiteSpace(SelectedModule.Description))
+                @if (!string.IsNullOrWhiteSpace(SanitizedLesson))
                 {
+                    @* Assaini avant rendu : le contenu vient d'un instructeur et etait
+                       injecte en HTML brut, ce qui permettait un XSS stocke. *@
                     <article class="course-text">
-                        @((MarkupString)SelectedModule.Description)
+                        @((MarkupString)SanitizedLesson)
                     </article>
                 }
                 else if (string.IsNullOrWhiteSpace(SelectedModule.VideoUrl))
@@ -149,7 +151,7 @@ else
                 return;
 
             Course = await client.GetFromJsonAsync<CourseDto>($"api/courses/{CourseId}");
-            SelectedModule = Course?.Modules.OrderBy(m => m.Order).FirstOrDefault();
+            SetSelectedModule(Course?.Modules.OrderBy(m => m.Order).FirstOrDefault());
             if (SelectedModule != null)
                 await LogActivityAsync("module_opened", 0);
         }
@@ -170,9 +172,15 @@ else
 
     private async Task SelectModule(ModuleDto module)
     {
-        SelectedModule = module;
+        SetSelectedModule(module);
         ActivityMessage = string.Empty;
         await LogActivityAsync("module_opened", 0);
+    }
+
+    private void SetSelectedModule(ModuleDto? module)
+    {
+        SelectedModule = module;
+        SanitizedLesson = EduPlatform.Core.Services.LessonHtml.Sanitize(module?.Description);
     }
 
     private async Task MarkModuleCompleted()
@@ -214,6 +222,9 @@ else
     private void GoToLogin() => Nav.NavigateTo("/login");
     private void GoToCourse() => Nav.NavigateTo($"/courses/{CourseId}");
 
+    // Assaini une seule fois par changement de module plutot qu'a chaque rendu.
+    private string SanitizedLesson = string.Empty;
+
     private static bool IsYouTubeUrl(string url)
     {
         return url.Contains("youtube.com/watch", StringComparison.OrdinalIgnoreCase)
@@ -226,7 +237,7 @@ else
         {
             var videoId = url[(url.IndexOf("youtu.be/", StringComparison.OrdinalIgnoreCase) + 9)..]
                 .Split('?', '&')[0];
-            return $"https://www.youtube.com/embed/{videoId}";
+            return $"https://www.youtube-nocookie.com/embed/{videoId}?rel=0&modestbranding=1";
         }
 
         var marker = "v=";
@@ -234,7 +245,7 @@ else
         if (start >= 0)
         {
             var videoId = url[(start + marker.Length)..].Split('&')[0];
-            return $"https://www.youtube.com/embed/{videoId}";
+            return $"https://www.youtube-nocookie.com/embed/{videoId}?rel=0&modestbranding=1";
         }
 
         return url;

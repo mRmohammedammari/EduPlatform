@@ -1,0 +1,62 @@
+@inject IConfiguration Configuration
+
+@*
+    Bloc de couverture d'un cours. Affiche la vignette televersee par l'instructeur
+    quand elle existe, sinon un degrade stable derive de la categorie.
+    Mutualise entre la page d'accueil, le catalogue et les recommandations.
+*@
+
+<div class="course-cover @CssClass @(ShowImage ? "has-thumbnail" : "is-gradient")"
+     style="@(ShowImage ? null : GradientStyle)">
+    @if (ShowImage)
+    {
+        <img src="@ResolvedThumbnail"
+             alt="@ImageAlt"
+             loading="lazy"
+             decoding="async"
+             width="640"
+             height="360"
+             @onerror="OnImageError" />
+    }
+    @if (!string.IsNullOrWhiteSpace(Tag))
+    {
+        <span class="course-cover-tag">@Tag</span>
+    }
+    @ChildContent
+</div>
+
+@code {
+    [Parameter] public string Title { get; set; } = string.Empty;
+    [Parameter] public string Category { get; set; } = string.Empty;
+    [Parameter] public string ThumbnailUrl { get; set; } = string.Empty;
+
+    /// <summary>Pastille affichee en surimpression (categorie, niveau...). Optionnelle.</summary>
+    [Parameter] public string Tag { get; set; } = string.Empty;
+
+    /// <summary>Classe de mise en page propre a l'appelant (taille, arrondis).</summary>
+    [Parameter] public string CssClass { get; set; } = string.Empty;
+
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    // On memorise l'URL fautive plutot qu'un simple booleen : reinitialiser un booleen
+    // dans OnParametersSet relancerait le chargement de la meme image en boucle.
+    private string? FailedThumbnail;
+
+    private bool ShowImage =>
+        EduPlatform.Web.Services.CourseCoverPalette.HasThumbnail(ThumbnailUrl)
+        && !string.Equals(FailedThumbnail, ThumbnailUrl, StringComparison.Ordinal);
+
+    private string GradientStyle =>
+        EduPlatform.Web.Services.CourseCoverPalette.GradientStyle(Category);
+
+    private string ResolvedThumbnail => EduPlatform.Web.Services.CourseCoverPalette.ResolveThumbnail(
+        ThumbnailUrl,
+        Configuration["Api:BaseUrl"] ?? "http://localhost:5053/");
+
+    private string ImageAlt => string.IsNullOrWhiteSpace(Title)
+        ? "Couverture du cours"
+        : $"Couverture : {Title}";
+
+    // Une vignette cassee ne doit pas laisser un trou dans la grille : on repasse au degrade.
+    private void OnImageError() => FailedThumbnail = ThumbnailUrl;
+}

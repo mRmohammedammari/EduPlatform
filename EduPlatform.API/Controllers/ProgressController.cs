@@ -64,6 +64,160 @@ namespace EduPlatform.API.Controllers
             return Ok(progress);
         }
 
+        /// <summary>
+        /// Avancement de l'apprenant sur chaque module d'un cours :
+        /// alimente les pastilles « termine » et la reprise de lecture video.
+        /// </summary>
+        [HttpGet("course/{courseId:guid}/modules")]
+        public async Task<IActionResult> GetModuleProgress(Guid courseId)
+        {
+            var userId = Guid.Parse(User.FindFirst(
+                System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+
+            var progress = await _db.ModuleProgresses
+                .Where(item => item.UserId == userId && item.CourseId == courseId)
+                .Select(item => new
+                {
+                    item.ModuleId,
+                    item.LastPositionSeconds,
+                    item.WatchedRatio,
+                    item.IsCompleted,
+                    item.CompletedAt
+                })
+                .ToListAsync();
+
+            return Ok(progress);
+        }
+
+        /// <summary>
+        /// Enregistre la position de lecture et la fraction visionnee d'un module.
+        /// </summary>
+        /// <remarks>
+        /// La completion est irreversible : <c>WatchedRatio</c> ne redescend jamais et
+        /// <c>IsCompleted</c> ne repasse pas a faux. Un apprenant qui revient au debut
+        /// d'une video ne doit pas perdre un module deja valide.
+        /// </remarks>
+        [HttpPost("module")]
+        public async Task<IActionResult> SaveModuleProgress([FromBody] ModuleProgressDto dto)
+        {
+            var userId = Guid.Parse(User.FindFirst(
+                System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+
+            var module = await _db.Modules
+                .Where(item => item.Id == dto.ModuleId)
+                .Select(item => new { item.Id, item.CourseId })
+                .FirstOrDefaultAsync();
+
+            if (module is null)
+                return NotFound(new { message = "Module introuvable." });
+
+            var enrolled = await _db.Enrollments.AnyAsync(enrollment =>
+                enrollment.UserId == userId && enrollment.CourseId == module.CourseId);
+            if (!enrolled)
+                return Forbid();
+
+            var ratio = Math.Clamp(dto.WatchedRatio, 0d, 1d);
+            var position = Math.Max(0, dto.PositionSeconds);
+
+            var progress = await _db.ModuleProgresses.FirstOrDefaultAsync(item =>
+                item.UserId == userId && item.ModuleId == dto.ModuleId);
+
+            if (progress is null)
+            {
+                progress = new ModuleProgress
+                {
+                    UserId = userId,
+                    ModuleId = dto.ModuleId,
+                    CourseId = module.CourseId
+                };
+                _db.ModuleProgresses.Add(progress);
+            }
+
+            progress.LastPositionSeconds = position;
+            progress.WatchedRatio = Math.Max(progress.WatchedRatio, ratio);
+            progress.UpdatedAt = DateTime.UtcNow;
+
+            // 90 % : les generiques de fin ne doivent pas empecher la validation.
+            var reachedCompletion = dto.MarkCompleted || progress.WatchedRatio >= 0.9d;
+            if (reachedCompletion && !progress.IsCompleted)
+            {
+                progress.IsCompleted = true;
+                progress.CompletedAt = DateTime.UtcNow;
+            }
+
+            await _db.SaveChangesAsync();
+
+            var totalModules = await _db.Modules.CountAsync(item => item.CourseId == module.CourseId);
+            var completedModules = await _db.ModuleProgresses.CountAsync(item =>
+                item.UserId == userId && item.CourseId == module.CourseId && item.IsCompleted);
+
+            return Ok(new
+            {
+                progress.ModuleId,
+                progress.LastPositionSeconds,
+                progress.WatchedRatio,
+                progress.IsCompleted,
+                CompletedModules = completedModules,
+                TotalModules = totalModules,
+                CoursePercent = totalModules == 0 ? 0 : completedModules * 100 / totalModules
+            });
+        }
+
+        /// <summary>
+        /// Cours a reprendre, pour le bandeau de la page d'accueil.
+        /// </summary>
+        /// <remarks>
+        /// Endpoint distinct de <c>enrollments</c> : celui-ci interroge Cassandra une fois
+        /// par cours inscrit, ce qui est acceptable sur la page de progression mais pas
+        /// sur la page d'accueil. Ici le nombre d'appels est borne a <c>limit</c>.
+        /// </remarks>
+        [HttpGet("continue")]
+        public async Task<IActionResult> GetContinueLearning([FromQuery] int limit = 3)
+        {
+            var userId = Guid.Parse(User.FindFirst(
+                System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+
+            limit = Math.Clamp(limit, 1, 10);
+
+            var enrollments = await _db.Enrollments
+                .Where(enrollment => enrollment.UserId == userId
+                    && !enrollment.Course.IsArchived)
+                .OrderByDescending(enrollment => enrollment.EnrolledAt)
+                .Take(limit)
+                .Select(enrollment => new
+                {
+                    enrollment.CourseId,
+                    enrollment.Course.Title,
+                    enrollment.Course.Category,
+                    enrollment.Course.ThumbnailUrl,
+                    enrollment.Course.DurationMinutes,
+                    enrollment.EnrolledAt
+                })
+                .ToListAsync();
+
+            var result = new List<object>(enrollments.Count);
+            foreach (var enrollment in enrollments)
+            {
+                var totalTimeSeconds = await _activityRepo
+                    .GetTotalTimeOnCourseAsync(userId, enrollment.CourseId);
+                var expectedTimeSeconds = Math.Max(enrollment.DurationMinutes * 60, 1);
+                var progressPercent = Math.Clamp(
+                    (int)Math.Round(totalTimeSeconds * 100d / expectedTimeSeconds), 0, 100);
+
+                result.Add(new
+                {
+                    enrollment.CourseId,
+                    CourseTitle = enrollment.Title,
+                    enrollment.Category,
+                    enrollment.ThumbnailUrl,
+                    enrollment.EnrolledAt,
+                    ProgressPercent = progressPercent
+                });
+            }
+
+            return Ok(result);
+        }
+
         [HttpPost("enroll")]
         public async Task<IActionResult> Enroll([FromBody] EnrollDto dto)
         {
@@ -210,6 +364,18 @@ namespace EduPlatform.API.Controllers
             {
             }
         }
+    }
+
+    public class ModuleProgressDto
+    {
+        public Guid ModuleId { get; set; }
+        public int PositionSeconds { get; set; }
+
+        /// <summary>Fraction visionnee, de 0 a 1.</summary>
+        public double WatchedRatio { get; set; }
+
+        /// <summary>Validation explicite par l'apprenant, sans attendre les 90 %.</summary>
+        public bool MarkCompleted { get; set; }
     }
 
     public class ActivityLogDto

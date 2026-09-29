@@ -38,8 +38,9 @@ namespace EduPlatform.API.Controllers
                 .Select(course => new { course.Category, course.Level })
                 .ToListAsync();
 
+            // !IsArchived : un cours archive restait eligible aux recommandations.
             var availableCourseIds = await _db.Courses
-                .Where(c => c.IsPublished && !enrolledCourseIds.Contains(c.Id))
+                .Where(c => c.IsPublished && !c.IsArchived && !enrolledCourseIds.Contains(c.Id))
                 .Select(c => c.Id)
                 .ToListAsync();
 
@@ -48,6 +49,22 @@ namespace EduPlatform.API.Controllers
 
             var courses = await _db.Courses
                 .Where(c => recommendedIds.Contains(c.Id))
+                .Select(c => new
+                {
+                    c.Id,
+                    c.Title,
+                    c.Description,
+                    c.Category,
+                    c.Level,
+                    c.DurationMinutes,
+                    c.ThumbnailUrl,
+                    ModuleCount = c.Modules.Count,
+                    AverageRating = _db.CourseReviews
+                        .Where(review => review.CourseId == c.Id)
+                        .Select(review => (double?)review.Rating)
+                        .Average() ?? 0,
+                    ReviewCount = _db.CourseReviews.Count(review => review.CourseId == c.Id)
+                })
                 .ToListAsync();
 
             return Ok(courses.Select(course => new
@@ -59,6 +76,9 @@ namespace EduPlatform.API.Controllers
                 course.Level,
                 course.DurationMinutes,
                 course.ThumbnailUrl,
+                course.ModuleCount,
+                AverageRating = Math.Round(course.AverageRating, 1),
+                course.ReviewCount,
                 RecommendationReason = GetRecommendationReason(
                     course.Category,
                     course.Level,

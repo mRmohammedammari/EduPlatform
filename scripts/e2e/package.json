@@ -3,7 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node smoke-tests.mjs"
+    "test": "node smoke-tests.mjs && node publication-moderation.mjs",
+    "test:smoke": "node smoke-tests.mjs",
+    "test:publication": "node publication-moderation.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.49.1"

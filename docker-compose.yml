@@ -98,6 +98,10 @@ services:
       DataProtection__KeysPath: /var/aspnet-keys
     volumes:
       - api_keys:/var/aspnet-keys
+      # Vignettes et videos televersees par les instructeurs. Sans ce volume, tout
+      # `docker compose up --build` effacait les fichiers alors que la base gardait
+      # leur URL : les cours se retrouvaient avec des vignettes en 404.
+      - api_uploads:/app/wwwroot/uploads
     depends_on:
       sqlserver:
         condition: service_healthy
@@ -154,4 +158,5 @@ volumes:
   sqlserver_data:
   cassandra_data:
   api_keys:
+  api_uploads:
   web_keys:

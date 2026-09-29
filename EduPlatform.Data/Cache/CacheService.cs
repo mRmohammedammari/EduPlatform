@@ -68,7 +68,10 @@ namespace EduPlatform.Data.Cache
         public static string CourseKey(Guid id) => $"course:{id}";
         public static string UserProgressKey(Guid userId, Guid courseId)
             => $"progress:{userId}:{courseId}";
-        public static string CourseListKey() => "courses:all";
+        // v2 : la liste de cours expose desormais vignette, compteurs et notes.
+        // Le suffixe evite de relire une entree au format precedent apres deploiement.
+        public static string CourseListKey() => "courses:all:v2";
         public static string CourseStatsKey() => "courses:stats";
+        public static string CourseCategoriesKey() => "courses:categories";
     }
 }

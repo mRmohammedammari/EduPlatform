@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [ main, master ]
 
+env:
+  # Seuil-cliquet de couverture : ne doit jamais baisser.
+  # Objectif roadmap : 80 %. Voir docs/TESTING.md pour la procedure de relevement.
+  COVERAGE_THRESHOLD: 45
+
 jobs:
   build-test:
     runs-on: ubuntu-latest
@@ -28,8 +33,47 @@ jobs:
       - name: Build
         run: dotnet build EduPlatform.sln --configuration Release --no-restore
 
-      - name: Unit tests
-        run: dotnet test EduPlatform.Tests/EduPlatform.Tests.csproj --configuration Release --no-build --no-restore
+      - name: Unit tests with coverage
+        run: >
+          dotnet test EduPlatform.Tests/EduPlatform.Tests.csproj
+          --configuration Release --no-build --no-restore
+          --settings EduPlatform.Tests/coverlet.runsettings
+          --collect:"XPlat Code Coverage"
+          --results-directory TestResults
+          --logger "trx;LogFileName=unit-tests.trx"
+
+      - name: Generate coverage report
+        uses: danielpalme/ReportGenerator-GitHub-Action@5.3.11
+        with:
+          reports: TestResults/**/coverage.cobertura.xml
+          targetdir: TestResults/coverage-report
+          reporttypes: Html;TextSummary;MarkdownSummaryGithub
+
+      - name: Coverage summary
+        shell: bash
+        run: |
+          cat TestResults/coverage-report/Summary.txt
+          cat TestResults/coverage-report/SummaryGithub.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Enforce coverage threshold
+        shell: bash
+        run: |
+          line_rate=$(grep -o 'line-rate="[0-9.]*"' TestResults/*/coverage.cobertura.xml \
+            | head -1 | tr -dc '0-9.')
+          percent=$(awk -v r="$line_rate" 'BEGIN { printf "%.2f", r * 100 }')
+          echo "Couverture de lignes : ${percent}% (seuil ${COVERAGE_THRESHOLD}%)"
+          awk -v p="$percent" -v t="$COVERAGE_THRESHOLD" 'BEGIN { exit !(p + 0 >= t + 0) }' || {
+            echo "::error::Couverture ${percent}% sous le seuil ${COVERAGE_THRESHOLD}%."
+            exit 1
+          }
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: TestResults/coverage-report
+          retention-days: 14
 
       - name: Validate Docker Compose
         run: docker compose config --quiet
@@ -45,10 +89,18 @@ jobs:
     env:
       SQLSERVER_SA_PASSWORD: EduPlatformCi!Sql2026Strong
       JWT_SECRET_KEY: EduPlatformCi!JwtSecretKey2026LongEnough
+      SEED_DEMO_DATA: "true"
+      EDUPLATFORM_BASE_URL: http://localhost:5297
+      EDUPLATFORM_API_URL: http://localhost:5053
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
 
       - name: Start ephemeral stack
         run: docker compose up -d --build
@@ -69,8 +121,27 @@ jobs:
           docker compose ps
           exit 1
 
+      - name: Install E2E dependencies
+        working-directory: scripts/e2e
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: E2E - smoke (public, etudiant, instructeur, admin)
+        working-directory: scripts/e2e
+        run: npm run test:smoke
+
+      - name: E2E - publication et moderation (donnees persistantes)
+        working-directory: scripts/e2e
+        run: npm run test:publication
+
       - name: Show service status
+        if: always()
         run: docker compose ps
+
+      - name: Dump service logs on failure
+        if: failure()
+        run: docker compose logs --tail 200
 
       - name: Stop ephemeral stack
         if: always()

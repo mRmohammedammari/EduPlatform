@@ -1,299 +1,208 @@
-# ?? EduPlatform - Statut de la Roadmap
+# Statut de la Roadmap - EduPlatform
 
-**Dernière mise à jour:** 2026-09-18
-
----
-
-## ?? Vue d'ensemble de la progression
-
-```
-Phase 1: Fondations et Sécurité       [??????????] 100% ? TERMINÉE
-Phase 2: Auth Client Blazor           [??????????] 100% ? TERMINÉE
-Phase 3: Complétion Interface Web     [??????????] 100% ? TERMINÉE
-Phase 4: Fonctionnalités Avancées     [??????????] 45% ? EN COURS
-Phase 5: Tests et Qualité             [??????????] 90% ? EN COURS
-Phase 6: DevOps et Déploiement        [??????????]  0% ? à VENIR
-Phase 7: Monitoring et Observabilité  [??????????]  0% ? à VENIR
-Phase 8: Monétisation                 [??????????]  0% ?? OPTIONNEL
-Phase 9: Fonctionnalités Pédagogiques [??????????]  0% ?? OPTIONNEL
-Phase 10: Optimisations               [??????????]  0% ? à VENIR
-Phase 11: Mobile                      [??????????]  0% ?? FUTUR
-```
-
-**Progression globale:** 40%
+**Derniere mise a jour : 2026-09-29**
+**Methode :** relecture du code, des tests et de la CI (et non des cases cochees precedentes).
+Le document precedent, date du 2026-09-18, sous-estimait fortement l'avancement reel.
 
 ---
 
-## ?? SUCCÈS RéCENTS
+## Vue d'ensemble
 
-- ? **Frontend Blazor complet et testé** (13 pages protégées, connexion/déconnexion/refresh token/"se souvenir de moi")
-- ? **Authentification robuste** : JWT + refresh token rotatif (table RefreshTokens), intercepteur HTTP centralisé
-- ? **API Backend opérationnelle** sur http://localhost:5053
-- ? **Swagger UI accessible** sur http://localhost:5053/swagger
-- ? **Kafka topics créés** (5 topics avec configuration compléte)
-- ? **Cassandra initialisé** (keyspace + 4 tables)
-- ? **Docker infrastructure** fonctionnelle (Kafka, Cassandra, Redis, Zookeeper)
-- ? **Documentation compléte** (11 guides créés)
-- ? **Scripts d'initialisation** testés et validés
+| Phase | Avancement | Statut |
+|-------|-----------|--------|
+| 1. Fondations et securite | 100 % | Terminee |
+| 2. Authentification client Blazor | 100 % | Terminee |
+| 3. Completion interface web | 100 % | Terminee |
+| 4. Fonctionnalites avancees | 70 % | En cours |
+| 5. Tests et qualite | 75 % | En cours |
+| 6. DevOps et deploiement | 85 % | En cours |
+| 7. Monitoring et observabilite | 45 % | En cours |
+| 8. Monetisation | 10 % | Gelee (decision produit) |
+| 9. Pedagogie avancee | 0 % | Optionnelle |
+| 10. Optimisations et performance | 25 % | A venir |
+| 11. Mobile | 0 % | Futur |
 
----
-
-## ? Phase 1: Fondations et Sécurité (100% - TERMINÉE)
-
-**Durée estimée:** 2-3 semaines  
-**Priorité:** ?? CRITIQUE  
-**Statut:** ? Presque terminée - API opérationnelle, Frontend — démarrer
-
-### 1.1 Sécurité et Configuration
-
-- [x] **Gestion des secrets**
-  - [x] Créer .gitignore complet
-  - [x] Créer template appsettings.template.json
-  - [x] Créer fichier .env.example
-  - [ ] Configurer User Secrets dans l'API (optionnel - clés par défaut dans appsettings.json)
-  - [x] Documenter le processus de configuration des secrets (STARTUP.md)
-  - [x] Tester la configuration avec des secrets locaux
-
-- [x] **Variables d'environnement**
-  - [x] Créer fichier .env.example
-  - [x] Documenter toutes les variables requises
-  - [x] Configurer profil Development (launchSettings.json)
-
-### 1.2 Infrastructure et Scripts
-
-- [x] ? **Cassandra**
-  - [x] Créer script d'initialisation keyspace (scripts/cassandra/init.cql)
-  - [x] Créer script de création tables (user_activity, test_results, chat_messages, chatbot_sessions, course_progress)
-  - [x] Script de seed data pour tests (scripts/cassandra/seed-data.cql)
-  - [x] Documentation compléte (docs/CASSANDRA_SETUP.md)
-  - [x] Tester les scripts d'initialisation ? VALIDÉ
-  - [x] Keyspace initialisé et opérationnel
-
-- [x] ? **Kafka**
-  - [x] Script de création des topics (scripts/kafka/init-topics.sh)
-  - [x] Script PowerShell pour Windows (scripts/kafka/init-topics.ps1) ? TESTé
-  - [x] Configuration des partitions et réplication
-  - [x] Documentation compléte (docs/KAFKA_SETUP.md)
-  - [x] Tester la création des topics ? 5 topics créés avec succès
-  - [x] Topics opérationnels : user-activity-events, test-results-events, notifications-events, course-enrollment-events, chatbot-interaction-events
-  - [x] Consumer Kafka actif avec démarrage résilient
-
-- [x] **SQL Server**
-  - [x] Scripts de seed data (scripts/sqlserver/seed-data.sql)
-  - [x] Exécuter les migrations EF Core (4 migrations appliquées, dont AddRefreshTokens)
-  - [x] Insérer les données de seed
-  - [x] Scripts de backup/restore
-  - [x] Documentation des migrations (DATABASE_SETUP.md)
-
-- [x] ? **Docker**
-  - [x] Script de démarrage complet (scripts/init-platform.ps1)
-  - [x] Docker Compose opérationnel ? 4 conteneurs actifs
-  - [x] Infrastructure testée : Cassandra, Kafka, Zookeeper, Redis
-  - [x] Configurer les healthchecks
-  - [x] Ajouter API et Web au docker-compose
-
-### 1.3 Documentation de base
-
-- [x] ? README.md principal
-- [x] ? Guide de démarrage rapide
-- [x] ? Architecture technique détaillée
-- [x] ? Documentation API compléte
-- [x] ? Guides Cassandra et Kafka
-- [x] ? Guide de tests
-- [x] ? Guide de déploiement
-- [x] ? Guide de sécurité
-- [x] ? Roadmap détaillée
+**Progression globale (phases 1 a 7, perimetre MVP) : environ 85 %.**
 
 ---
 
-## ? Phase 2: Authentification Client Blazor (100% - TERMINÉE)
+## Phase 1 - Fondations et securite : 100 %
 
-**Durée estimée:** 1 semaine  
-**Priorité:** ?? HAUTE
-
-### 2.1 Système d'authentification
-
-- [x] **AuthenticationStateProvider**
-  - [x] Créer AuthStateService (Équivalent CustomAuthStateProvider)
-  - [x] Gestion du token JWT dans localStorage/sessionStorage
-  - [x] Rafraîchissement automatique du token (refresh token rotatif, 30 jours, table RefreshTokens)
-  - [x] Gestion de l'expiration (IsTokenExpired + refresh silencieux à l'initialisation)
-
-- [x] **Services d'authentification**
-  - [x] AuthStateService côté Blazor
-  - [x] Intercepteur HTTP pour ajouter JWT (HttpClientFactoryExtensions.CreateAuthorizedClient, utilisé par toutes les pages protégées)
-  - [x] Gestion des erreurs 401/403 (redirection vers /login, révocation du refresh token au logout)
-
-- [x] **Protection des routes**
-  - [x] Vérification IsAuthenticated/Role par page + redirection automatique
-  - [x] Redirections automatiques vers /login
-  - [x] Gestion des rôles (Student, Instructor, Admin)
-
-### 2.2 Interface utilisateur
-
-- [x] Bouton de déconnexion (avec révocation serveur du refresh token)
-- [x] Affichage profil utilisateur dans le header/menu
-- [x] Persistance de la session (testée après reload complet du navigateur)
-- [x] "Se souvenir de moi" (localStorage si coché, sessionStorage sinon)
+Livre : `.gitignore`, `appsettings.template.json`, `.env.example`, secrets hors du depot,
+scripts d'initialisation Cassandra / Kafka / SQL Server, `init-platform.ps1`, backup/restore,
+4 migrations EF appliquees, docker-compose complet avec healthchecks, 11 guides de documentation.
 
 ---
 
-## ?? Phase 3: Complétion Interface Web (100% - TERMINÉE)
+## Phase 2 - Authentification client Blazor : 100 %
 
-**Durée estimée:** 2-3 semaines  
-**Priorité:** ?? HAUTE
-
-### 3.1 Navigation et Layout — 100% ?
-- [x] NavMenu remplacé (PublicHeader/NavSidebar), plus de Counter/Weather
-- [x] Liens Cours, Profil, Chat, Tests, Activité, Notifications
-- [x] Menu différencié par rôle (Student/Instructor/Admin)
-- [x] Indicateur utilisateur connecté (nom + avatar dans le header)
-
-### 3.2 Pages Étudiants — 100%
-- [x] Page Profil : infos perso, historique des cours, statistiques
-- [x] Page Profil : Édition du profil (prénom/nom + changement de mot de passe)
-- [x] Page Progression : stats agrégées par cours
-- [x] Page Progression : graphiques, badges/achievements
-- [x] Page Tests/QCM : liste, passage, résultats
-- [x] Page Tests/QCM : révision détaillée des réponses (bonne réponse mise en surbrillance)
-- [x] Page Chat IA : interface compléte
-- [x] Page Chat IA : historique persistant par utilisateur/session
-- [x] Page Recommandations : affichage cours recommandés
-- [x] Page Recommandations : explication du pourquoi, filtres/tri
-
-### 3.3 Pages Instructeurs — 100%
-- [x] Dashboard Instructeur : vue d'ensemble des cours créés
-- [x] Dashboard Instructeur : analytics avancées (inscriptions, tentatives, score moyen, taux de réussite)
-- [x] Création/édition de cours : formulaire, modules, QCM (onglets), workflow de validation admin
-- [x] Création/édition de cours : upload de thumbnail (fichier réel jpg/png/webp) avec aperçu
-- [x] Création/édition de cours : upload vidéo de module (mp4/webm/ogg, 100 Mo maximum)
-- [x] Apprentissage : lecteur vidéo HTML5 pour les vidéos hébergées
-- [x] Création/édition de cours : prévisualisation complète du cours
-- [x] Gestion des Étudiants : liste des inscrits avec progression + messagerie (notifications)
-
-### 3.4 Pages Administrateur — 100%
-- [x] Dashboard Admin : métriques globales + cours en attente de validation
-- [x] Dashboard Admin : utilisateurs actifs, inscriptions récentes et alertes opérationnelles (revenus non applicable)
-- [x] Gestion Utilisateurs : liste, modification des rôles, recherche/filtres, suspension/réactivation
-- [x] Gestion Cours : workflow d'approbation (soumission ? validation admin ? publication)
-- [x] Gestion Cours : modération et catalogue de catégories structurées
-
-### 3.5 Composants Réutilisables — 100%
-- [x] CourseCard partagé entre l'exploration et les recommandations
-- [x] LoadingState, AlertMessage et StarRating partagés
-- [x] SearchBar partagé avec soumission clavier et filtrage par query string
-- [x] Modal de confirmation réutilisable pour les actions administratives
-- [x] Toast réutilisable pour les retours d'action
-- [x] Pagination réutilisable pour les listes volumineuses
-
-### 4.1 Évaluations et modération — 50%
-- [x] Notes et commentaires par les apprenants inscrits
-- [x] Affichage de la moyenne et des avis sur le détail d'un cours
-- [x] Liste admin des avis avec pagination
-- [x] Suppression admin avec confirmation et retour toast
-- [x] Signalement d'un avis par un apprenant avec motif
-- [x] Historique des signalements dans l'espace admin
-
-### 5.1 Couverture et validation — 90%
-- [x] Tests d'authentification et de paiement
-- [x] Tests de validation des uploads vidéo
-- [x] Tests du contrôleur API de signalement d'avis avec EF InMemory
-- [x] Tests du contrôleur admin de modération des avis
-- [x] Smoke test manuel E2E public : recherche, filtre et ouverture d'un cours
-- [x] Smoke test Playwright automatisé : catalogue, recherche, filtres et détail
-- [x] Smoke test Playwright authentifié : connexion étudiant et progression
-- [x] Smoke test Playwright par rôle : instructeur et administrateur
-- [x] Validation E2E d'une création de cours vide et accès aux écrans admin
-- [x] Cycle E2E persistant création/archivage/suppression avec rôles instructeur/admin
-- [ ] Tests end-to-end de publication et modération avec données persistantes
+Livre : `AuthStateService`, JWT + refresh token rotatif (table `RefreshTokens`, 30 jours),
+rafraichissement silencieux, `CreateAuthorizedClient`, gestion 401/403 avec redirection,
+protection par role (Student / Instructor / Admin), « se souvenir de moi », revocation au logout.
 
 ---
 
-## ?? Prochaines Actions Recommandées
+## Phase 3 - Completion interface web : 100 %
 
-### Priorité HAUTE — Avancer sur la Phase 4
+21 pages Razor livrees. Etudiant : profil, progression avec badges, QCM avec revision,
+chat IA, recommandations, notifications, certificat. Instructeur : dashboard, analytics,
+CRUD cours/modules/QCM, upload thumbnail et video, previsualisation, gestion des inscrits.
+Admin : dashboard, utilisateurs et roles, workflow d'approbation, categories, moderation des avis,
+export CSV.
 
-1. **Instructeurs : previsualisation complete des cours**
-   - Voir le cours comme un apprenant avant publication
+8 composants partages : `CourseCard`, `LoadingState`, `AlertMessage`, `StarRating`, `SearchBar`,
+`Modal`, `Toast`, `Pagination`.
 
-2. **Phase 4 : signalement et historique de mod�ration des avis**
-
-3. **Composants réutilisables** (100%)
-  - Terminé : CourseCard, LoadingState, AlertMessage, StarRating et SearchBar
-  - Terminé : Modal de confirmation
-  - Tous les composants prévus sont livrés
-
-4. **Phase 4 : optimisation des médias**
-  - Stockage objet/CDN et transcodage vidéo
-
-### Semaine prochaine
-
-5. **Phase 4** : stockage objet/CDN et transcodage des médias
-6. **Phase 5** : tests unitaires et d'intégration (24 tests automatisés actuellement)
+> Reserve : plusieurs de ces composants sont sous-utilises et des donnees deja disponibles
+> ne sont pas affichees (vignettes, notes, pagination du catalogue).
+> Detail et priorisation dans [IMPROVEMENTS.md](IMPROVEMENTS.md).
 
 ---
 
-## ?? Métriques de Progression
+## Phase 4 - Fonctionnalites avancees : 70 %
 
-| Catégorie | Items Complétés | Items Totaux | % |
-|-----------|----------------|--------------|---|
-| **Documentation** | 10 | 10 | 100% |
-| **Scripts Infrastructure** | 7 | 10 | 70% |
-| **Configuration** | 3 | 6 | 50% |
-| **Tests** | 24 | 24 | 100% |
-| **Features** | Phases 1-3 | Phases 1-3 | 100% |
+### Livre
 
----
+- Upload de thumbnail (jpg/png/webp) et de video de module (mp4/webm/ogg, 100 Mo max) avec validation
+- Lecteur video HTML5 pour les fichiers heberges, iframe pour YouTube
+- Notifications in-app : table, service, page dediee, marquage lu/non-lu
+- Certificat de reussite consultable en ligne
+- Avis apprenants : note, commentaire, moyenne, affichage sur le detail du cours
+- Moderation : liste admin paginee, suppression avec confirmation, signalement motive, historique
 
-## ?? Objectifs par Sprint
+### Reste a faire
 
-### Sprint 1 (Semaine du 2026-08-28) - ACTUEL
-- [x] Créer toute la documentation
-- [x] Créer les scripts d'infrastructure
-- [ ] Configurer les secrets
-- [ ] Initialiser la plateforme
-- [ ] Tester l'infrastructure
-
-### Sprint 2 (Semaine du 2026-09-04)
-- [ ] Compléter Phase 1 — 100%
-- [ ] Commencer Phase 2 (Auth Blazor)
-- [ ] Créer AuthenticationStateProvider
-- [ ] Mettre à jour NavMenu
-
-### Sprint 3 (Semaine du 2026-09-11)
-- [ ] Compléter Phase 2
-- [ ] Commencer Phase 3 (Pages Web)
-- [ ] Créer page Profil
-- [ ] Créer page Progression
+- [ ] Stockage objet / CDN (actuellement disque local, bloque le scale horizontal)
+- [ ] Transcodage video et streaming adaptatif (HLS/DASH)
+- [ ] Sous-titres (aucun champ de stockage VTT)
+- [ ] Certificat au format PDF telechargeable + verification par QR code
+- [ ] Notifications temps reel (SignalR) et preferences de notification
+- [ ] Ressources telechargeables par cours (PDF, code source)
+- [ ] Distribution des notes (barres 5/4/3/2/1) et analytics de feedback instructeur
 
 ---
 
-## ?? Problèmes Connus
+## Phase 5 - Tests et qualite : 75 %
 
-*Aucun problème identifié pour le moment*
+### Livre
+
+- 24 tests automatises (xUnit + EF InMemory) : `AuthServiceTests`, `PaymentGatewayTests`,
+  `CourseMediaValidatorTests`, `ReviewsControllerTests`, `AdminReviewsControllerTests`
+- Couverture de code mesuree par Coverlet, rapport HTML publie en artefact CI,
+  seuil-cliquet applique dans le workflow
+- E2E Playwright `smoke-tests.mjs` : catalogue public, recherche, filtres, detail,
+  parcours etudiant, instructeur et admin, cycle creation/archivage/suppression
+- E2E Playwright `publication-moderation.mjs` : cycle brouillon -> soumission -> rejet motive
+  -> resoumission -> approbation -> publication -> visibilite publique -> avis -> signalement
+  -> moderation -> depublication, avec nettoyage garanti
+- Les deux suites E2E tournent en CI contre une stack Docker ephemere
+
+### Etat de la couverture (2026-09-29)
+
+| Assembly | Lignes |
+|----------|--------|
+| EduPlatform.Core | 96,1 % |
+| EduPlatform.Data | 66,0 % |
+| EduPlatform.API | 7,5 % |
+| EduPlatform.BigData | 0 % |
+| **Global** | **47,1 %** (branches 25,0 %) |
+
+### Reste a faire
+
+- [ ] Atteindre l'objectif de 80 % : l'essentiel de l'ecart porte sur les controllers
+      `EduPlatform.API` (Courses, Admin, Progress, Tests, Certificates, Chatbot) et sur
+      `EduPlatform.BigData` (producers/consumers Kafka, analytics)
+- [ ] Tests d'integration avec `WebApplicationFactory` (aujourd'hui les tests controllers
+      instancient les controllers directement)
+- [ ] Tests des repositories Cassandra et du `CacheService`
+- [ ] Tests d'accessibilite (axe/Lighthouse) dans la CI
 
 ---
 
-## ?? Notes et Idées
+## Phase 6 - DevOps et deploiement : 85 %
 
-### Améliorations Futures
-- Ajouter des tests d'intégration pour l'infrastructure
-- Créer un dashboard de monitoring
-- Mettre en place le stockage objet/CDN et le transcodage vidéo
+### Livre
 
-### Décisions Techniques
-- ? Utiliser BCrypt pour le hashing de mots de passe
-- ? JWT avec expiration 24h
-- ? Cassandra pour les time-series data
-- ? Kafka pour l'event streaming
+- Pipeline GitHub Actions : restore, build Release, tests unitaires avec couverture et seuil,
+  rapport de couverture en artefact, validation `docker compose config`, build des images
+  API et Web, stack ephemere + suites E2E
+- `Dockerfile.api`, `Dockerfile.web`, `docker-compose.yml` complet (SQL Server, Cassandra,
+  Kafka, Zookeeper, Redis, API, Web, nginx)
+- Reverse proxy nginx avec TLS, redirection HTTP -> HTTPS, `X-Forwarded-*`, HSTS hors Development
+- Migrations appliquees au deploiement, scripts de sauvegarde et restauration
+
+### Reste a faire
+
+- [ ] Certificat TLS emis par une autorite reconnue (les certificats actuels sont auto-signes,
+      generes par `scripts/nginx/generate-dev-cert.ps1`, dev uniquement)
+- [ ] Retirer l'exposition directe des ports 5053 et 5297 en production
+- [ ] Publication des images vers un registre et deploiement effectif sur un hebergeur
+
+Procedure detaillee : [PRODUCTION_READINESS.md](PRODUCTION_READINESS.md).
 
 ---
 
-## ?? Support
+## Phase 7 - Monitoring et observabilite : 45 %
 
-Pour toute question sur la roadmap ou la progression:
-- Consulter [ROADMAP.md](ROADMAP.md) pour les détails complets
-- Consulter la documentation dans `docs/`
-- Créer une issue sur GitHub
+### Livre
 
-**Dernière mise à jour:** 2026-08-28
+- Healthchecks SQL Server, Cassandra, Redis et Kafka, exposes sur `/health`
+- Logs structures avec correlation par `SessionId`
+- `scripts/monitor-health.ps1` avec alertes webhook optionnelles
+
+### Reste a faire
+
+- [ ] Serilog (le README l'annonce, il n'est pas installe)
+- [ ] Metriques Prometheus et tableau de bord Grafana
+- [ ] Tracing distribue (OpenTelemetry)
+- [ ] Agregation centralisee des logs
+
+---
+
+## Phase 8 - Monetisation : 10 % (gelee)
+
+Le paiement est **simule** et ne doit pas etre utilise en production. Chantier volontairement
+mis de cote. Le plan d'integration d'un fournisseur reel est ecrit dans
+[PRODUCTION_READINESS.md](PRODUCTION_READINESS.md).
+
+---
+
+## Phase 10 - Optimisations et performance : 25 %
+
+### Livre
+
+- Cache Redis (cours, listes, statistiques) avec invalidation ciblee
+
+### Reste a faire
+
+- [ ] Rate limiting (aucun `AddRateLimiter` dans `Program.cs`)
+- [ ] Pagination cote serveur du catalogue (tous les cours sont renvoyes d'un bloc)
+- [ ] Optimisation des requetes EF (`AsNoTracking`, projections)
+- [ ] Decoupage de `app.css` (1536 lignes), lazy loading des images, mode sombre
+
+---
+
+## Problemes connus
+
+| # | Probleme | Gravite |
+|---|----------|---------|
+| 1 | `Learn.razor` rend le contenu des modules via `MarkupString` sans assainissement : un instructeur peut injecter du script chez ses apprenants (XSS stocke) | Elevee |
+| 2 | `Course.ThumbnailUrl` est uploade mais affiche nulle part | Moyenne |
+| 3 | Integration YouTube via `youtube.com` et non `youtube-nocookie.com` : cookies de suivi avant consentement | Moyenne (RGPD) |
+| 4 | Images de la page d'accueil chargees depuis Unsplash en dur, sans repli | Moyenne |
+| 5 | Le catalogue public charge tous les cours sans pagination | Moyenne |
+| 6 | Pas de page CGU / confidentialite / contact | Moyenne (mise en ligne publique) |
+| 7 | Couverture de code a 45 % contre 80 % vises | Moyenne |
+
+Analyse complete et plan de correction : [IMPROVEMENTS.md](IMPROVEMENTS.md).
+
+---
+
+## Prochaines actions recommandees
+
+1. **Securite** : assainir le HTML des modules (probleme 1), passer a `youtube-nocookie.com`
+2. **Coherence d'affichage** : lot 1 de [IMPROVEMENTS.md](IMPROVEMENTS.md) (vignettes, notes
+   sur les cartes, categories dynamiques, recherche dans le catalogue, footer global)
+3. **Couverture** : tests des controllers `EduPlatform.API` pour remonter le seuil-cliquet
+4. **Mise en ligne** : certificat TLS reconnu et fermeture des ports directs
+5. **Medias** : stockage objet / CDN, prealable au scale horizontal

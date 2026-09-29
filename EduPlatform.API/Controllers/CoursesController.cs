@@ -41,31 +41,123 @@ namespace EduPlatform.API.Controllers
             [FromQuery] string? category,
             [FromQuery] string? level)
         {
-            if (string.IsNullOrWhiteSpace(category) && string.IsNullOrWhiteSpace(level))
+            var isUnfiltered = string.IsNullOrWhiteSpace(category) && string.IsNullOrWhiteSpace(level);
+            List<CourseListItemDto>? courses = null;
+
+            if (isUnfiltered)
+                courses = await _cache.GetAsync<List<CourseListItemDto>>(CacheService.CourseListKey());
+
+            if (courses is null)
             {
-                var cachedCourses = await _cache.GetAsync<List<Course>>(CacheService.CourseListKey());
-                if (cachedCourses != null)
-                    return Ok(cachedCourses);
+                var query = _db.Courses.Where(c => c.IsPublished && !c.IsArchived);
+
+                if (!string.IsNullOrEmpty(category))
+                    query = query.Where(c => c.Category == category);
+                if (!string.IsNullOrEmpty(level))
+                    query = query.Where(c => c.Level == level);
+
+                courses = await query
+                    .OrderByDescending(c => c.CreatedAt)
+                    .Select(c => new CourseListItemDto
+                    {
+                        Id = c.Id,
+                        Title = c.Title,
+                        Description = c.Description,
+                        Category = c.Category,
+                        Level = c.Level,
+                        DurationMinutes = c.DurationMinutes,
+                        ThumbnailUrl = c.ThumbnailUrl,
+                        Price = c.Price,
+                        CreatedAt = c.CreatedAt,
+                        ModuleCount = c.Modules.Count,
+                        EnrollmentCount = c.Enrollments.Count
+                    })
+                    .ToListAsync();
+
+                if (isUnfiltered)
+                {
+                    await _cache.SetAsync(CacheService.CourseListKey(), courses,
+                        TimeSpan.FromMinutes(10));
+                }
             }
 
-            var query = _db.Courses
-                .Include(c => c.Modules)
-                .Where(c => c.IsPublished && !c.IsArchived);
-
-            if (!string.IsNullOrEmpty(category))
-                query = query.Where(c => c.Category == category);
-            if (!string.IsNullOrEmpty(level))
-                query = query.Where(c => c.Level == level);
-
-            var courses = await query.ToListAsync();
-
-            if (string.IsNullOrWhiteSpace(category) && string.IsNullOrWhiteSpace(level))
-            {
-                await _cache.SetAsync(CacheService.CourseListKey(), courses,
-                    TimeSpan.FromMinutes(10));
-            }
-
+            // Les notes sont volontairement calculees hors cache : un avis publie ou modere
+            // doit se refleter immediatement, alors que la liste de cours tolere 10 minutes.
+            await ApplyRatingsAsync(courses);
             return Ok(courses);
+        }
+
+        [HttpGet("categories")]
+        public async Task<IActionResult> GetPublicCategories()
+        {
+            var cached = await _cache.GetAsync<List<CourseCategoryDto>>(
+                CacheService.CourseCategoriesKey());
+            if (cached != null)
+                return Ok(cached);
+
+            var disabled = await _db.CourseCategories
+                .Where(item => !item.IsActive)
+                .Select(item => item.Name)
+                .ToListAsync();
+
+            // Seules les categories qui contiennent au moins un cours publie sont exposees :
+            // une tuile de la page d'accueil doit toujours mener a des resultats.
+            var categories = await _db.Courses
+                .Where(c => c.IsPublished && !c.IsArchived && c.Category != "")
+                .GroupBy(c => c.Category)
+                .Select(group => new CourseCategoryDto
+                {
+                    Name = group.Key,
+                    CourseCount = group.Count(),
+                    ThumbnailUrl = group
+                        .Where(c => c.ThumbnailUrl != "")
+                        .OrderByDescending(c => c.CreatedAt)
+                        .Select(c => c.ThumbnailUrl)
+                        .FirstOrDefault() ?? string.Empty
+                })
+                .ToListAsync();
+
+            categories = categories
+                .Where(item => !disabled.Contains(item.Name, StringComparer.OrdinalIgnoreCase))
+                .OrderByDescending(item => item.CourseCount)
+                .ThenBy(item => item.Name)
+                .ToList();
+
+            await _cache.SetAsync(CacheService.CourseCategoriesKey(), categories,
+                TimeSpan.FromMinutes(10));
+            return Ok(categories);
+        }
+
+        private async Task ApplyRatingsAsync(List<CourseListItemDto> courses)
+        {
+            if (courses.Count == 0)
+                return;
+
+            var ids = courses.Select(course => course.Id).ToList();
+            var ratings = await _db.CourseReviews
+                .Where(review => ids.Contains(review.CourseId))
+                .GroupBy(review => review.CourseId)
+                .Select(group => new
+                {
+                    CourseId = group.Key,
+                    Average = group.Average(review => (double)review.Rating),
+                    Count = group.Count()
+                })
+                .ToListAsync();
+
+            var byCourse = ratings.ToDictionary(item => item.CourseId);
+            foreach (var course in courses)
+            {
+                if (!byCourse.TryGetValue(course.Id, out var rating))
+                {
+                    course.AverageRating = 0;
+                    course.ReviewCount = 0;
+                    continue;
+                }
+
+                course.AverageRating = Math.Round(rating.Average, 1);
+                course.ReviewCount = rating.Count;
+            }
         }
 
         [HttpGet("stats")]
@@ -212,6 +304,7 @@ namespace EduPlatform.API.Controllers
             await _db.SaveChangesAsync();
 
             await _cache.RemoveAsync(CacheService.CourseListKey());
+            await _cache.RemoveAsync(CacheService.CourseCategoriesKey());
             await _cache.RemoveAsync(CacheService.CourseStatsKey());
             return CreatedAtAction(nameof(GetById), new { id = course.Id }, course);
         }
@@ -236,7 +329,9 @@ namespace EduPlatform.API.Controllers
             {
                 CourseId = id,
                 Title = dto.Title,
-                Description = dto.Description,
+                // Le contenu du module est rendu en HTML brut cote Web : on ne stocke
+                // que du balisage assaini, sans script ni attribut executable.
+                Description = LessonHtml.Sanitize(dto.Description),
                 VideoUrl = dto.VideoUrl,
                 DurationMinutes = dto.DurationMinutes,
                 Order = dto.Order
@@ -245,6 +340,7 @@ namespace EduPlatform.API.Controllers
             await _db.SaveChangesAsync();
             await _cache.RemoveAsync(CacheService.CourseKey(id));
             await _cache.RemoveAsync(CacheService.CourseListKey());
+            await _cache.RemoveAsync(CacheService.CourseCategoriesKey());
             await _cache.RemoveAsync(CacheService.CourseStatsKey());
 
             return Ok(module);
@@ -276,6 +372,7 @@ namespace EduPlatform.API.Controllers
             await _db.SaveChangesAsync();
             await _cache.RemoveAsync(CacheService.CourseKey(id));
             await _cache.RemoveAsync(CacheService.CourseListKey());
+            await _cache.RemoveAsync(CacheService.CourseCategoriesKey());
             await _cache.RemoveAsync(CacheService.CourseStatsKey());
 
             return Ok(course);
@@ -348,6 +445,7 @@ namespace EduPlatform.API.Controllers
             await _db.SaveChangesAsync();
             await _cache.RemoveAsync(CacheService.CourseKey(id));
             await _cache.RemoveAsync(CacheService.CourseListKey());
+            await _cache.RemoveAsync(CacheService.CourseCategoriesKey());
             await _cache.RemoveAsync(CacheService.CourseStatsKey());
 
             return Ok(course);
@@ -398,6 +496,7 @@ namespace EduPlatform.API.Controllers
             await _db.SaveChangesAsync();
             await _cache.RemoveAsync(CacheService.CourseKey(id));
             await _cache.RemoveAsync(CacheService.CourseListKey());
+            await _cache.RemoveAsync(CacheService.CourseCategoriesKey());
             await _cache.RemoveAsync(CacheService.CourseStatsKey());
 
             return Ok(course);
@@ -420,6 +519,7 @@ namespace EduPlatform.API.Controllers
             await _db.SaveChangesAsync();
             await _cache.RemoveAsync(CacheService.CourseKey(id));
             await _cache.RemoveAsync(CacheService.CourseListKey());
+            await _cache.RemoveAsync(CacheService.CourseCategoriesKey());
             await _cache.RemoveAsync(CacheService.CourseStatsKey());
 
             return Ok(course);
@@ -443,6 +543,7 @@ namespace EduPlatform.API.Controllers
             await _db.SaveChangesAsync();
             await _cache.RemoveAsync(CacheService.CourseKey(id));
             await _cache.RemoveAsync(CacheService.CourseListKey());
+            await _cache.RemoveAsync(CacheService.CourseCategoriesKey());
             await _cache.RemoveAsync(CacheService.CourseStatsKey());
 
             return Ok(course);
@@ -466,6 +567,7 @@ namespace EduPlatform.API.Controllers
             await _db.SaveChangesAsync();
             await _cache.RemoveAsync(CacheService.CourseKey(id));
             await _cache.RemoveAsync(CacheService.CourseListKey());
+            await _cache.RemoveAsync(CacheService.CourseCategoriesKey());
             await _cache.RemoveAsync(CacheService.CourseStatsKey());
 
             return Ok(course);
@@ -487,6 +589,7 @@ namespace EduPlatform.API.Controllers
             await _db.SaveChangesAsync();
             await _cache.RemoveAsync(CacheService.CourseKey(id));
             await _cache.RemoveAsync(CacheService.CourseListKey());
+            await _cache.RemoveAsync(CacheService.CourseCategoriesKey());
             await _cache.RemoveAsync(CacheService.CourseStatsKey());
 
             return NoContent();
@@ -511,6 +614,7 @@ namespace EduPlatform.API.Controllers
             await _db.SaveChangesAsync();
             await _cache.RemoveAsync(CacheService.CourseKey(courseId));
             await _cache.RemoveAsync(CacheService.CourseListKey());
+            await _cache.RemoveAsync(CacheService.CourseCategoriesKey());
             await _cache.RemoveAsync(CacheService.CourseStatsKey());
 
             return NoContent();
@@ -538,13 +642,14 @@ namespace EduPlatform.API.Controllers
                 return Forbid();
 
             module.Title = dto.Title;
-            module.Description = dto.Description;
+            module.Description = LessonHtml.Sanitize(dto.Description);
             module.VideoUrl = dto.VideoUrl;
             module.DurationMinutes = dto.DurationMinutes;
             module.Order = dto.Order;
             await _db.SaveChangesAsync();
             await _cache.RemoveAsync(CacheService.CourseKey(courseId));
             await _cache.RemoveAsync(CacheService.CourseListKey());
+            await _cache.RemoveAsync(CacheService.CourseCategoriesKey());
             await _cache.RemoveAsync(CacheService.CourseStatsKey());
 
             return Ok(module);
@@ -596,6 +701,7 @@ namespace EduPlatform.API.Controllers
             await _db.SaveChangesAsync();
             await _cache.RemoveAsync(CacheService.CourseKey(courseId));
             await _cache.RemoveAsync(CacheService.CourseListKey());
+            await _cache.RemoveAsync(CacheService.CourseCategoriesKey());
             await _cache.RemoveAsync(CacheService.CourseStatsKey());
 
             return Ok(module);
@@ -640,6 +746,7 @@ namespace EduPlatform.API.Controllers
             await _db.SaveChangesAsync();
             await _cache.RemoveAsync(CacheService.CourseKey(id));
             await _cache.RemoveAsync(CacheService.CourseListKey());
+            await _cache.RemoveAsync(CacheService.CourseCategoriesKey());
             await _cache.RemoveAsync(CacheService.CourseStatsKey());
 
             return Ok(course);
@@ -769,6 +876,34 @@ namespace EduPlatform.API.Controllers
         public string VideoUrl { get; set; } = string.Empty;
         public int DurationMinutes { get; set; }
         public int Order { get; set; }
+    }
+
+    /// <summary>
+    /// Projection du catalogue public. Volontairement distincte de l'entite <see cref="Course"/> :
+    /// elle expose la vignette et les agregats d'affichage sans transporter les modules complets.
+    /// </summary>
+    public class CourseListItemDto
+    {
+        public Guid Id { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string Category { get; set; } = string.Empty;
+        public string Level { get; set; } = string.Empty;
+        public int DurationMinutes { get; set; }
+        public string ThumbnailUrl { get; set; } = string.Empty;
+        public decimal Price { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public int ModuleCount { get; set; }
+        public int EnrollmentCount { get; set; }
+        public double AverageRating { get; set; }
+        public int ReviewCount { get; set; }
+    }
+
+    public class CourseCategoryDto
+    {
+        public string Name { get; set; } = string.Empty;
+        public int CourseCount { get; set; }
+        public string ThumbnailUrl { get; set; } = string.Empty;
     }
 
     public class CourseStatsDto

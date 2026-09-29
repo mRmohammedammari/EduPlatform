@@ -1,8 +1,11 @@
-﻿@page "/"
+@page "/"
 @rendermode InteractiveServer
 @inject NavigationManager Nav
 @inject EduPlatform.Web.Services.AuthStateService AuthState
 @inject IHttpClientFactory HttpClientFactory
+@using System.Globalization
+
+<PageTitle>EduPlatform - Apprendre, progresser, partager</PageTitle>
 
 <div class="market-home">
     <section class="market-hero-panel">
@@ -12,14 +15,67 @@
             <p>Des cours concrets, des parcours guidés et un suivi qui vous aide à aller jusqu'au bout.</p>
             <div class="market-hero-actions">
                 <button class="market-button market-button-light" @onclick='() => Nav.NavigateTo("/courses")'>Explorer les cours</button>
-                <button class="market-button market-button-outline" @onclick='() => Nav.NavigateTo("/register")'>Commencer gratuitement</button>
+                @if (!AuthState.IsAuthenticated)
+                {
+                    <button class="market-button market-button-outline" @onclick='() => Nav.NavigateTo("/register")'>Commencer gratuitement</button>
+                }
+                else
+                {
+                    <button class="market-button market-button-outline" @onclick='() => Nav.NavigateTo("/progress")'>Ma progression</button>
+                }
             </div>
         </div>
 
         <div class="hero-visual">
-            <img src="https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1200&q=80" alt="Étudiants qui apprennent ensemble" />
+            @* Image servie localement : l'ancienne URL Unsplash en dur laissait un trou
+               quand le service tiers etait injoignable, et deposait une requete externe. *@
+            <img src="img/hero-learning.svg"
+                 alt="Illustration d'un parcours d'apprentissage"
+                 width="1200" height="800" loading="eager" decoding="async" />
         </div>
     </section>
+
+    @* Bandeau de reprise : la page d'accueil etait identique connecte et deconnecte,
+       alors que AuthState y etait deja injecte sans jamais etre utilise. *@
+    @if (AuthState.IsAuthenticated && ContinueCourses is { Count: > 0 })
+    {
+        <section class="market-section continue-learning">
+            <div class="section-heading-row">
+                <div>
+                    <span class="eyebrow dark">REPRENDRE</span>
+                    <h2>Là où vous en étiez.</h2>
+                </div>
+                <button class="text-link" @onclick='() => Nav.NavigateTo("/progress")'>Toute ma progression &rarr;</button>
+            </div>
+
+            <div class="continue-grid">
+                @foreach (var course in ContinueCourses)
+                {
+                    <article class="continue-card"
+                             role="button"
+                             tabindex="0"
+                             aria-label="@($"Reprendre le cours {course.CourseTitle}, progression {course.ProgressPercent}%")"
+                             @onclick="() => GoToLearn(course.CourseId)"
+                             @onkeydown="args => OnLearnKeyDown(args, course.CourseId)">
+                        <CourseCover Title="@course.CourseTitle"
+                                     Category="@course.Category"
+                                     ThumbnailUrl="@course.ThumbnailUrl"
+                                     CssClass="continue-cover" />
+                        <div class="continue-copy">
+                            <h3>@course.CourseTitle</h3>
+                            <div class="continue-progress">
+                                <span class="continue-bar">
+                                    <span class="continue-bar-fill" style="width: @course.ProgressPercent%"></span>
+                                </span>
+                                <small>@course.ProgressPercent% terminé</small>
+                            </div>
+                            <span class="continue-cta">Reprendre &rarr;</span>
+                        </div>
+                    </article>
+                }
+            </div>
+        </section>
+    }
 
     <div class="market-stats-band">
         <div><strong>@FormatStat(Stats?.ActiveLearners)</strong><span>apprenants actifs</span></div>
@@ -31,52 +87,56 @@
     <section class="market-section market-features">
         <div class="section-heading-row centered-row">
             <div>
-                <span class="eyebrow dark">POURQUOI ÉTUDIANTS</span>
+                <span class="eyebrow dark">POURQUOI EDUPLATFORM</span>
                 <h2>Une expérience pensée pour avancer sans friction.</h2>
             </div>
         </div>
 
         <div class="market-feature-grid">
             <article class="feature-panel">
-                <span class="feature-icon">⚡</span>
+                <span class="feature-icon" aria-hidden="true">&#9889;</span>
                 <h3>Progression rapide</h3>
                 <p>Des parcours guidés, des modules clairs et une dynamique de suivi pour rester motivé.</p>
             </article>
             <article class="feature-panel">
-                <span class="feature-icon">🎯</span>
+                <span class="feature-icon" aria-hidden="true">&#127919;</span>
                 <h3>Apprentissage concret</h3>
                 <p>Chaque cours combine théorie, exercices et mise en situation pour mieux retenir.</p>
             </article>
             <article class="feature-panel">
-                <span class="feature-icon">🏆</span>
+                <span class="feature-icon" aria-hidden="true">&#127942;</span>
                 <h3>Certifications utiles</h3>
                 <p>Validez vos compétences avec des évaluations et des attestations de progression.</p>
             </article>
         </div>
     </section>
 
-    <section class="market-section market-intro">
-        <div class="intro-copy">
-            <span class="eyebrow dark">APPRENDRE AUTREMENT</span>
-            <h2>Les compétences qui comptent vraiment.</h2>
-            <p>Des formations conçues pour passer de la curiosité à la pratique, avec vidéo, contenu écrit et tests de validation.</p>
-        </div>
+    @if (Categories is { Count: > 0 })
+    {
+        <section class="market-section market-intro">
+            <div class="intro-copy">
+                <span class="eyebrow dark">APPRENDRE AUTREMENT</span>
+                <h2>Les compétences qui comptent vraiment.</h2>
+                <p>Des formations conçues pour passer de la curiosité à la pratique, avec vidéo, contenu écrit et tests de validation.</p>
+            </div>
 
-        <div class="market-category-grid">
-            <button class="category-tile" @onclick='() => GoToCourses("Informatique")'>
-                <img src="https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&w=700&q=80" alt="Intelligence artificielle" />
-                <span>Intelligence artificielle</span>
-            </button>
-            <button class="category-tile" @onclick='() => GoToCourses("Economie")'>
-                <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=700&q=80" alt="Analyse de données" />
-                <span>Data & stratégie</span>
-            </button>
-            <button class="category-tile" @onclick='() => GoToCourses("Informatique")'>
-                <img src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=700&q=80" alt="Développement logiciel" />
-                <span>Développement logiciel</span>
-            </button>
-        </div>
-    </section>
+            <div class="market-category-grid">
+                @* Categories reellement presentes au catalogue : les trois tuiles etaient
+                   ecrites en dur et pouvaient mener a zero resultat. *@
+                @foreach (var category in Categories.Take(3))
+                {
+                    <button class="category-tile" @onclick="() => GoToCourses(category.Name)">
+                        <CourseCover Title="@category.Name"
+                                     Category="@category.Name"
+                                     ThumbnailUrl="@category.ThumbnailUrl"
+                                     CssClass="category-tile-cover" />
+                        <span>@category.Name</span>
+                        <small>@category.CourseCount cours</small>
+                    </button>
+                }
+            </div>
+        </section>
+    }
 
     <section class="market-section market-courses">
         <div class="section-heading-row">
@@ -84,12 +144,12 @@
                 <span class="eyebrow dark">À LA UNE</span>
                 <h2>Les cours qui font avancer.</h2>
             </div>
-            <button class="text-link" @onclick='() => Nav.NavigateTo("/courses")'>Voir tout le catalogue →</button>
+            <button class="text-link" @onclick='() => Nav.NavigateTo("/courses")'>Voir tout le catalogue &rarr;</button>
         </div>
 
         @if (FeaturedCourses is null)
         {
-            <p class="market-courses-empty">Chargement des cours...</p>
+            <LoadingState Message="Chargement des cours..." CssClass="market-courses-empty" />
         }
         else if (FeaturedCourses.Count == 0)
         {
@@ -100,13 +160,32 @@
             <div class="market-course-grid">
                 @foreach (var course in FeaturedCourses)
                 {
-                    <article class="market-course-card" @onclick="() => GoToCourse(course.Id)" style="cursor: pointer;">
-                        <div class="market-course-cover" style="@GetCoverStyle(course.Category)"></div>
+                    <article class="market-course-card"
+                             role="button"
+                             tabindex="0"
+                             aria-label="@($"Ouvrir le cours {course.Title}")"
+                             @onclick="() => GoToCourse(course.Id)"
+                             @onkeydown="args => OnCardKeyDown(args, course.Id)">
+                        <CourseCover Title="@course.Title"
+                                     Category="@course.Category"
+                                     ThumbnailUrl="@course.ThumbnailUrl"
+                                     CssClass="market-course-cover" />
                         <div class="course-card-copy">
                             <span class="course-kicker">@course.Category.ToUpperInvariant()</span>
                             <h3>@course.Title</h3>
+                            @if (course.ReviewCount > 0)
+                            {
+                                <div class="course-card-rating">
+                                    <StarRating Rating="@course.AverageRating" ReviewCount="@course.ReviewCount" />
+                                    <strong>@course.AverageRating.ToString("0.0", CultureInfo.InvariantCulture)</strong>
+                                    <span>(@course.ReviewCount)</span>
+                                </div>
+                            }
                             <p>@course.Description</p>
-                            <div class="course-card-meta"><strong>@course.Level</strong><small>@course.Modules.Count module(s)</small></div>
+                            <div class="course-card-meta">
+                                <strong>@course.Level</strong>
+                                <small>@course.ModuleCount module@(course.ModuleCount > 1 ? "s" : "")</small>
+                            </div>
                         </div>
                     </article>
                 }
@@ -125,47 +204,34 @@
         <div class="pathway-art">
             <div class="art-shape art-shape-one"></div>
             <div class="art-shape art-shape-two"></div>
+            @* L'ancien encart annoncait « +42% cette semaine » a tous les visiteurs :
+               c'etait une valeur fictive ecrite en dur. Remplacee par un chiffre reel. *@
             <div class="art-window">
-                <span>PROGRESS</span>
-                <strong>+ 42%</strong>
-                <small>Cette semaine</small>
+                <span>CATALOGUE</span>
+                <strong>@FormatStat(Stats?.PublishedCourses)</strong>
+                <small>cours publiés à ce jour</small>
             </div>
         </div>
     </section>
 
     <section class="market-trust">
         <span>Une plateforme pensée pour apprendre avec confiance</span>
-        <div><b>SQL</b><b>ML.NET</b><b>Kafka</b><b>Blazor</b><b>Cloud-ready</b></div>
+        <div>
+            <b>Contenus validés</b>
+            <b>Suivi de progression</b>
+            <b>Évaluations QCM</b>
+            <b>Attestations</b>
+            <b>Assistance IA</b>
+        </div>
     </section>
-
-    <footer class="market-footer">
-        <div>
-            <a class="market-logo footer-logo" href="/">Edu<span>Platform</span></a>
-            <p>Apprendre avec méthode. Grandir avec confiance.</p>
-        </div>
-        <div>
-            <strong>Explorer</strong>
-            <a href="/courses">Tous les cours</a>
-            <a href="/recommendations">Recommandations</a>
-            <a href="/register">Créer un compte</a>
-        </div>
-        <div>
-            <strong>La plateforme</strong>
-            <a href="/activity">Votre activité</a>
-            <a href="/progress">Votre progression</a>
-            <a href="/notifications">Notifications</a>
-        </div>
-        <div>
-            <strong>Pour les enseignants</strong>
-            <a href="/instructor">Créer un cours</a>
-            <a href="/login">Se connecter</a>
-        </div>
-    </footer>
 </div>
 
 @code {
     private CourseStatsDto? Stats;
     private List<CourseSummaryDto>? FeaturedCourses;
+    private List<CategoryDto>? Categories;
+    private List<ContinueCourseDto>? ContinueCourses;
+    private bool ContinueLoaded;
 
     protected override async Task OnInitializedAsync()
     {
@@ -183,8 +249,13 @@
         try
         {
             var courses = await httpClient.GetFromJsonAsync<List<CourseSummaryDto>>("api/courses");
+            // Mise en avant par note puis par nombre d'avis, avec la date en dernier recours :
+            // « les 4 derniers crees » ne reflete pas la qualite du catalogue.
             FeaturedCourses = (courses ?? new List<CourseSummaryDto>())
-                .OrderByDescending(c => c.CreatedAt)
+                .OrderByDescending(course => course.ReviewCount > 0 ? course.AverageRating : -1)
+                .ThenByDescending(course => course.ReviewCount)
+                .ThenByDescending(course => course.EnrollmentCount)
+                .ThenByDescending(course => course.CreatedAt)
                 .Take(4)
                 .ToList();
         }
@@ -192,27 +263,68 @@
         {
             FeaturedCourses = new List<CourseSummaryDto>();
         }
+
+        try
+        {
+            Categories = await httpClient.GetFromJsonAsync<List<CategoryDto>>("api/courses/categories");
+        }
+        catch (Exception)
+        {
+            Categories = new List<CategoryDto>();
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await AuthState.InitializeAsync();
+            await LoadContinueLearningAsync();
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadContinueLearningAsync()
+    {
+        if (!AuthState.IsAuthenticated || ContinueLoaded)
+            return;
+
+        ContinueLoaded = true;
+        try
+        {
+            var client = HttpClientFactory.CreateAuthorizedClient(AuthState);
+            ContinueCourses = await client
+                .GetFromJsonAsync<List<ContinueCourseDto>>("api/progress/continue?limit=3");
+        }
+        catch (Exception)
+        {
+            // Le bandeau est un bonus : son echec ne doit pas degrader la page d'accueil.
+            ContinueCourses = new List<ContinueCourseDto>();
+        }
+    }
+
+    private void GoToLearn(Guid courseId) => Nav.NavigateTo($"/courses/{courseId}/learn");
+
+    private void OnLearnKeyDown(KeyboardEventArgs args, Guid courseId)
+    {
+        if (args.Key is "Enter" or " ")
+            GoToLearn(courseId);
     }
 
     private static string FormatStat(int? value) => value is null ? "—" : value.Value.ToString();
 
-    private void GoToCourses(string category) => Nav.NavigateTo($"/courses?category={Uri.EscapeDataString(category)}");
+    private void GoToCourses(string category) =>
+        Nav.NavigateTo($"/explore?category={Uri.EscapeDataString(category)}");
 
     private void GoToCourse(Guid id) => Nav.NavigateTo($"/courses/{id}");
 
-    private string GetCoverStyle(string category)
+    private void OnCardKeyDown(KeyboardEventArgs args, Guid courseId)
     {
-        return category switch
-        {
-            "Informatique" => "background: linear-gradient(135deg, #5b5df6 0%, #8b5cf6 100%);",
-            "Economie" => "background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%);",
-            "Physique" => "background: linear-gradient(135deg, #10b981 0%, #14b8a6 100%);",
-            "Langues" => "background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);",
-            _ => "background: linear-gradient(135deg, #1f2937 0%, #6d28d9 100%);"
-        };
+        if (args.Key is "Enter" or " ")
+            GoToCourse(courseId);
     }
 
-    private class CourseStatsDto
+    private sealed class CourseStatsDto
     {
         public int PublishedCourses { get; set; }
         public int Categories { get; set; }
@@ -220,14 +332,34 @@
         public int ActiveLearners { get; set; }
     }
 
-    private class CourseSummaryDto
+    private sealed class CourseSummaryDto
     {
         public Guid Id { get; set; }
         public string Title { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
         public string Category { get; set; } = string.Empty;
         public string Level { get; set; } = string.Empty;
+        public string ThumbnailUrl { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; }
-        public List<object> Modules { get; set; } = new();
+        public int ModuleCount { get; set; }
+        public int EnrollmentCount { get; set; }
+        public double AverageRating { get; set; }
+        public int ReviewCount { get; set; }
+    }
+
+    private sealed class CategoryDto
+    {
+        public string Name { get; set; } = string.Empty;
+        public int CourseCount { get; set; }
+        public string ThumbnailUrl { get; set; } = string.Empty;
+    }
+
+    private sealed class ContinueCourseDto
+    {
+        public Guid CourseId { get; set; }
+        public string CourseTitle { get; set; } = string.Empty;
+        public string Category { get; set; } = string.Empty;
+        public string ThumbnailUrl { get; set; } = string.Empty;
+        public int ProgressPercent { get; set; }
     }
 }

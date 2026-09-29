@@ -1,10 +1,41 @@
-<span class="review-stars" role="img" aria-label="@($"{Rating:0.0} sur 5")">
+@*
+    Notation en etoiles, lecture seule.
+    Les glyphes etaient precedemment perdus a l'encodage et s'affichaient en "?" :
+    ils sont ecrits ici via leurs references de caracteres HTML pour etre insensibles
+    a l'encodage du fichier.
+*@
+
+<span class="review-stars" role="img" aria-label="@AccessibleLabel">
     @for (var index = 1; index <= 5; index++)
     {
-        <span aria-hidden="true">@(index <= Math.Round(Rating) ? "?" : "?")</span>
+        <span class="review-star @(index <= FilledStars ? "is-filled" : "is-empty")" aria-hidden="true">
+            @(index <= FilledStars ? FilledStar : EmptyStar)
+        </span>
     }
 </span>
 
 @code {
+    private const string FilledStar = "★"; // etoile pleine
+    private const string EmptyStar = "☆";  // etoile vide
+
     [Parameter] public double Rating { get; set; }
+
+    /// <summary>Nombre d'avis, inclus dans le libelle accessible quand il est fourni.</summary>
+    [Parameter] public int? ReviewCount { get; set; }
+
+    private int FilledStars => Math.Clamp((int)Math.Round(Rating, MidpointRounding.AwayFromZero), 0, 5);
+
+    private string AccessibleLabel
+    {
+        get
+        {
+            var note = $"{Rating.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture)} sur 5";
+            if (ReviewCount is null)
+                return note;
+
+            return ReviewCount == 1
+                ? $"{note}, 1 avis"
+                : $"{note}, {ReviewCount} avis";
+        }
+    }
 }
