@@ -1,5 +1,6 @@
 @page "/courses/{CourseId:guid}"
 @rendermode InteractiveServer
+@implements IDisposable
 @inject IHttpClientFactory HttpClientFactory
 @inject NavigationManager Nav
 @inject EduPlatform.Web.Services.AuthStateService AuthState
@@ -380,6 +381,19 @@ else
         return rest == 0 ? $"{hours} h" : $"{hours} h {rest:00}";
     }
 
+    protected override void OnInitialized()
+    {
+        // Sans cet abonnement, la page ne reevaluait jamais l'authentification :
+        // elle lisait AuthState.IsAuthenticated dans OnInitializedAsync, c'est-a-dire
+        // avant que le jeton ait pu etre relu depuis le localStorage. Resultat, un
+        // apprenant deja inscrit se voyait proposer d'acheter son propre cours.
+        AuthState.OnChange += OnAuthStateChanged;
+    }
+
+    /// <summary>
+    /// Donnees publiques du cours. Volontairement chargees des l'initialisation :
+    /// elles ne dependent pas de l'authentification et restent rendues cote serveur.
+    /// </summary>
     protected override async Task OnInitializedAsync()
     {
         try
@@ -387,17 +401,57 @@ else
             var httpClient = HttpClientFactory.CreateClient("EduPlatformAPI");
             Course = await httpClient.GetFromJsonAsync<CourseDto>($"api/Courses/{CourseId}");
             Reviews = await httpClient.GetFromJsonAsync<ReviewSummary>($"api/reviews/course/{CourseId}");
-
-            if (AuthState.IsAuthenticated)
-            {
-                httpClient.DefaultRequestHeaders.Authorization =
-                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", AuthState.Token);
-                IsEnrolled = await httpClient.GetFromJsonAsync<bool>(
-                    $"api/Courses/{CourseId}/enrollment-status");
-            }
         }
         catch { Course = null; }
         finally { IsLoading = false; }
+    }
+
+    /// <summary>
+    /// L'etat d'inscription ne peut etre determine qu'une fois la session restauree,
+    /// ce qui exige l'acces au stockage du navigateur, donc le premier rendu passe.
+    /// </summary>
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+            return;
+
+        await AuthState.InitializeAsync();
+        await RefreshEnrollmentAsync();
+        StateHasChanged();
+    }
+
+    private async void OnAuthStateChanged()
+    {
+        await InvokeAsync(async () =>
+        {
+            await RefreshEnrollmentAsync();
+            StateHasChanged();
+        });
+    }
+
+    private async Task RefreshEnrollmentAsync()
+    {
+        if (!AuthState.IsAuthenticated)
+        {
+            IsEnrolled = false;
+            return;
+        }
+
+        try
+        {
+            var client = HttpClientFactory.CreateAuthorizedClient(AuthState);
+            IsEnrolled = await client.GetFromJsonAsync<bool>(
+                $"api/Courses/{CourseId}/enrollment-status");
+        }
+        catch
+        {
+            IsEnrolled = false;
+        }
+    }
+
+    public void Dispose()
+    {
+        AuthState.OnChange -= OnAuthStateChanged;
     }
 
     private async Task SubmitReview()

@@ -1,43 +1,67 @@
 @page "/courses/{CourseId:guid}/learn"
 @rendermode InteractiveServer
-@implements IDisposable
+@implements IAsyncDisposable
 @inject IHttpClientFactory HttpClientFactory
 @inject NavigationManager Nav
+@inject IJSRuntime JS
 @inject EduPlatform.Web.Services.AuthStateService AuthState
 
-@if (!AuthState.IsAuthenticated)
+@if (!AuthResolved)
+{
+    @* Tant que la restauration de session n'a pas abouti, on ne peut rien conclure :
+       afficher « Connectez-vous » ici accusait a tort un utilisateur connecte. *@
+    <LoadingState Message="Chargement du cours..." />
+}
+else if (!AuthState.IsAuthenticated)
 {
     <div class="profile-container">
-        <div class="alert-error">Connectez-vous pour accéder au contenu du cours.</div>
+        <AlertMessage Message="Connectez-vous pour accéder au contenu du cours." />
         <button class="btn-primary" @onclick="GoToLogin">Se connecter</button>
     </div>
 }
 else if (IsLoading)
 {
-    <p>Chargement du cours...</p>
+    <LoadingState Message="Chargement du cours..." />
 }
 else if (!IsEnrolled)
 {
     <div class="profile-container">
-        <div class="alert-error">Vous devez être inscrit à ce cours pour accéder au contenu.</div>
+        <AlertMessage Message="Vous devez être inscrit à ce cours pour accéder au contenu." />
         <button class="btn-primary" @onclick="GoToCourse">Voir le cours</button>
     </div>
 }
 else if (Course == null)
 {
-    <div class="alert-error">Cours introuvable.</div>
+    <div class="profile-container">
+        <AlertMessage Message="Cours introuvable." />
+        <button class="btn-primary" @onclick="GoToCourse">Retour au cours</button>
+    </div>
 }
 else
 {
+    <PageTitle>@Course.Title - EduPlatform</PageTitle>
+
     <div class="learning-layout">
         <aside class="learning-sidebar">
             <h2>@Course.Title</h2>
-            @foreach (var module in Course.Modules.OrderBy(m => m.Order))
+
+            @* Progression du cours : la barre laterale ne montrait ni les modules
+               termines ni l'avancement global. *@
+            <div class="learning-progress">
+                <div class="learning-progress-bar">
+                    <span class="learning-progress-fill" style="width: @CoursePercent%"></span>
+                </div>
+                <small>@CompletedCount / @OrderedModules.Count modules &middot; @CoursePercent%</small>
+            </div>
+
+            @foreach (var module in OrderedModules)
             {
-                <button class="module-link @(SelectedModule?.Id == module.Id ? "active" : "")"
+                var done = IsModuleCompleted(module.Id);
+                <button class="module-link @(SelectedModule?.Id == module.Id ? "active" : "") @(done ? "is-done" : "")"
                         @onclick="() => SelectModule(module)">
-                    <span>@module.Order. @module.Title</span>
-                    <small>@module.DurationMinutes min</small>
+                    <span class="module-link-state" aria-hidden="true">@(done ? "✓" : module.Order.ToString())</span>
+                    <span class="module-link-title">@module.Title</span>
+                    <small>@module.DurationMinutes min@(done ? " · terminé" : "")</small>
                 </button>
             }
         </aside>
@@ -53,6 +77,10 @@ else
                 <div class="page-header">
                     <span class="badge">Module @SelectedModule.Order</span>
                     <h1>@SelectedModule.Title</h1>
+                    @if (IsModuleCompleted(SelectedModule.Id))
+                    {
+                        <span class="module-done-tag">Terminé</span>
+                    }
                 </div>
 
                 @if (!string.IsNullOrWhiteSpace(SelectedModule.VideoUrl))
@@ -67,9 +95,42 @@ else
                         }
                         else
                         {
-                            <video controls preload="metadata" src="@SelectedModule.VideoUrl"></video>
+                            @* @key force un nouvel element DOM par module : sans cela Blazor
+                               reutiliserait le meme <video> et la reprise viserait le mauvais
+                               module. *@
+                            <video @key="SelectedModule.Id"
+                                   @ref="VideoElement"
+                                   controls
+                                   preload="metadata"
+                                   playsinline
+                                   poster="@PosterUrl"
+                                   src="@SelectedModule.VideoUrl"></video>
                         }
                     </div>
+
+                    @if (!IsYouTubeUrl(SelectedModule.VideoUrl))
+                    {
+                        <div class="video-toolbar">
+                            <button class="btn-secondary btn-small" @onclick="() => Skip(-10)" aria-label="Reculer de 10 secondes">&#8592; 10 s</button>
+                            <button class="btn-secondary btn-small" @onclick="() => Skip(10)" aria-label="Avancer de 10 secondes">10 s &#8594;</button>
+
+                            <label class="video-rate">
+                                Vitesse
+                                <select @bind="PlaybackRate" @bind:after="ApplyPlaybackRate" aria-label="Vitesse de lecture">
+                                    <option value="0.75">0,75×</option>
+                                    <option value="1">1×</option>
+                                    <option value="1.25">1,25×</option>
+                                    <option value="1.5">1,5×</option>
+                                    <option value="2">2×</option>
+                                </select>
+                            </label>
+
+                            @if (ResumedFromSeconds > 0)
+                            {
+                                <span class="video-resumed">Reprise à @FormatClock(ResumedFromSeconds)</span>
+                            }
+                        </div>
+                    }
                 }
 
                 @if (!string.IsNullOrWhiteSpace(SanitizedLesson))
@@ -85,13 +146,30 @@ else
                     <p>Le contenu de ce module sera bientôt disponible.</p>
                 }
 
-                <button class="btn-primary" @onclick="MarkModuleCompleted" disabled="@IsSavingActivity">
-                    @(IsSavingActivity ? "Enregistrement..." : "Marquer le module comme terminé")
-                </button>
+                <div class="learning-actions">
+                    @if (!IsModuleCompleted(SelectedModule.Id))
+                    {
+                        <button class="btn-primary" @onclick="MarkModuleCompleted" disabled="@IsSavingActivity">
+                            @(IsSavingActivity ? "Enregistrement..." : "Marquer le module comme terminé")
+                        </button>
+                    }
+
+                    @* Enchainement : il fallait revenir a la barre laterale a chaque fois. *@
+                    @if (NextModule is not null)
+                    {
+                        <button class="btn-secondary" @onclick="GoToNextModule">
+                            Module suivant : @NextModule.Title &rarr;
+                        </button>
+                    }
+                    else if (CompletedCount == OrderedModules.Count && OrderedModules.Count > 0)
+                    {
+                        <button class="btn-secondary" @onclick="GoToCertificate">Voir mon certificat</button>
+                    }
+                </div>
 
                 @if (!string.IsNullOrWhiteSpace(ActivityMessage))
                 {
-                    <div class="alert-success">@ActivityMessage</div>
+                    <div class="alert-success" role="status">@ActivityMessage</div>
                 }
             }
         </main>
@@ -107,7 +185,55 @@ else
     private bool IsEnrolled;
     private bool IsSavingActivity;
     private string ActivityMessage = string.Empty;
-    private bool DataLoaded;
+
+    /// <summary>Chargement unique du cours, partage entre tous les appelants.</summary>
+    private Task? LoadTask;
+
+    /// <summary>Vrai une fois la premiere tentative de restauration de session terminee.</summary>
+    private bool AuthResolved;
+
+    // Assaini une seule fois par changement de module plutot qu'a chaque rendu.
+    private string SanitizedLesson = string.Empty;
+
+    private ElementReference VideoElement;
+    private IJSObjectReference? VideoModule;
+    private DotNetObjectReference<Learn>? SelfRef;
+
+    /// <summary>Module pour lequel le lecteur JS est actuellement attache.</summary>
+    private Guid? AttachedModuleId;
+
+    private string PlaybackRate = "1";
+    private int ResumedFromSeconds;
+
+    private Dictionary<Guid, ModuleProgressDto> Progress = new();
+
+    private List<ModuleDto> OrderedModules =>
+        Course?.Modules.OrderBy(module => module.Order).ToList() ?? new List<ModuleDto>();
+
+    private int CompletedCount => OrderedModules.Count(module => IsModuleCompleted(module.Id));
+
+    private int CoursePercent => OrderedModules.Count == 0
+        ? 0
+        : CompletedCount * 100 / OrderedModules.Count;
+
+    private ModuleDto? NextModule
+    {
+        get
+        {
+            if (SelectedModule is null)
+                return null;
+
+            return OrderedModules
+                .SkipWhile(module => module.Id != SelectedModule.Id)
+                .Skip(1)
+                .FirstOrDefault();
+        }
+    }
+
+    private string PosterUrl => "img/video-poster.svg";
+
+    private bool IsModuleCompleted(Guid moduleId) =>
+        Progress.TryGetValue(moduleId, out var item) && item.IsCompleted;
 
     protected override void OnInitialized()
     {
@@ -118,31 +244,60 @@ else
     {
         if (firstRender)
         {
-            await AuthState.InitializeAsync();
-            await EvaluateAuthStateAsync();
+            // La session vit dans le localStorage : elle n'existe donc pas au premier
+            // rendu. Plusieurs composants (en-tete, layout, page) appellent
+            // InitializeAsync en parallele et se marchaient dessus, si bien qu'apres
+            // l'attente la page voyait encore IsAuthenticated = false.
+            // On declenche la restauration si personne ne l'a fait, puis on attend la
+            // PREMIERE restauration, d'ou qu'elle vienne. C'est exactement le role de
+            // WaitForInitializationAsync, jusqu'ici presente mais jamais utilisee.
+            _ = AuthState.InitializeAsync();
+            await AuthState.WaitForInitializationAsync();
+
+            AuthResolved = true;
+            await EnsureLoadedAsync();
+
+            // OnAfterRenderAsync ne declenche pas de nouveau rendu par lui-meme.
+            StateHasChanged();
+            return;
         }
+
+        await AttachPlayerIfNeededAsync();
     }
 
     private async void OnAuthStateChanged()
     {
         await InvokeAsync(async () =>
         {
-            await EvaluateAuthStateAsync();
+            AuthResolved = true;
+            await EnsureLoadedAsync();
             StateHasChanged();
         });
     }
 
-    private async Task EvaluateAuthStateAsync()
+    /// <summary>
+    /// Garantit que le cours est charge, une seule fois, et rend l'operation
+    /// attendable par tous les appelants.
+    /// </summary>
+    /// <remarks>
+    /// Le garde booleen precedent empechait bien le double chargement, mais le second
+    /// appelant repartait aussitot et declenchait un rendu avant la fin du premier :
+    /// la page restait figee sur l'etat de chargement. En memorisant la Task, les deux
+    /// chemins (evenement d'authentification et premier rendu) attendent la meme chose.
+    /// </remarks>
+    private Task EnsureLoadedAsync()
     {
         if (!AuthState.IsAuthenticated)
         {
             IsLoading = false;
-            return;
+            return Task.CompletedTask;
         }
-        if (DataLoaded)
-            return;
-        DataLoaded = true;
 
+        return LoadTask ??= LoadCourseAsync();
+    }
+
+    private async Task LoadCourseAsync()
+    {
         try
         {
             var client = CreateAuthorizedClient();
@@ -151,7 +306,14 @@ else
                 return;
 
             Course = await client.GetFromJsonAsync<CourseDto>($"api/courses/{CourseId}");
-            SetSelectedModule(Course?.Modules.OrderBy(m => m.Order).FirstOrDefault());
+            await LoadProgressAsync();
+
+            // On ouvre le premier module non termine plutot que le premier module :
+            // l'apprenant reprend la ou il s'est arrete.
+            var resumeTarget = OrderedModules.FirstOrDefault(module => !IsModuleCompleted(module.Id))
+                ?? OrderedModules.FirstOrDefault();
+
+            SetSelectedModule(resumeTarget);
             if (SelectedModule != null)
                 await LogActivityAsync("module_opened", 0);
         }
@@ -165,13 +327,29 @@ else
         }
     }
 
-    public void Dispose()
+    private async Task LoadProgressAsync()
     {
-        AuthState.OnChange -= OnAuthStateChanged;
+        try
+        {
+            var client = CreateAuthorizedClient();
+            var items = await client.GetFromJsonAsync<List<ModuleProgressDto>>(
+                $"api/progress/course/{CourseId}/modules");
+            Progress = (items ?? new List<ModuleProgressDto>())
+                .ToDictionary(item => item.ModuleId);
+        }
+        catch
+        {
+            // La progression est un confort : sans elle la page reste utilisable.
+            Progress = new Dictionary<Guid, ModuleProgressDto>();
+        }
     }
 
     private async Task SelectModule(ModuleDto module)
     {
+        if (SelectedModule?.Id == module.Id)
+            return;
+
+        await DetachPlayerAsync();
         SetSelectedModule(module);
         ActivityMessage = string.Empty;
         await LogActivityAsync("module_opened", 0);
@@ -181,15 +359,163 @@ else
     {
         SelectedModule = module;
         SanitizedLesson = EduPlatform.Core.Services.LessonHtml.Sanitize(module?.Description);
+        ResumedFromSeconds = module is not null
+            && Progress.TryGetValue(module.Id, out var item)
+            && !item.IsCompleted
+                ? item.LastPositionSeconds
+                : 0;
     }
+
+    private async Task GoToNextModule()
+    {
+        var next = NextModule;
+        if (next is not null)
+            await SelectModule(next);
+    }
+
+    // --- Pont JS du lecteur video -------------------------------------------
+
+    private async Task AttachPlayerIfNeededAsync()
+    {
+        var module = SelectedModule;
+        if (module is null
+            || string.IsNullOrWhiteSpace(module.VideoUrl)
+            || IsYouTubeUrl(module.VideoUrl))
+        {
+            return;
+        }
+
+        if (AttachedModuleId == module.Id)
+            return;
+
+        try
+        {
+            VideoModule ??= await JS.InvokeAsync<IJSObjectReference>("import", "./video.js");
+            SelfRef ??= DotNetObjectReference.Create(this);
+
+            var startAt = Progress.TryGetValue(module.Id, out var item) && !item.IsCompleted
+                ? item.LastPositionSeconds
+                : 0;
+
+            await VideoModule.InvokeVoidAsync("attach", VideoElement, SelfRef, startAt);
+
+            var storedRate = await VideoModule.InvokeAsync<double>("getStoredPlaybackRate");
+            PlaybackRate = storedRate.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
+
+            AttachedModuleId = module.Id;
+        }
+        catch (JSDisconnectedException)
+        {
+            // Circuit ferme pendant la navigation : rien a faire.
+        }
+        catch
+        {
+            // Le lecteur natif reste pleinement utilisable sans le pont JS.
+        }
+    }
+
+    private async Task DetachPlayerAsync()
+    {
+        if (VideoModule is null || AttachedModuleId is null)
+        {
+            AttachedModuleId = null;
+            return;
+        }
+
+        try
+        {
+            await VideoModule.InvokeVoidAsync("detach", VideoElement);
+        }
+        catch (JSDisconnectedException) { }
+        catch { }
+
+        AttachedModuleId = null;
+    }
+
+    /// <summary>
+    /// Appele par video.js toutes les 5 secondes de lecture, et au franchissement
+    /// des 90 %. Volontairement peu fréquent : un appel par evenement timeupdate
+    /// saturerait le circuit Blazor.
+    /// </summary>
+    [JSInvokable]
+    public async Task OnPlaybackProgress(int positionSeconds, double watchedRatio)
+    {
+        if (SelectedModule is null)
+            return;
+
+        await SaveModuleProgressAsync(SelectedModule.Id, positionSeconds, watchedRatio, false);
+        StateHasChanged();
+    }
+
+    private async Task Skip(int seconds)
+    {
+        if (VideoModule is null)
+            return;
+
+        try
+        {
+            await VideoModule.InvokeVoidAsync("skip", VideoElement, seconds);
+        }
+        catch (JSDisconnectedException) { }
+    }
+
+    private async Task ApplyPlaybackRate()
+    {
+        if (VideoModule is null)
+            return;
+
+        try
+        {
+            var rate = double.Parse(PlaybackRate, System.Globalization.CultureInfo.InvariantCulture);
+            await VideoModule.InvokeVoidAsync("setPlaybackRate", VideoElement, rate);
+        }
+        catch (JSDisconnectedException) { }
+        catch (FormatException) { }
+    }
+
+    // --- Progression --------------------------------------------------------
 
     private async Task MarkModuleCompleted()
     {
         if (SelectedModule == null)
             return;
 
+        await SaveModuleProgressAsync(SelectedModule.Id, 0, 1d, true);
         await LogActivityAsync("module_completed", SelectedModule.DurationMinutes * 60);
         ActivityMessage = "Votre progression a été enregistrée.";
+    }
+
+    private async Task SaveModuleProgressAsync(
+        Guid moduleId, int positionSeconds, double watchedRatio, bool markCompleted)
+    {
+        var wasCompleted = IsModuleCompleted(moduleId);
+
+        try
+        {
+            var response = await CreateAuthorizedClient().PostAsJsonAsync("api/progress/module", new
+            {
+                moduleId,
+                positionSeconds,
+                watchedRatio,
+                markCompleted
+            });
+
+            if (!response.IsSuccessStatusCode)
+                return;
+
+            var saved = await response.Content.ReadFromJsonAsync<ModuleProgressDto>();
+            if (saved is not null)
+                Progress[moduleId] = saved;
+
+            // Completion atteinte automatiquement : on le signale, sinon le passage
+            // de la pastille a « terminé » serait silencieux.
+            if (!wasCompleted && IsModuleCompleted(moduleId) && !markCompleted)
+                ActivityMessage = "Module terminé : progression enregistrée.";
+        }
+        catch
+        {
+            ActivityMessage = "La progression n'a pas pu être enregistrée.";
+        }
     }
 
     private async Task LogActivityAsync(string actionType, int durationSeconds)
@@ -217,13 +543,34 @@ else
         }
     }
 
+    public async ValueTask DisposeAsync()
+    {
+        AuthState.OnChange -= OnAuthStateChanged;
+
+        await DetachPlayerAsync();
+
+        if (VideoModule is not null)
+        {
+            try { await VideoModule.DisposeAsync(); }
+            catch (JSDisconnectedException) { }
+            catch { }
+        }
+
+        SelfRef?.Dispose();
+    }
+
     private HttpClient CreateAuthorizedClient() => HttpClientFactory.CreateAuthorizedClient(AuthState);
 
     private void GoToLogin() => Nav.NavigateTo("/login");
     private void GoToCourse() => Nav.NavigateTo($"/courses/{CourseId}");
+    private void GoToCertificate() => Nav.NavigateTo($"/courses/{CourseId}/certificate");
 
-    // Assaini une seule fois par changement de module plutot qu'a chaque rendu.
-    private string SanitizedLesson = string.Empty;
+    private static string FormatClock(int totalSeconds)
+    {
+        var minutes = totalSeconds / 60;
+        var seconds = totalSeconds % 60;
+        return $"{minutes}:{seconds:00}";
+    }
 
     private static bool IsYouTubeUrl(string url)
     {
@@ -266,5 +613,13 @@ else
         public string VideoUrl { get; set; } = string.Empty;
         public int DurationMinutes { get; set; }
         public int Order { get; set; }
+    }
+
+    private sealed class ModuleProgressDto
+    {
+        public Guid ModuleId { get; set; }
+        public int LastPositionSeconds { get; set; }
+        public double WatchedRatio { get; set; }
+        public bool IsCompleted { get; set; }
     }
 }
