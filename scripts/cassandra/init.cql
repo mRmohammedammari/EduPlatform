@@ -58,18 +58,15 @@ ON user_activities (action_type);
 -- ============================================
 
 CREATE TABLE IF NOT EXISTS test_results (
-    user_id uuid,
     course_id uuid,
-    test_id uuid,
-    submitted_at timestamp,
-    score decimal,
+  user_id uuid,
+  taken_at timestamp,
     max_score decimal,
-    percentage_score decimal,
     passed boolean,
+  score decimal,
     answers map<text, text>,
-    time_taken_sec int,
-    PRIMARY KEY ((user_id, course_id), submitted_at, test_id)
-) WITH CLUSTERING ORDER BY (submitted_at DESC, test_id ASC)
+  PRIMARY KEY (course_id, user_id, taken_at)
+) WITH CLUSTERING ORDER BY (user_id ASC, taken_at ASC)
   AND comment = 'Résultats des tests passés par les utilisateurs'
   AND gc_grace_seconds = 864000;
 
@@ -101,7 +98,21 @@ CREATE INDEX IF NOT EXISTS idx_chat_course
 ON chat_messages (course_id);
 
 -- ============================================
--- 5. VERIFICATION
+-- 5. CHATBOT SESSIONS (runtime repository)
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS chatbot_sessions (
+    user_id uuid,
+    session_id uuid,
+    created_at timestamp,
+    messages list<text>,
+    PRIMARY KEY (user_id, session_id)
+) WITH CLUSTERING ORDER BY (session_id ASC)
+  AND comment = 'Historique JSON des conversations utilise par ChatRepository'
+  AND gc_grace_seconds = 864000;
+
+-- ============================================
+-- 6. VERIFICATION
 -- ============================================
 
 -- Afficher les tables créées

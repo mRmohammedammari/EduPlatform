@@ -1,7 +1,7 @@
 # EduPlatform - Etat du projet et guide d'exploitation
 
 **Etat verifie le : 2026-09-29**  
-**Commit de reference :** `b8e40bc` sur `main`  
+**Branche de reference :** `main`
 **Public :** developpeurs, administrateurs de la stack et responsables du deploiement.
 
 Ce document decrit le comportement constate dans le depot. Pour les routes HTTP, les attributs des controllers et les DTO sont la source de verite. `docs/API_DOCUMENTATION.md`, `docs/ARCHITECTURE.md`, `docs/DEPLOYMENT.md` et `docs/REMAINING_TASKS.md` contiennent encore des exemples historiques qui ne doivent pas etre copies sans verification.
@@ -15,7 +15,7 @@ Ce document decrit le comportement constate dans le depot. Pour les routes HTTP,
 | Web Blazor | Operationnel | Blazor Server .NET 8, rendu interactif et appels REST a l'API |
 | API REST | Operationnelle | ASP.NET Core 8, JWT Bearer, Swagger |
 | SQL Server | Operationnel en Docker | Donnees relationnelles, migrations EF Core au demarrage dans Compose |
-| Cassandra | Conteneur operationnel | Activites et resultats historiques; schema et repositories ont des ecarts a corriger |
+| Cassandra | Conteneur operationnel | Schema d'initialisation aligne sur les repositories pour les installations neuves |
 | Redis | Operationnel | Cache best-effort pour catalogue, detail, statistiques et categories |
 | Kafka | Operationnel | Producteur et consumer d'activites; consumer actuellement surtout observabilite/log |
 | Nginx | Operationnel localement | Reverse proxy HTTP/HTTPS, certificat local auto-signe |
@@ -27,8 +27,8 @@ Derniere validation locale documentee : build Release, 44/44 tests .NET, smoke E
 
 ### Points de vigilance prioritaires
 
-1. `TestResultRepository` ne correspond pas au schema CQL de `test_results` : le code utilise `taken_at`, alors que le CQL declare `submitted_at` et une cle primaire exigeant `test_id`. Les tests InMemory ne detectent pas cet ecart.
-2. `ChatRepository` utilise `chatbot_sessions`, mais `scripts/cassandra/init.cql` ne cree que `user_activities`, `test_results` et `chat_messages`. Le chatbot peut echouer au runtime si aucune creation manuelle n'a ajoute cette table.
+1. Les bases Cassandra deja initialisees avec l'ancien `test_results` (`submitted_at`, `test_id`) ne sont pas converties par `CREATE TABLE IF NOT EXISTS`; elles necessitent une migration de donnees planifiee.
+2. `user_activities` a partition key `(user_id, course_id)`, mais `GetUserActivitiesAsync` lit seulement par `user_id` avec `ALLOW FILTERING`; acceptable pour petit volume de dev, pas une strategie de scale.
 3. Le healthcheck Docker de l'API cible `/health`, mappe via `AddHealthChecks()` sans checks enregistres. Les dependances sont controlees plus en detail par `/health/details`, mais Compose ne l'utilise pas.
 4. Paiement simule, TLS local auto-signe, ports API/Web publies directement par Compose. Ce n'est pas une configuration de production publique.
 5. Les fichiers `docs/ROADMAP_STATUS.md` et `docs/REMAINING_TASKS.md` ont des statuts qui ne refletent pas tous le code recent. Les pourcentages sont des estimations, pas une mesure automatique.
@@ -303,13 +303,12 @@ Get-Content scripts/cassandra/init.cql | docker exec -i cassandra_edu cqlsh
 Get-Content scripts/cassandra/002_add_activity_session_id.cql | docker exec -i cassandra_edu cqlsh
 ```
 
-Le premier script declare `user_activities`, `test_results`, `chat_messages`; le second ajoute `session_id` aux installations historiques. Donnees temporelles/analytique et conversations doivent etre sauvegardees separativement du volume SQL. En dev, `nodetool snapshot edu_platform -t <nom>` cree un snapshot local; exporter/copier le snapshot hors du volume et tester le restore avant de compter dessus.
+Le script declare `user_activities`, `test_results`, `chat_messages` et `chatbot_sessions`; le second ajoute `session_id` aux installations historiques. Le schema `test_results` est aligne sur `TestResultRepository` pour une installation neuve. `CREATE TABLE IF NOT EXISTS` ne change pas la cle primaire d'une ancienne table; faire une migration/export-import explicite avant upgrade d'une base creee avec l'ancien schema. Donnees temporelles/analytique et conversations doivent etre sauvegardees separativement du volume SQL. En dev, `nodetool snapshot edu_platform -t <nom>` cree un snapshot local; exporter/copier le snapshot hors du volume et tester le restore avant de compter dessus.
 
-**Gaps Cassandra a traiter avant de declarer ces fonctions fiables :**
+**Gaps Cassandra restants :**
 
-- `ChatRepository` utilise `chatbot_sessions(messages, user_id, session_id)`, absente de `init.cql` et des scripts CQL trouves.
-- Le CQL `test_results` definit `submitted_at`, `test_id` dans sa cle primaire; `TestResultRepository` insere `taken_at` et ne fournit pas `test_id`. `GetResultsByCourseAsync` filtre par une colonne hors cle de partition sans `ALLOW FILTERING`. Les parcours QCM/certificat reposant sur Cassandra sont donc a valider/corriger contre une instance reelle; EF InMemory ne peut pas le tester.
 - `user_activities` a partition key `(user_id, course_id)`, mais `GetUserActivitiesAsync` lit seulement par `user_id` avec `ALLOW FILTERING`; acceptable pour petit volume de dev, pas une strategie de scale.
+- Les tests xUnit/InMemory ne valident pas les requetes CQL; maintenir une verification d'integration contre Cassandra.
 
 Ne pas changer une cle primaire Cassandra en place sans migration de donnees et plan de bascule; concevoir une nouvelle table par modele de requete est souvent necessaire.
 
@@ -409,8 +408,7 @@ CI `.github/workflows/ci.yml` : build Release, tests avec Coverlet, rapport d'ar
 
 ### P0 - Fiabilite des donnees externes
 
-- Corriger et tester sur Cassandra reel le schema `test_results` / `TestResultRepository`.
-- Ajouter la creation/migration CQL de `chatbot_sessions` ou adapter le repository au schema effectivement choisi.
+- Tester l'initialisation CQL sur une base vide et definir un chemin de migration pour les installations qui ont l'ancienne cle primaire de `test_results`.
 - Reconcevoir les requetes Cassandra `ALLOW FILTERING` avant croissance des volumes.
 - Faire en sorte que le healthcheck API verifie reellement les dependances requises, ou separer liveness et readiness; aligner Compose sur le readiness.
 

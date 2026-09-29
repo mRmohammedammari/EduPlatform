@@ -1,5 +1,7 @@
 # ??? Configuration Cassandra - EduPlatform
 
+> **Schema de reference :** le fichier maintenu et applique par l'initialisation de la plateforme est [`../scripts/cassandra/init.cql`](../scripts/cassandra/init.cql). Les exemples de tables plus bas dans ce guide sont historiques; verifier le script avant de les executer manuellement.
+
 ## Overview
 
 Cassandra est utilisé pour stocker les données volumineuses et time-series:
@@ -169,18 +171,15 @@ WHERE user_id = ? AND course_id = ?;
 
 ```cql
 CREATE TABLE IF NOT EXISTS test_results (
-    user_id uuid,
     course_id uuid,
-    test_id uuid,
-    submitted_at timestamp,
-    score decimal,
+  user_id uuid,
+  taken_at timestamp,
     max_score decimal,
-    percentage_score decimal,
     passed boolean,
+  score decimal,
     answers map<text, text>,
-    time_taken_sec int,
-    PRIMARY KEY ((user_id, course_id), submitted_at, test_id)
-) WITH CLUSTERING ORDER BY (submitted_at DESC, test_id ASC)
+  PRIMARY KEY (course_id, user_id, taken_at)
+) WITH CLUSTERING ORDER BY (user_id ASC, taken_at ASC)
   AND comment = 'Résultats des tests passés par les utilisateurs'
   AND gc_grace_seconds = 864000;
 
@@ -192,31 +191,27 @@ ON test_results (passed);
 **Colonnes:**
 - `user_id`: ID de l'utilisateur
 - `course_id`: ID du cours
-- `test_id`: ID du test
-- `submitted_at`: Date de soumission
+- `taken_at`: Date de soumission (colonne lue/ecrite par `TestResultRepository`)
 - `score`: Score obtenu
 - `max_score`: Score maximum possible
-- `percentage_score`: Pourcentage
 - `passed`: Test réussi ou non
 - `answers`: Map des réponses (question_id ? réponse)
-- `time_taken_sec`: Temps passé sur le test
 
 **Exemples de requêtes:**
 ```cql
 -- Tous les résultats d'un user pour un cours
 SELECT * FROM test_results 
-WHERE user_id = ? AND course_id = ?
-ORDER BY submitted_at DESC;
+WHERE course_id = ?;
 
 -- Meilleur score
 SELECT MAX(score) as best_score
 FROM test_results 
-WHERE user_id = ? AND course_id = ?;
+WHERE course_id = ? AND user_id = ? ALLOW FILTERING;
 
 -- Nombre de tentatives
 SELECT COUNT(*) as attempts
 FROM test_results 
-WHERE user_id = ? AND course_id = ?;
+WHERE course_id = ? AND user_id = ? ALLOW FILTERING;
 ```
 
 ---
@@ -253,6 +248,18 @@ ON chat_messages (course_id);
 - `content`: Contenu du message
 - `course_id`: Cours associé (optionnel)
 - `tokens_used`: Tokens consommés (pour facturation)
+
+Le runtime `ChatRepository` n'utilise pas cette table historique. Il sauvegarde les sessions dans `chatbot_sessions`; cette table doit etre presente pour utiliser les routes chatbot.
+
+```cql
+CREATE TABLE IF NOT EXISTS chatbot_sessions (
+  user_id uuid,
+  session_id uuid,
+  created_at timestamp,
+  messages list<text>,
+  PRIMARY KEY (user_id, session_id)
+) WITH CLUSTERING ORDER BY (session_id ASC);
+```
 
 **Exemples de requêtes:**
 ```cql
@@ -293,6 +300,7 @@ DESCRIBE TABLE user_activities;
 SELECT COUNT(*) FROM user_activities;
 SELECT COUNT(*) FROM test_results;
 SELECT COUNT(*) FROM chat_messages;
+SELECT COUNT(*) FROM chatbot_sessions;
 ```
 
 ---
@@ -334,16 +342,13 @@ INSERT INTO user_activities (
 
 -- Résultats de test
 INSERT INTO test_results (
-  user_id, course_id, test_id, submitted_at,
-  score, max_score, percentage_score, passed,
-  time_taken_sec
+  course_id, user_id, taken_at, score, max_score, passed, answers
 ) VALUES (
-  11111111-1111-1111-1111-111111111111,
   22222222-2222-2222-2222-222222222222,
-  33333333-3333-3333-3333-333333333333,
+  11111111-1111-1111-1111-111111111111,
   toTimestamp(now()),
-  8.5, 10.0, 85.0, true,
-  420
+  8.5, 10.0, true,
+  {'q1': 'A', 'q2': 'B'}
 );
 
 -- Messages de chat
@@ -379,91 +384,19 @@ INSERT INTO chat_messages (
 
 ## ?? Script d'Initialisation Complet
 
-Créer un fichier `scripts/cassandra/init.cql`:
-
-```cql
--- ============================================
--- EduPlatform Cassandra Initialization Script
--- ============================================
-
--- Create Keyspace
-CREATE KEYSPACE IF NOT EXISTS edu_platform
-WITH replication = {
-  'class': 'SimpleStrategy',
-  'replication_factor': 1
-};
-
-USE edu_platform;
-
--- User Activities Table
-CREATE TABLE IF NOT EXISTS user_activities (
-    user_id uuid,
-    course_id uuid,
-    timestamp timestamp,
-    action_type text,
-    duration_sec int,
-    page_url text,
-    device_type text,
-    metadata map<text, text>,
-    PRIMARY KEY ((user_id, course_id), timestamp)
-) WITH CLUSTERING ORDER BY (timestamp DESC)
-  AND compaction = {
-    'class': 'TimeWindowCompactionStrategy',
-    'compaction_window_unit': 'DAYS',
-    'compaction_window_size': 1
-  };
-
-CREATE INDEX IF NOT EXISTS idx_action_type 
-ON user_activities (action_type);
-
--- Test Results Table
-CREATE TABLE IF NOT EXISTS test_results (
-    user_id uuid,
-    course_id uuid,
-    test_id uuid,
-    submitted_at timestamp,
-    score decimal,
-    max_score decimal,
-    percentage_score decimal,
-    passed boolean,
-    answers map<text, text>,
-    time_taken_sec int,
-    PRIMARY KEY ((user_id, course_id), submitted_at, test_id)
-) WITH CLUSTERING ORDER BY (submitted_at DESC, test_id ASC);
-
-CREATE INDEX IF NOT EXISTS idx_test_passed 
-ON test_results (passed);
-
--- Chat Messages Table
-CREATE TABLE IF NOT EXISTS chat_messages (
-    user_id uuid,
-    session_id uuid,
-    timestamp timestamp,
-    message_id uuid,
-    role text,
-    content text,
-    course_id uuid,
-    tokens_used int,
-    PRIMARY KEY ((user_id, session_id), timestamp, message_id)
-) WITH CLUSTERING ORDER BY (timestamp DESC, message_id ASC)
-  AND default_time_to_live = 7776000;
-
-CREATE INDEX IF NOT EXISTS idx_chat_course 
-ON chat_messages (course_id);
-
--- Confirmation
-SELECT * FROM system_schema.tables WHERE keyspace_name = 'edu_platform';
-```
+Le schema executable est maintenu dans `scripts/cassandra/init.cql`. Ne pas recopier un schema parallele dans ce guide : cela a deja provoque un ecart entre `test_results` et `TestResultRepository`. Pour les tables des repositories, le script canonique declare `user_activities`, `test_results`, `chat_messages` et `chatbot_sessions`.
 
 **Exécuter le script:**
 
 ```bash
-# Via Docker
-docker exec -i cassandra_edu cqlsh < scripts/cassandra/init.cql
+# Windows PowerShell - depuis la racine du depot
+Get-Content scripts/cassandra/init.cql | docker exec -i cassandra_edu cqlsh
 
-# Installation locale
+# Installation locale - depuis la racine du depot
 cqlsh -f scripts/cassandra/init.cql
 ```
+
+Pour une base existante, `CREATE TABLE IF NOT EXISTS` ne modifie pas la structure d'une table deja creee. Comparer `DESCRIBE TABLE edu_platform.test_results` avec le script avant de mettre a jour. Une ancienne cle primaire necessite un export/import vers une nouvelle table; ne pas dropper la table en production.
 
 ---
 
