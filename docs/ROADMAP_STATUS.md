@@ -53,9 +53,11 @@ export CSV.
 8 composants partages : `CourseCard`, `LoadingState`, `AlertMessage`, `StarRating`, `SearchBar`,
 `Modal`, `Toast`, `Pagination`.
 
-> Reserve : plusieurs de ces composants sont sous-utilises et des donnees deja disponibles
-> ne sont pas affichees (vignettes, notes, pagination du catalogue).
-> Detail et priorisation dans [IMPROVEMENTS.md](IMPROVEMENTS.md).
+Lot UI 1-4 livre depuis le premier audit : vignettes et notes sur les cartes, categories dynamiques,
+recherche/tri/pagination navigateur partageables par URL, footer global, SEO/Open Graph, accueil
+personnalise, programme public, sanitisation HTML, lecteur avec reprise/progression a 90 %,
+controles de vitesse/saut, YouTube nocookie et responsive de l'espace d'apprentissage.
+Reste distinct : pagination cote serveur du catalogue, pages legales et tests accessibilite.
 
 ---
 
@@ -69,6 +71,8 @@ export CSV.
 - Certificat de reussite consultable en ligne
 - Avis apprenants : note, commentaire, moyenne, affichage sur le detail du cours
 - Moderation : liste admin paginee, suppression avec confirmation, signalement motive, historique
+- Progression persistante par module : reprise de lecture et completion automatique a 90 %
+- Inscription Free sans passer par la passerelle de paiement; plans payants encore simules
 
 ### Reste a faire
 
@@ -86,15 +90,15 @@ export CSV.
 
 ### Livre
 
-- 24 tests automatises (xUnit + EF InMemory) : `AuthServiceTests`, `PaymentGatewayTests`,
+- 44 tests automatises (xUnit + EF InMemory) : `AuthServiceTests`, `PaymentGatewayTests`,
   `CourseMediaValidatorTests`, `ReviewsControllerTests`, `AdminReviewsControllerTests`
 - Couverture de code mesuree par Coverlet, rapport HTML publie en artefact CI,
   seuil-cliquet applique dans le workflow
 - E2E Playwright `smoke-tests.mjs` : catalogue public, recherche, filtres, detail,
   parcours etudiant, instructeur et admin, cycle creation/archivage/suppression
-- E2E Playwright `publication-moderation.mjs` : cycle brouillon -> soumission -> rejet motive
-  -> resoumission -> approbation -> publication -> visibilite publique -> avis -> signalement
-  -> moderation -> depublication, avec nettoyage garanti
+- E2E Playwright `publication-moderation.mjs` : brouillon -> rejet motive -> approbation
+      -> publication -> inscription Free -> QCM/resultat Cassandra -> analytics/certificat
+      -> avis/signalement/moderation -> depublication, avec nettoyage SQL et Cassandra
 - Les deux suites E2E tournent en CI contre une stack Docker ephemere
 
 ### Etat de la couverture (2026-09-29)
@@ -128,6 +132,8 @@ export CSV.
   API et Web, stack ephemere + suites E2E
 - `Dockerfile.api`, `Dockerfile.web`, `docker-compose.yml` complet (SQL Server, Cassandra,
   Kafka, Zookeeper, Redis, API, Web, nginx)
+- Kafka : listeners distincts hote/interne Docker, volume persistant nomme et consumer API
+- Readiness API Compose sur `/health/details`; liveness ASP.NET sur `/health`
 - Reverse proxy nginx avec TLS, redirection HTTP -> HTTPS, `X-Forwarded-*`, HSTS hors Development
 - Migrations appliquees au deploiement, scripts de sauvegarde et restauration
 
@@ -146,7 +152,8 @@ Procedure detaillee : [PRODUCTION_READINESS.md](PRODUCTION_READINESS.md).
 
 ### Livre
 
-- Healthchecks SQL Server, Cassandra, Redis et Kafka, exposes sur `/health`
+- Healthchecks Docker SQL Server, Cassandra, Redis, Kafka, API readiness et Web
+- `/health/details` verifie SQL par `CanConnectAsync`, Cassandra/Redis/Kafka par TCP
 - Logs structures avec correlation par `SessionId`
 - `scripts/monitor-health.ps1` avec alertes webhook optionnelles
 
@@ -184,15 +191,14 @@ mis de cote. Le plan d'integration d'un fournisseur reel est ecrit dans
 
 ## Problemes connus
 
-| # | Probleme | Gravite |
+| # | Probleme restant | Gravite |
 |---|----------|---------|
-| 1 | `Learn.razor` rend le contenu des modules via `MarkupString` sans assainissement : un instructeur peut injecter du script chez ses apprenants (XSS stocke) | Elevee |
-| 2 | `Course.ThumbnailUrl` est uploade mais affiche nulle part | Moyenne |
-| 3 | Integration YouTube via `youtube.com` et non `youtube-nocookie.com` : cookies de suivi avant consentement | Moyenne (RGPD) |
-| 4 | Images de la page d'accueil chargees depuis Unsplash en dur, sans repli | Moyenne |
-| 5 | Le catalogue public charge tous les cours sans pagination | Moyenne |
-| 6 | Pas de page CGU / confidentialite / contact | Moyenne (mise en ligne publique) |
-| 7 | Couverture de code a 45 % contre 80 % vises | Moyenne |
+| 1 | Anciennes installations Cassandra peuvent avoir `test_results` avec une cle incompatible; migration export/import a planifier avant upgrade | Elevee pour ces bases |
+| 2 | Couverture mesuree precedemment a 47,1 %; controllers API et BigData restent peu/non couverts | Moyenne |
+| 3 | Pas de pages CGU, confidentialite et contact avant ouverture publique | Moyenne |
+| 4 | Le health readiness teste la connectivite TCP mais pas une lecture/ecriture applicative Cassandra/Redis/Kafka | Moyenne |
+| 5 | Medias locaux, ports API/Web exposes par Compose et TLS local auto-signe | Elevee en production |
+| 6 | Paiement reel gelee par decision produit | Bloquant uniquement si la monetisation est activee |
 
 Analyse complete et plan de correction : [IMPROVEMENTS.md](IMPROVEMENTS.md).
 
@@ -200,9 +206,9 @@ Analyse complete et plan de correction : [IMPROVEMENTS.md](IMPROVEMENTS.md).
 
 ## Prochaines actions recommandees
 
-1. **Securite** : assainir le HTML des modules (probleme 1), passer a `youtube-nocookie.com`
-2. **Coherence d'affichage** : lot 1 de [IMPROVEMENTS.md](IMPROVEMENTS.md) (vignettes, notes
-   sur les cartes, categories dynamiques, recherche dans le catalogue, footer global)
-3. **Couverture** : tests des controllers `EduPlatform.API` pour remonter le seuil-cliquet
-4. **Mise en ligne** : certificat TLS reconnu et fermeture des ports directs
-5. **Medias** : stockage objet / CDN, prealable au scale horizontal
+1. **Donnees** : preparer une migration des anciennes tables Cassandra `test_results` si elles existent.
+2. **Qualite** : augmenter couverture des controllers API/BigData; integration WebApplicationFactory,
+      tests CQL/Redis et accesibilite axe/Lighthouse.
+3. **Production** : TLS d'autorite reconnue, fermer ports 5053/5297, publier images et deployer.
+4. **Observabilite** : Serilog, Prometheus/Grafana, OpenTelemetry et logs centralises.
+5. **Echelle/produit** : stockage objet/CDN, transcodage, pagination serveur, pages legales.

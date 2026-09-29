@@ -68,17 +68,18 @@
 
 Analyse detaillee et priorisation : [IMPROVEMENTS.md](IMPROVEMENTS.md).
 
-- [ ] Assainir le HTML des modules rendu par `MarkupString` (XSS stocke) - **securite**
-- [ ] Passer l'integration YouTube sur `youtube-nocookie.com` - **RGPD**
-- [ ] Afficher `ThumbnailUrl` sur les cartes, le catalogue et la home
-- [ ] Afficher les notes et avis sur les cartes de cours
-- [ ] Categories de la page d'accueil depuis `CourseCategory` au lieu du code en dur
-- [ ] Retirer la statistique fictive « +42% » de la page d'accueil
-- [ ] Rapatrier les images Unsplash en local
-- [ ] Champ de recherche et pagination dans le catalogue
-- [ ] Deplacer le footer dans `MainLayout`
+- [x] Assainir le HTML des modules rendu via `MarkupString` (sanitizer cote API et Web)
+- [x] Passer l'integration YouTube sur `youtube-nocookie.com`
+- [x] Afficher `ThumbnailUrl` sur les cartes, le catalogue, la home et le detail
+- [x] Afficher les notes et avis sur les cartes de cours et la home
+- [x] Charger les categories de la home depuis l'API `CourseCategory`
+- [x] Remplacer la statistique fictive « +42% » par les statistiques reelles du catalogue
+- [x] Remplacer l'illustration hero externe par un asset local
+- [x] Recherche, filtres, tri et pagination navigateur du catalogue (etat partage dans l'URL)
+- [x] Deplacer le footer dans `MainLayout`
 - [ ] Pages CGU, confidentialite et contact
-- [ ] Reprise de lecture video et completion automatique a 90 %
+- [x] Reprise de lecture video et completion automatique a 90 %
+- [ ] Pagination serveur du catalogue (l'API renvoie encore la liste complete)
 
 ## Deja realise
 

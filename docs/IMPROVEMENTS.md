@@ -6,6 +6,25 @@ Chaque item porte une priorité et un coût estimé :
 P1 = incohérence ou régression visible, P2 = gain fort, P3 = confort.
 Coût : S (< 2 h), M (0,5 - 1 j), L (> 1 j).
 
+## Mise a jour d'etat (2026-09-29)
+
+Les constats ci-dessous proviennent de l'audit initial et plusieurs sont maintenant resolus.
+Livres depuis : vignettes et notes sur les cartes/home, categories dynamiques, recherche/filtres/tri
+et pagination cote navigateur partageables par URL, footer global, statistiques reelles, image hero
+locale, balises SEO/Open Graph, programme visible aux visiteurs, avis repositionnes, distribution
+des notes, HTML assaini contre le XSS, YouTube nocookie, reprise/progression video a 90 %, poster,
+vitesse, sauts, progression des modules et navigation vers le module suivant.
+
+Les ecarts encore ouverts a prioriser sont : pagination cote serveur (le catalogue charge encore
+tous les cours), pages legales, tests axe/Lighthouse, sous-titres video, objectifs/prerequis de cours,
+stockage objet/CDN/transcodage, decoupage de `app.css`, optimisation SQL et choix editorial pour
+les avis/t�moignages. La roadmap d'exploitation reste la reference pour production, Cassandra et CI.
+
+> Les sections detaillees ci-dessous sont conservees comme trace de l'audit initial. En particulier,
+> les constats 1.1 a 1.6 et les lots 1, 2 (XSS/YouTube) et 4 sont resolus; ils ne sont pas des taches
+> ouvertes. Le backlog courant est uniquement la liste � ecarts encore ouverts � ci-dessus et
+> `docs/ROADMAP_STATUS.md`.
+
 ---
 
 ## 1. Écarts fonctionnels déjà payés mais non exposés
