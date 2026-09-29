@@ -28,7 +28,7 @@ Derniere validation locale documentee : build Release, 44/44 tests .NET, smoke E
 ### Points de vigilance prioritaires
 
 1. Les bases Cassandra deja initialisees avec l'ancien `test_results` (`submitted_at`, `test_id`) ne sont pas converties par `CREATE TABLE IF NOT EXISTS`; elles necessitent une migration de donnees planifiee.
-2. `user_activities` a partition key `(user_id, course_id)`, mais `GetUserActivitiesAsync` lit seulement par `user_id` avec `ALLOW FILTERING`; acceptable pour petit volume de dev, pas une strategie de scale.
+2. L'historique interroge Cassandra une fois par cours inscrit (paquets paralleles de 16, au plus 100 lignes par partition), puis fusionne les evenements recents; le cout augmente avec le nombre d'inscriptions.
 3. Le healthcheck Compose utilise `/health/details`, qui controle SQL Server et la connectivite TCP Cassandra/Redis/Kafka. Ces tests ne verifient pas les operations applicatives de lecture/ecriture.
 4. Paiement simule, TLS local auto-signe, ports API/Web publies directement par Compose. Ce n'est pas une configuration de production publique.
 5. Les fichiers `docs/ROADMAP_STATUS.md` et `docs/REMAINING_TASKS.md` ont des statuts qui ne refletent pas tous le code recent. Les pourcentages sont des estimations, pas une mesure automatique.
@@ -307,7 +307,7 @@ Le script declare `user_activities`, `test_results`, `chat_messages` et `chatbot
 
 **Gaps Cassandra restants :**
 
-- `user_activities` a partition key `(user_id, course_id)`, mais `GetUserActivitiesAsync` lit seulement par `user_id` avec `ALLOW FILTERING`; acceptable pour petit volume de dev, pas une strategie de scale.
+- L'historique fait un fan-out sur les cours inscrits; si un compte accumule beaucoup de cours, concevoir une table/index de lecture utilisateur avec backfill.
 - Les tests xUnit/InMemory ne valident pas les requetes CQL; maintenir une verification d'integration contre Cassandra.
 
 Ne pas changer une cle primaire Cassandra en place sans migration de donnees et plan de bascule; concevoir une nouvelle table par modele de requete est souvent necessaire.
@@ -409,7 +409,7 @@ CI `.github/workflows/ci.yml` : build Release, tests avec Coverlet, rapport d'ar
 ### P0 - Fiabilite des donnees externes
 
 - Tester l'initialisation CQL sur une base vide et definir un chemin de migration pour les installations qui ont l'ancienne cle primaire de `test_results`.
-- Reconcevoir la requete d'historique `user_activities` qui utilise `ALLOW FILTERING` avant croissance des volumes.
+- Remplacer le fan-out de l'historique par un index/table de lecture utilisateur si le volume de cours par compte augmente.
 - Ajouter des probes separees liveness/readiness et des checks applicatifs CQL/Kafka/Redis au-dela d'une simple connexion TCP.
 
 ### P1 - Qualite et securite

@@ -340,8 +340,12 @@ namespace EduPlatform.API.Controllers
             var userId = Guid.Parse(User.FindFirst(
                 System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
 
+            var courseIds = await _db.Enrollments
+                .Where(enrollment => enrollment.UserId == userId)
+                .Select(enrollment => enrollment.CourseId)
+                .ToListAsync();
             var activities = await _activityRepo
-                .GetUserActivitiesAsync(userId, 20);
+                .GetUserActivitiesAsync(userId, courseIds, 20);
 
             return Ok(activities);
         }

@@ -1,5 +1,6 @@
 using EduPlatform.Core.Models;
 using EduPlatform.Core.Services;
+using EduPlatform.BigData.Kafka;
 using EduPlatform.Data.Cache;
 using EduPlatform.Data.Cassandra.Repositories;
 using EduPlatform.Data.SqlServer;
@@ -19,6 +20,7 @@ namespace EduPlatform.API.Controllers
         private readonly IConfiguration _configuration;
         private readonly ActivityRepository _activityRepo;
         private readonly TestResultRepository _testRepo;
+        private readonly EventProducer _eventProducer;
 
         public CoursesController(
             EduDbContext db,
@@ -26,7 +28,8 @@ namespace EduPlatform.API.Controllers
             IWebHostEnvironment environment,
             IConfiguration configuration,
             ActivityRepository activityRepo,
-            TestResultRepository testRepo)
+            TestResultRepository testRepo,
+            EventProducer eventProducer)
         {
             _db = db;
             _cache = cache;
@@ -34,6 +37,7 @@ namespace EduPlatform.API.Controllers
             _configuration = configuration;
             _activityRepo = activityRepo;
             _testRepo = testRepo;
+            _eventProducer = eventProducer;
         }
 
         [HttpGet]
@@ -795,7 +799,35 @@ namespace EduPlatform.API.Controllers
             _db.Enrollments.Add(enrollment);
             await _db.SaveChangesAsync();
 
+            await PublishActivityBestEffortAsync(new UserActivityEvent
+            {
+                UserId = userId,
+                CourseId = id,
+                ActionType = "course_enrolled",
+                PageUrl = $"/courses/{id}",
+                DeviceType = "web"
+            });
+
             return Ok(new { message = "Inscription réussie" });
+        }
+
+        private async Task PublishActivityBestEffortAsync(UserActivityEvent activity)
+        {
+            try
+            {
+                await _activityRepo.LogActivityAsync(activity);
+            }
+            catch
+            {
+            }
+
+            try
+            {
+                await _eventProducer.PublishActivityAsync(activity);
+            }
+            catch
+            {
+            }
         }
 
         [HttpGet("{id:guid}/enrollment-status")]

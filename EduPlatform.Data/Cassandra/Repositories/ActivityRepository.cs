@@ -7,7 +7,7 @@ namespace EduPlatform.Data.Cassandra.Repositories
     {
         private readonly ISession _session;
         private readonly PreparedStatement _insertActivity;
-        private readonly PreparedStatement _selectByUser;
+        private readonly PreparedStatement _selectByUserAndCourse;
 
         public ActivityRepository(CassandraContext context)
         {
@@ -17,8 +17,8 @@ namespace EduPlatform.Data.Cassandra.Repositories
                 "INSERT INTO user_activities (user_id, course_id, timestamp, session_id, action_type, duration_sec, page_url, device_type) " +
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
 
-            _selectByUser = _session.Prepare(
-                "SELECT * FROM user_activities WHERE user_id = ? ALLOW FILTERING");
+            _selectByUserAndCourse = _session.Prepare(
+                "SELECT * FROM user_activities WHERE user_id = ? AND course_id = ?");
         }
 
         public async Task LogActivityAsync(UserActivityEvent evt)
@@ -29,23 +29,50 @@ namespace EduPlatform.Data.Cassandra.Repositories
             await _session.ExecuteAsync(bound);
         }
 
-        public async Task<List<UserActivityEvent>> GetUserActivitiesAsync(Guid userId, int limit = 50)
+        public async Task<List<UserActivityEvent>> GetUserActivitiesAsync(
+            Guid userId,
+            IEnumerable<Guid> courseIds,
+            int limit = 50)
         {
-            var bound = _selectByUser.Bind(userId);
-            var rows = await _session.ExecuteAsync(bound);
+            limit = Math.Clamp(limit, 1, 100);
+            var courses = courseIds.Where(courseId => courseId != Guid.Empty).Distinct().ToArray();
+            if (courses.Length == 0)
+                return new List<UserActivityEvent>();
 
-            return rows.Select(row => new UserActivityEvent
+            var activities = new List<UserActivityEvent>();
+            foreach (var courseBatch in courses.Chunk(16))
             {
-                UserId = row.GetValue<Guid?>("user_id") ?? Guid.Empty,
-                SessionId = row.GetValue<Guid?>("session_id") ?? Guid.Empty,
-                EventTime = row.GetValue<DateTimeOffset>("timestamp").DateTime,
-                CourseId = row.GetValue<Guid?>("course_id") ?? Guid.Empty,
-                ActionType = row.GetValue<string>("action_type") ?? string.Empty,
-                DurationSec = row.GetValue<int?>("duration_sec") ?? 0,
-                PageUrl = row.GetValue<string>("page_url") ?? string.Empty,
-                DeviceType = row.GetValue<string>("device_type") ?? "web"
-            }).Take(limit).ToList();
+                var batchResults = await Task.WhenAll(courseBatch.Select(async courseId =>
+                {
+                    // LIMIT is interpolated only after clamping to a small integer range.
+                    var query = new SimpleStatement(
+                        $"SELECT * FROM user_activities WHERE user_id = ? AND course_id = ? LIMIT {limit}",
+                        userId,
+                        courseId);
+                    var rows = await _session.ExecuteAsync(query);
+                    return rows.Select(MapActivity).ToList();
+                }));
+
+                activities.AddRange(batchResults.SelectMany(result => result));
+            }
+
+            return activities
+                .OrderByDescending(activity => activity.EventTime)
+                .Take(limit)
+                .ToList();
         }
+
+        private static UserActivityEvent MapActivity(Row row) => new()
+        {
+            UserId = row.GetValue<Guid?>("user_id") ?? Guid.Empty,
+            SessionId = row.GetValue<Guid?>("session_id") ?? Guid.Empty,
+            EventTime = row.GetValue<DateTimeOffset>("timestamp").DateTime,
+            CourseId = row.GetValue<Guid?>("course_id") ?? Guid.Empty,
+            ActionType = row.GetValue<string>("action_type") ?? string.Empty,
+            DurationSec = row.GetValue<int?>("duration_sec") ?? 0,
+            PageUrl = row.GetValue<string>("page_url") ?? string.Empty,
+            DeviceType = row.GetValue<string>("device_type") ?? "web"
+        };
 
         public async Task<int> GetTotalTimeOnCourseAsync(Guid userId, Guid courseId)
         {

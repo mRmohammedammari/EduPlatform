@@ -203,6 +203,18 @@ try {
     assertOk(response, 'L apprenant doit pouvoir s inscrire au cours publie.');
   });
 
+  await step('Historique apprenant lu par partition Cassandra sans scan global', async () => {
+    const response = await api.get(`${apiUrl}/api/progress/history`, {
+      headers: authHeader(student)
+    });
+    assertOk(response, 'L historique d activite doit etre accessible.');
+    const activities = await response.json();
+    assert(
+      activities.some((activity) => activity.courseId === courseId && activity.actionType === 'course_enrolled'),
+      'L evenement d inscription doit apparaitre dans l historique Cassandra.'
+    );
+  });
+
   await step('Soumission du QCM et persistance Cassandra', async () => {
     const questions = await api.get(`${apiUrl}/api/tests/${courseId}`, {
       headers: authHeader(student)
