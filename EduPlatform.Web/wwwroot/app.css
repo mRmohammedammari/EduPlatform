@@ -700,9 +700,13 @@ a {
 }
 
 .badge-card.locked {
-    opacity: 0.4;
-    filter: grayscale(1);
+    background: #f3f4f6;
+    border-color: #d1d5db;
+    color: #4b5563;
 }
+
+.badge-card.locked .badge-icon,
+.badge-card.locked .badge-label { color: #4b5563; }
 
 .badge-icon {
     font-size: 32px;

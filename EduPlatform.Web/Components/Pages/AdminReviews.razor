@@ -5,18 +5,20 @@
 @inject NavigationManager Nav
 @inject EduPlatform.Web.Services.AuthStateService AuthState
 
+<PageTitle>ModÃ©ration des avis - EduPlatform</PageTitle>
+
 @if (!IsAdmin)
 {
     <div class="profile-container">
-        <div class="alert-error">Cette page est réservée aux administrateurs.</div>
-        <button class="btn-primary" @onclick="GoToHome">Retour à l'accueil</button>
+        <div class="alert-error">Cette page est rï¿½servï¿½e aux administrateurs.</div>
+        <button class="btn-primary" @onclick="GoToHome">Retour ï¿½ l'accueil</button>
     </div>
 }
 else
 {
     <div class="page-header">
-        <h1>Modération des avis</h1>
-        <p>Consultez les avis publiés et supprimez ceux qui ne respectent pas les règles.</p>
+        <h1>Modï¿½ration des avis</h1>
+        <p>Consultez les avis publiï¿½s et supprimez ceux qui ne respectent pas les rï¿½gles.</p>
     </div>
 
     @if (IsLoading)
@@ -29,7 +31,7 @@ else
     }
     else if (FilteredReviews.Count == 0)
     {
-        <div class="course-section"><p>Aucun avis à modérer.</p></div>
+        <div class="course-section"><p>Aucun avis ï¿½ modï¿½rer.</p></div>
     }
     else
     {
@@ -40,7 +42,7 @@ else
                     <div class="review-moderation-header">
                         <div>
                             <strong>@review.CourseTitle</strong>
-                            <p>@review.UserName · @review.UserEmail</p>
+                            <p>@review.UserName ï¿½ @review.UserEmail</p>
                         </div>
                         <StarRating Rating="@review.Rating" />
                     </div>
@@ -51,7 +53,7 @@ else
                             <strong>@review.Reports.Count signalement(s)</strong>
                             @foreach (var report in review.Reports)
                             {
-                                <p>@report.ReporterName · @report.Reason · @report.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</p>
+                                <p>@report.ReporterName ï¿½ @report.Reason ï¿½ @report.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</p>
                             }
                         </div>
                     }
@@ -77,7 +79,7 @@ else
        OnConfirm="ConfirmDelete">
     @if (PendingReview is not null)
     {
-        <p>Supprimer définitivement l'avis de <strong>@PendingReview.UserName</strong> pour « @PendingReview.CourseTitle » ?</p>
+        <p>Supprimer dï¿½finitivement l'avis de <strong>@PendingReview.UserName</strong> pour ï¿½ @PendingReview.CourseTitle ï¿½ ?</p>
     }
 </Modal>
 
@@ -182,12 +184,12 @@ else
             if (response.IsSuccessStatusCode)
             {
                 Reviews.Remove(PendingReview);
-                ShowToast("Avis supprimé.");
+                ShowToast("Avis supprimï¿½.");
                 CloseDeleteModal();
             }
             else
             {
-                ShowToast("La suppression a échoué.", Toast.ToastTone.Error);
+                ShowToast("La suppression a ï¿½chouï¿½.", Toast.ToastTone.Error);
             }
         }
         catch

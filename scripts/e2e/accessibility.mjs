@@ -25,13 +25,48 @@ try {
   await page.locator('h1').first().waitFor();
   await audit('Detail du cours');
 
+  await loginAs('student@eduplatform.com', 'Student123!');
+  await page.goto(`${baseUrl}/progress`, { waitUntil: 'domcontentloaded' });
+  await page.getByRole('heading', { name: 'Ma progression' }).waitFor();
+  await audit('Progression etudiant');
+
+  await loginAs('instructor@eduplatform.com', 'Instructor123!');
+  await page.goto(`${baseUrl}/instructor`, { waitUntil: 'domcontentloaded' });
+  await page.getByRole('heading', { name: 'Espace enseignant' }).waitFor();
+  await page.getByRole('heading', { name: 'Creer un cours' }).waitFor().catch(async () => {
+    await page.getByRole('heading', { name: /cours/i }).first().waitFor();
+  });
+  await audit('Espace instructeur');
+
+  await loginAs('admin@eduplatform.com', 'Admin123!');
+  await page.goto(`${baseUrl}/admin`, { waitUntil: 'domcontentloaded' });
+  await page.getByRole('heading', { name: 'Tableau de bord administrateur' }).waitFor();
+  await audit('Dashboard admin');
+
+  await page.goto(`${baseUrl}/admin/users`, { waitUntil: 'domcontentloaded' });
+  await page.getByRole('heading', { name: 'Gestion des utilisateurs' }).waitFor();
+  await audit('Gestion utilisateurs');
+
+  await page.goto(`${baseUrl}/admin/reviews`, { waitUntil: 'domcontentloaded' });
+  await page.locator('h1').first().waitFor();
+  await audit('Moderation admin');
+
   if (blockingViolations.length > 0) {
     throw new Error(`${blockingViolations.length} violation(s) axe de severite serious/critical.`);
   }
 
-  console.log('Accessibility audit passed: aucune violation serious/critical sur les pages publiques.');
+  console.log('Accessibility audit passed: aucune violation serious/critical sur les pages publiques et authentifiees.');
 } finally {
   await browser.close();
+}
+
+async function loginAs(email, password) {
+  await page.goto(`${baseUrl}/login`, { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(1800);
+  await page.locator('input[type="email"]').fill(email);
+  await page.locator('input[type="password"]').fill(password);
+  await page.getByRole('button', { name: 'Se connecter' }).click();
+  await page.waitForURL('**/courses');
 }
 
 async function audit(label) {

@@ -100,7 +100,7 @@ Reste distinct : pages legales et tests accessibilite.
       -> publication -> inscription Free -> QCM/resultat Cassandra -> analytics/certificat
       -> avis/signalement/moderation -> depublication, avec nettoyage SQL et Cassandra
 - Les deux suites E2E tournent en CI contre une stack Docker ephemere
-- Audit Axe WCAG 2.1 A/AA automatise en CI sur accueil, catalogue et detail; bloque les violations serious/critical
+- Audit Axe WCAG 2.1 A/AA automatise en CI sur accueil, catalogue, detail, progression, espace instructeur, dashboard admin, gestion utilisateurs et moderation admin; bloque les violations serious/critical
 
 ### Etat de la couverture (2026-09-29)
 
@@ -120,7 +120,7 @@ Reste distinct : pages legales et tests accessibilite.
 - [ ] Tests d'integration avec `WebApplicationFactory` (aujourd'hui les tests controllers
       instancient les controllers directement)
 - [ ] Tests des repositories Cassandra et du `CacheService`
-- [ ] Etendre Axe aux pages authentifiees/instructeur/admin et completer par Lighthouse
+- [ ] Completer l'audit par Lighthouse
 
 ---
 

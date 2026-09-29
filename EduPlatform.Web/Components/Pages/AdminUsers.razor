@@ -5,6 +5,8 @@
 @inject NavigationManager Nav
 @inject EduPlatform.Web.Services.AuthStateService AuthState
 
+<PageTitle>Gestion des utilisateurs - EduPlatform</PageTitle>
+
 @if (!IsAdmin)
 {
     <div class="profile-container">
@@ -31,7 +33,7 @@ else
     {
         <div class="admin-users-filters">
             <input type="text" class="admin-users-search" placeholder="Rechercher par nom ou email..." @bind="SearchTerm" @bind:event="oninput" @bind:after="ResetPage" />
-            <select @bind="RoleFilter" @bind:after="ResetPage">
+            <select @bind="RoleFilter" @bind:after="ResetPage" aria-label="Filtrer par rÃ´le">
                 <option value="">Tous les rÃ´les</option>
                 <option value="Student">Ã‰tudiants</option>
                 <option value="Instructor">Enseignants</option>
@@ -53,7 +55,7 @@ else
                         }
                     </div>
                     <div class="activity-meta">
-                        <select value="@user.Role" @onchange="eventArgs => UpdateRole(user.Id, eventArgs.Value?.ToString())">
+                        <select value="@user.Role" aria-label="@( $"RÃ´le de {user.FirstName} {user.LastName}" )" @onchange="eventArgs => UpdateRole(user.Id, eventArgs.Value?.ToString())">
                             <option value="Student">Ã‰tudiant</option>
                             <option value="Instructor">Enseignant</option>
                             <option value="Admin">Gestionnaire</option>
@@ -79,14 +81,14 @@ else
 }
 
 <Modal IsOpen="@IsSuspensionModalOpen"
-       Title="@(PendingSuspension ? "Suspendre l'utilisateur" : "Réactiver l'utilisateur")"
-       ConfirmText="@(PendingSuspension ? "Suspendre" : "Réactiver")"
+       Title="@(PendingSuspension ? "Suspendre l'utilisateur" : "Rï¿½activer l'utilisateur")"
+       ConfirmText="@(PendingSuspension ? "Suspendre" : "Rï¿½activer")"
        IsBusy="@IsSuspensionInProgress"
        OnClose="CloseSuspensionModal"
        OnConfirm="ConfirmSuspensionChange">
     @if (PendingUser is not null)
     {
-        <p>Confirmer l'opération pour <strong>@PendingUser.FirstName @PendingUser.LastName</strong> (@PendingUser.Email) ?</p>
+        <p>Confirmer l'opï¿½ration pour <strong>@PendingUser.FirstName @PendingUser.LastName</strong> (@PendingUser.Email) ?</p>
     }
 </Modal>
 

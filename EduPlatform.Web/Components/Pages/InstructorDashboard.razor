@@ -5,6 +5,8 @@
 @inject NavigationManager Nav
 @inject EduPlatform.Web.Services.AuthStateService AuthState
 
+<PageTitle>Espace enseignant - EduPlatform</PageTitle>
+
 @if (!AuthState.IsAuthenticated || (AuthState.Role != "Instructor" && AuthState.Role != "Admin"))
 {
     <div class="profile-container">
@@ -34,7 +36,7 @@ else
         <div class="form-row">
             <div class="form-group">
                 <label>Niveau</label>
-                <select @bind="NewCourse.Level">
+                <select @bind="NewCourse.Level" aria-label="Niveau du cours">
                     <option value="Debutant">Débutant</option>
                     <option value="Intermediaire">Intermédiaire</option>
                     <option value="Avance">Avancé</option>
@@ -42,7 +44,7 @@ else
             </div>
             <div class="form-group">
                 <label>Durée (minutes)</label>
-                <input type="number" min="1" @bind="NewCourse.DurationMinutes" />
+                <input type="number" min="1" @bind="NewCourse.DurationMinutes" aria-label="Durée du cours en minutes" />
             </div>
         </div>
         <div class="form-group">
@@ -52,7 +54,7 @@ else
         <div class="form-row">
             <div class="form-group">
                 <label>Prix</label>
-                <input type="number" min="0" step="0.01" @bind="NewCourse.Price" />
+                <input type="number" min="0" step="0.01" @bind="NewCourse.Price" aria-label="Prix du cours" />
             </div>
             <div class="form-group">
                 <label>Image de couverture</label>
