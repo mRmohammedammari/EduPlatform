@@ -52,7 +52,7 @@ namespace EduPlatform.Data.Cassandra.Repositories
 
         public async Task<decimal> GetBestScoreAsync(Guid userId, Guid courseId)
         {
-            var cql = "SELECT score, max_score FROM test_results WHERE course_id = ? AND user_id = ? ALLOW FILTERING";
+            var cql = "SELECT score, max_score FROM test_results WHERE course_id = ? AND user_id = ?";
             var rows = await _session.ExecuteAsync(new SimpleStatement(cql, courseId, userId));
             var best = rows.Select(r => r.GetValue<decimal>("score")).DefaultIfEmpty(0).Max();
             return best;
@@ -61,7 +61,7 @@ namespace EduPlatform.Data.Cassandra.Repositories
         public async Task<TestResult?> GetBestPassedResultAsync(Guid userId, Guid courseId)
         {
             var cql = "SELECT score, max_score, passed, taken_at FROM test_results " +
-                "WHERE course_id = ? AND user_id = ? ALLOW FILTERING";
+                "WHERE course_id = ? AND user_id = ?";
             var rows = await _session.ExecuteAsync(new SimpleStatement(cql, courseId, userId));
 
             return rows

@@ -409,7 +409,7 @@ CI `.github/workflows/ci.yml` : build Release, tests avec Coverlet, rapport d'ar
 ### P0 - Fiabilite des donnees externes
 
 - Tester l'initialisation CQL sur une base vide et definir un chemin de migration pour les installations qui ont l'ancienne cle primaire de `test_results`.
-- Reconcevoir les requetes Cassandra `ALLOW FILTERING` avant croissance des volumes.
+- Reconcevoir la requete d'historique `user_activities` qui utilise `ALLOW FILTERING` avant croissance des volumes.
 - Ajouter des probes separees liveness/readiness et des checks applicatifs CQL/Kafka/Redis au-dela d'une simple connexion TCP.
 
 ### P1 - Qualite et securite

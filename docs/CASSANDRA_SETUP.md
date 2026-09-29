@@ -206,12 +206,12 @@ WHERE course_id = ?;
 -- Meilleur score
 SELECT MAX(score) as best_score
 FROM test_results 
-WHERE course_id = ? AND user_id = ? ALLOW FILTERING;
+WHERE course_id = ? AND user_id = ?;
 
 -- Nombre de tentatives
 SELECT COUNT(*) as attempts
 FROM test_results 
-WHERE course_id = ? AND user_id = ? ALLOW FILTERING;
+WHERE course_id = ? AND user_id = ?;
 ```
 
 ---
