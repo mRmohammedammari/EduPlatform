@@ -144,10 +144,12 @@
 @code {
     private const int PageSize = 12;
 
-    private List<CourseDto>? CourseList;
+    private List<CourseDto> PagedCourses = new();
+    private int MatchCount;
     private CourseStatsDto? Stats;
     private bool IsLoading = true;
     private bool LoadFailed;
+    private bool HasLoaded;
     private List<string> AvailableCategories = new();
 
     // Tout l'etat de navigation vit dans l'URL : une recherche filtree est partageable,
@@ -175,42 +177,9 @@
 
     private string? LoadedCategory;
     private string? LoadedLevel;
-
-    private IEnumerable<CourseDto> MatchingCourses
-    {
-        get
-        {
-            var courses = (CourseList ?? new List<CourseDto>()).AsEnumerable();
-
-            if (!string.IsNullOrWhiteSpace(SearchTerm))
-            {
-                courses = courses.Where(course =>
-                    course.Title.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase)
-                    || course.Description.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase)
-                    || course.Category.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase));
-            }
-
-            return SelectedSort switch
-            {
-                "rating" => courses
-                    .OrderByDescending(course => course.ReviewCount > 0 ? course.AverageRating : -1)
-                    .ThenByDescending(course => course.ReviewCount),
-                "popular" => courses.OrderByDescending(course => course.EnrollmentCount),
-                "title" => courses.OrderBy(course => course.Title, StringComparer.CurrentCultureIgnoreCase),
-                "duration-asc" => courses.OrderBy(course => course.DurationMinutes),
-                "duration-desc" => courses.OrderByDescending(course => course.DurationMinutes),
-                _ => courses.OrderByDescending(course => course.CreatedAt)
-            };
-        }
-    }
-
-    private int MatchCount => MatchingCourses.Count();
-
-    private int TotalPages => Math.Max(1, (int)Math.Ceiling(MatchCount / (double)PageSize));
-
-    private IEnumerable<CourseDto> PagedCourses => MatchingCourses
-        .Skip((Math.Clamp(CurrentPage, 1, TotalPages) - 1) * PageSize)
-        .Take(PageSize);
+    private string? LoadedSearch;
+    private string? LoadedSort;
+    private int? LoadedPage;
 
     private Dictionary<string, string> ActiveFilters
     {
@@ -235,10 +204,15 @@
         SelectedSort = string.IsNullOrWhiteSpace(SortQuery) ? "recent" : SortQuery;
         CurrentPage = Math.Max(1, PageQuery ?? 1);
 
-        // Le tri, la recherche et la pagination s'appliquent en memoire ;
-        // seuls categorie et niveau declenchent un nouvel appel API.
-        if (CourseList is null || LoadedCategory != SelectedCategory || LoadedLevel != SelectedLevel)
+        if (!HasLoaded
+            || LoadedCategory != SelectedCategory
+            || LoadedLevel != SelectedLevel
+            || LoadedSearch != SearchTerm
+            || LoadedSort != SelectedSort
+            || LoadedPage != CurrentPage)
+        {
             await LoadCourseList();
+        }
 
         if (Stats is null)
             await LoadStats();
@@ -266,13 +240,23 @@
         try
         {
             var httpClient = HttpClientFactory.CreateClient("EduPlatformAPI");
-            var url = "api/courses"
+            var url = "api/courses/paged"
                 + $"?category={Uri.EscapeDataString(SelectedCategory)}"
-                + $"&level={Uri.EscapeDataString(SelectedLevel)}";
+                + $"&level={Uri.EscapeDataString(SelectedLevel)}"
+                + $"&search={Uri.EscapeDataString(SearchTerm)}"
+                + $"&sort={Uri.EscapeDataString(SelectedSort)}"
+                + $"&page={CurrentPage}"
+                + $"&pageSize={PageSize}";
 
-            CourseList = await httpClient.GetFromJsonAsync<List<CourseDto>>(url) ?? new List<CourseDto>();
+            var response = await httpClient.GetFromJsonAsync<PagedCourseResultDto>(url);
+            PagedCourses = response?.Items ?? new List<CourseDto>();
+            MatchCount = response?.TotalItems ?? 0;
             LoadedCategory = SelectedCategory;
             LoadedLevel = SelectedLevel;
+            LoadedSearch = SearchTerm;
+            LoadedSort = SelectedSort;
+            LoadedPage = CurrentPage;
+            HasLoaded = true;
 
             if (string.IsNullOrWhiteSpace(SelectedCategory) && string.IsNullOrWhiteSpace(SelectedLevel))
                 await LoadCategories();
@@ -281,7 +265,8 @@
         {
             // Distingue l'echec d'appel d'un catalogue reellement vide : afficher
             // « aucun cours disponible » sur une erreur reseau etait trompeur.
-            CourseList = new List<CourseDto>();
+            PagedCourses = new List<CourseDto>();
+            MatchCount = 0;
             LoadFailed = true;
         }
         finally
@@ -304,7 +289,7 @@
         catch (Exception)
         {
             // Repli sur les categories presentes dans la page courante.
-            AvailableCategories = (CourseList ?? new List<CourseDto>())
+            AvailableCategories = PagedCourses
                 .Select(course => course.Category)
                 .Where(category => !string.IsNullOrWhiteSpace(category))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
@@ -339,6 +324,7 @@
         SearchTerm = string.Empty;
         SelectedCategory = string.Empty;
         SelectedLevel = string.Empty;
+        SelectedSort = "recent";
         Navigate(page: 1);
     }
 
@@ -391,6 +377,15 @@
         public string Name { get; set; } = string.Empty;
         public int CourseCount { get; set; }
         public string ThumbnailUrl { get; set; } = string.Empty;
+    }
+
+    private sealed class PagedCourseResultDto
+    {
+        public List<CourseDto> Items { get; set; } = new();
+        public int TotalItems { get; set; }
+        public int Page { get; set; }
+        public int PageSize { get; set; }
+        public int TotalPages { get; set; }
     }
 
     private sealed class CourseStatsDto

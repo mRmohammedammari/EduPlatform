@@ -91,6 +91,86 @@ namespace EduPlatform.API.Controllers
             return Ok(courses);
         }
 
+        [HttpGet("paged")]
+        public async Task<IActionResult> GetPaged(
+            [FromQuery] string? category,
+            [FromQuery] string? level,
+            [FromQuery] string? search,
+            [FromQuery] string? sort = "recent",
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 12)
+        {
+            page = Math.Max(1, page);
+            pageSize = Math.Clamp(pageSize, 1, 50);
+
+            var query = _db.Courses
+                .Where(course => course.IsPublished && !course.IsArchived)
+                .Select(course => new CourseListItemDto
+                {
+                    Id = course.Id,
+                    Title = course.Title,
+                    Description = course.Description,
+                    Category = course.Category,
+                    Level = course.Level,
+                    DurationMinutes = course.DurationMinutes,
+                    ThumbnailUrl = course.ThumbnailUrl,
+                    Price = course.Price,
+                    CreatedAt = course.CreatedAt,
+                    ModuleCount = course.Modules.Count,
+                    EnrollmentCount = course.Enrollments.Count,
+                    AverageRating = _db.CourseReviews
+                        .Where(review => review.CourseId == course.Id)
+                        .Select(review => (double?)review.Rating)
+                        .Average() ?? 0,
+                    ReviewCount = _db.CourseReviews.Count(review => review.CourseId == course.Id)
+                });
+
+            if (!string.IsNullOrWhiteSpace(category))
+                query = query.Where(course => course.Category == category.Trim());
+            if (!string.IsNullOrWhiteSpace(level))
+                query = query.Where(course => course.Level == level.Trim());
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var term = search.Trim();
+                query = query.Where(course =>
+                    course.Title.Contains(term)
+                    || course.Description.Contains(term)
+                    || course.Category.Contains(term));
+            }
+
+            var totalItems = await query.CountAsync();
+            var totalPages = Math.Max(1, (int)Math.Ceiling(totalItems / (double)pageSize));
+            page = Math.Min(page, totalPages);
+            var ordered = (sort ?? "recent").Trim().ToLowerInvariant() switch
+            {
+                "rating" => query
+                    .OrderByDescending(course => course.ReviewCount > 0 ? course.AverageRating : -1)
+                    .ThenByDescending(course => course.ReviewCount)
+                    .ThenByDescending(course => course.CreatedAt),
+                "popular" => query
+                    .OrderByDescending(course => course.EnrollmentCount)
+                    .ThenByDescending(course => course.CreatedAt),
+                "title" => query.OrderBy(course => course.Title),
+                "duration-asc" => query.OrderBy(course => course.DurationMinutes)
+                    .ThenByDescending(course => course.CreatedAt),
+                "duration-desc" => query.OrderByDescending(course => course.DurationMinutes)
+                    .ThenByDescending(course => course.CreatedAt),
+                _ => query.OrderByDescending(course => course.CreatedAt)
+            };
+
+            var skip = (int)Math.Min((long)(page - 1) * pageSize, int.MaxValue);
+            var items = await ordered.Skip(skip).Take(pageSize).ToListAsync();
+
+            return Ok(new PagedCourseResultDto
+            {
+                Items = items,
+                TotalItems = totalItems,
+                Page = page,
+                PageSize = pageSize,
+                TotalPages = totalPages
+            });
+        }
+
         [HttpGet("categories")]
         public async Task<IActionResult> GetPublicCategories()
         {
@@ -929,6 +1009,15 @@ namespace EduPlatform.API.Controllers
         public int EnrollmentCount { get; set; }
         public double AverageRating { get; set; }
         public int ReviewCount { get; set; }
+    }
+
+    public class PagedCourseResultDto
+    {
+        public List<CourseListItemDto> Items { get; set; } = new();
+        public int TotalItems { get; set; }
+        public int Page { get; set; }
+        public int PageSize { get; set; }
+        public int TotalPages { get; set; }
     }
 
     public class CourseCategoryDto

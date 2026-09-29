@@ -16,6 +16,8 @@ npm test
 Pop-Location
 ```
 
+Le smoke verifie aussi `GET /api/courses/paged` : taille de page, total non pagine, pages adjacentes sans chevauchement et retour borne pour une page hors limites.
+
 `npm test` execute les deux suites. Pour n'en lancer qu'une :
 
 ```powershell

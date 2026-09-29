@@ -1,6 +1,7 @@
 import { chromium, request } from '@playwright/test';
 
 const baseUrl = process.env.EDUPLATFORM_BASE_URL ?? 'http://localhost:5297';
+const apiUrl = process.env.EDUPLATFORM_API_URL ?? 'http://localhost:5053';
 const browser = await chromium.launch({ headless: true });
 const page = await browser.newPage();
 
@@ -11,6 +12,31 @@ try {
 
   const initialCount = await page.locator('.course-card').count();
   assert(initialCount > 0, 'Le catalogue doit contenir au moins un cours.');
+
+  const firstPageResponse = await page.request.get(
+    `${apiUrl}/api/courses/paged?page=1&pageSize=1&sort=recent`
+  );
+  assert(firstPageResponse.ok(), 'Le endpoint de catalogue pagine doit repondre.');
+  const firstPage = await firstPageResponse.json();
+  assert(firstPage.items.length === 1, 'pageSize=1 doit renvoyer un seul element.');
+  assert(firstPage.totalItems >= initialCount, 'totalItems doit compter tout le catalogue filtre.');
+  assert(firstPage.totalPages >= 2, 'Le catalogue de test doit fournir plusieurs pages.');
+
+  const secondPageResponse = await page.request.get(
+    `${apiUrl}/api/courses/paged?page=2&pageSize=1&sort=recent`
+  );
+  assert(secondPageResponse.ok(), 'La seconde page du catalogue doit repondre.');
+  const secondPage = await secondPageResponse.json();
+  assert(secondPage.items.length === 1, 'La seconde page doit renvoyer son element.');
+  assert(secondPage.items[0].id !== firstPage.items[0].id, 'Les pages serveur ne doivent pas se recouvrir.');
+
+  const outOfRangeResponse = await page.request.get(
+    `${apiUrl}/api/courses/paged?page=999&pageSize=1&sort=recent`
+  );
+  assert(outOfRangeResponse.ok(), 'Une page hors limites doit rester une reponse valide.');
+  const outOfRange = await outOfRangeResponse.json();
+  assert(outOfRange.page === outOfRange.totalPages, 'La page demandee doit etre bornee a la derniere page.');
+  assert(outOfRange.items.length === 1, 'La derniere page bornee doit contenir son cours.');
 
   const search = page.locator('input[aria-label="Rechercher un cours"]');
   await search.fill('Blazor');

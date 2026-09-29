@@ -143,6 +143,7 @@ L'inscription assigne toujours le role Student; le role n'est pas librement choi
 | Methode et route | Acces | Fonction et controles principaux |
 |---|---|---|
 | `GET /api/courses?category=&level=` | Public | Catalogue publie/non archive; filtres optionnels; liste optimisee avec compteurs et note |
+| `GET /api/courses/paged?page=1&pageSize=12&category=&level=&search=&sort=recent` | Public | Pagination SQL serveur; pageSize borne a 50; totalItems/totalPages; filtres recherche/categorie/niveau et tri recent/rating/popular/title/duree |
 | `GET /api/courses/categories` | Public | Categories actives ayant des cours publies, mises en cache |
 | `GET /api/courses/stats` | Public | Statistiques du catalogue |
 | `GET /api/courses/{id}` | Public / proprietaire / Admin | Detail public; brouillon visible seulement au proprietaire/Admin authentifie |
@@ -169,6 +170,8 @@ L'inscription assigne toujours le role Student; le role n'est pas librement choi
 | `GET /api/courses/{id}/students` | Proprietaire/Admin | Liste des inscrits/progression |
 
 Les uploads sont ecrits sous `wwwroot/uploads/courses/<courseId>` dans le conteneur API. Le volume Compose `api_uploads` les preserve lors d'un rebuild local.
+
+Le catalogue Blazor utilise `GET /api/courses/paged`; `GET /api/courses` reste disponible pour les integrations et la home qui ont besoin d'une liste complete.
 
 ### Progression et inscriptions - `ProgressController`
 

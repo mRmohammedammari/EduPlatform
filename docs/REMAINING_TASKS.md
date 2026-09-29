@@ -76,10 +76,10 @@ Analyse detaillee et priorisation : [IMPROVEMENTS.md](IMPROVEMENTS.md).
 - [x] Remplacer la statistique fictive « +42% » par les statistiques reelles du catalogue
 - [x] Remplacer l'illustration hero externe par un asset local
 - [x] Recherche, filtres, tri et pagination navigateur du catalogue (etat partage dans l'URL)
+- [x] Pagination serveur du catalogue (`/api/courses/paged`, pageSize max 50, filtres et tri SQL)
 - [x] Deplacer le footer dans `MainLayout`
 - [ ] Pages CGU, confidentialite et contact
 - [x] Reprise de lecture video et completion automatique a 90 %
-- [ ] Pagination serveur du catalogue (l'API renvoie encore la liste complete)
 
 ## Deja realise
 

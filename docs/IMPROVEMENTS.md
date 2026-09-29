@@ -15,11 +15,12 @@ locale, balises SEO/Open Graph, programme visible aux visiteurs, avis reposition
 des notes, HTML assaini contre le XSS, YouTube nocookie, reprise/progression video a 90 %, poster,
 vitesse, sauts, progression des modules et navigation vers le module suivant.
 
-Les ecarts encore ouverts a prioriser sont : pagination cote serveur (le catalogue charge encore
-tous les cours), pages legales, tests axe/Lighthouse, sous-titres video, objectifs/prerequis de cours,
+Les ecarts encore ouverts a prioriser sont : pages legales, tests axe/Lighthouse, sous-titres video, objectifs/prerequis de cours,
 stockage objet/CDN/transcodage, decoupage de `app.css`, optimisation SQL et choix editorial pour
 les avis/témoignages. La roadmap d'exploitation reste la reference pour production, Cassandra et CI.
 
+> La pagination SQL serveur du catalogue est livree via `/api/courses/paged` (pageSize borne a 50);
+> la recherche, les filtres, le tri et la page restent partageables dans l'URL.
 > Les sections detaillees ci-dessous sont conservees comme trace de l'audit initial. En particulier,
 > les constats 1.1 a 1.6 et les lots 1, 2 (XSS/YouTube) et 4 sont resolus; ils ne sont pas des taches
 > ouvertes. Le backlog courant est uniquement la liste « ecarts encore ouverts » ci-dessus et

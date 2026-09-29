@@ -54,10 +54,10 @@ export CSV.
 `Modal`, `Toast`, `Pagination`.
 
 Lot UI 1-4 livre depuis le premier audit : vignettes et notes sur les cartes, categories dynamiques,
-recherche/tri/pagination navigateur partageables par URL, footer global, SEO/Open Graph, accueil
+recherche/tri et filtres partageables par URL, pagination SQL serveur, footer global, SEO/Open Graph, accueil
 personnalise, programme public, sanitisation HTML, lecteur avec reprise/progression a 90 %,
 controles de vitesse/saut, YouTube nocookie et responsive de l'espace d'apprentissage.
-Reste distinct : pagination cote serveur du catalogue, pages legales et tests accessibilite.
+Reste distinct : pages legales et tests accessibilite.
 
 ---
 
@@ -95,7 +95,7 @@ Reste distinct : pagination cote serveur du catalogue, pages legales et tests ac
 - Couverture de code mesuree par Coverlet, rapport HTML publie en artefact CI,
   seuil-cliquet applique dans le workflow
 - E2E Playwright `smoke-tests.mjs` : catalogue public, recherche, filtres, detail,
-  parcours etudiant, instructeur et admin, cycle creation/archivage/suppression
+      contrat de pagination serveur, parcours etudiant, instructeur et admin, cycle creation/archivage/suppression
 - E2E Playwright `publication-moderation.mjs` : brouillon -> rejet motive -> approbation
       -> publication -> inscription Free -> QCM/resultat Cassandra -> analytics/certificat
       -> avis/signalement/moderation -> depublication, avec nettoyage SQL et Cassandra
@@ -174,18 +174,18 @@ mis de cote. Le plan d'integration d'un fournisseur reel est ecrit dans
 
 ---
 
-## Phase 10 - Optimisations et performance : 25 %
+## Phase 10 - Optimisations et performance : 35 %
 
 ### Livre
 
 - Cache Redis (cours, listes, statistiques) avec invalidation ciblee
+- Pagination SQL serveur du catalogue avec recherche, filtres, tri et nombre total de resultats
 
 ### Reste a faire
 
 - [ ] Rate limiting (aucun `AddRateLimiter` dans `Program.cs`)
-- [ ] Pagination cote serveur du catalogue (tous les cours sont renvoyes d'un bloc)
 - [ ] Optimisation des requetes EF (`AsNoTracking`, projections)
-- [ ] Decoupage de `app.css` (1536 lignes), lazy loading des images, mode sombre
+- [ ] Decoupage de `app.css` (2188 lignes), lazy loading des images, mode sombre
 
 ---
 
