@@ -178,7 +178,7 @@ Les uploads sont ecrits sous `wwwroot/uploads/courses/<courseId>` dans le conten
 | `GET /api/progress/course/{courseId}/modules` | Authentifie | Progression module par module |
 | `POST /api/progress/module` | Authentifie et inscrit | Sauvegarde position/ratio; complete automatiquement a 90 %, ou avec `markCompleted` |
 | `GET /api/progress/continue?limit=3` | Authentifie | Cours a reprendre, limite bornee a 1..10 |
-| `POST /api/progress/enroll` | Authentifie | Inscription au plan Free/Standard/Premium; controle du montant, paiement demo et notification |
+| `POST /api/progress/enroll` | Authentifie | Inscription au plan Free/Standard/Premium; controle du montant, passerelle demo pour plans payants seulement et notification |
 | `POST /api/progress/log` | Authentifie | Journalise une action; best-effort Cassandra/Kafka |
 | `GET /api/progress/{courseId}` | Authentifie | Temps total passe dans le cours |
 | `GET /api/progress/history` | Authentifie | Historique recent Cassandra |

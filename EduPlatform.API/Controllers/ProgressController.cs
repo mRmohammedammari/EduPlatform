@@ -248,18 +248,21 @@ namespace EduPlatform.API.Controllers
             if (exists)
                 return BadRequest(new { message = "Déjà inscrit à ce cours" });
 
-            var payment = _paymentGateway.CreateCheckoutSession(new PaymentRequest
+            if (expectedAmount > 0)
             {
-                CourseId = dto.CourseId,
-                UserId = userId,
-                CourseTitle = course.Title,
-                Plan = plan!,
-                Amount = expectedAmount,
-                Currency = "DZD"
-            });
+                var payment = _paymentGateway.CreateCheckoutSession(new PaymentRequest
+                {
+                    CourseId = dto.CourseId,
+                    UserId = userId,
+                    CourseTitle = course.Title,
+                    Plan = plan!,
+                    Amount = expectedAmount,
+                    Currency = "DZD"
+                });
 
-            if (!payment.IsSuccess)
-                return BadRequest(new { message = payment.ErrorMessage ?? "Paiement refusé." });
+                if (!payment.IsSuccess)
+                    return BadRequest(new { message = payment.ErrorMessage ?? "Paiement refusé." });
+            }
 
             _db.Enrollments.Add(new Enrollment
             {
@@ -267,7 +270,7 @@ namespace EduPlatform.API.Controllers
                 CourseId = dto.CourseId,
                 Plan = plan!,
                 AmountPaid = expectedAmount,
-                PaymentStatus = payment.Status == "Paid" ? "Completed" : "Completed"
+                PaymentStatus = "Completed"
             });
             _db.Notifications.Add(new Notification
             {

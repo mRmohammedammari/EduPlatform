@@ -45,7 +45,7 @@ Etapes couvertes :
 6. Resoumission apres correction, motif de rejet efface
 7. Approbation interdite a l'instructeur (403), puis approbation admin (statut `Approved`, publie)
 8. Visibilite du cours publie dans le catalogue public anonyme **et** dans l'interface web
-9. Inscription d'un apprenant, lecture des questions et soumission d'un QCM avec reponse correcte
+9. Inscription gratuite d'un apprenant sans appel a la passerelle de paiement, lecture des questions et soumission d'un QCM avec reponse correcte
 10. Persistance du resultat dans Cassandra et lecture par les analytics instructeur
 11. Lecture du meilleur resultat depuis Cassandra pour emettre le certificat
 12. Depot d'un avis note, auto-signalement refuse (400), signalement par un second inscrit (204), doublon refuse (409)

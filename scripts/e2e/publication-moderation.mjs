@@ -197,8 +197,14 @@ try {
 
   // --- 7. Inscription, avis, signalement ----------------------------------
   await step('Inscription de l apprenant au cours publie', async () => {
-    const response = await api.post(`${apiUrl}/api/courses/${courseId}/enroll`, {
-      headers: authHeader(student)
+    const response = await api.post(`${apiUrl}/api/progress/enroll`, {
+      headers: authHeader(student),
+      data: {
+        courseId,
+        sessionId: randomUUID(),
+        plan: 'Free',
+        amountPaid: 0
+      }
     });
     assertOk(response, 'L apprenant doit pouvoir s inscrire au cours publie.');
   });
@@ -280,6 +286,15 @@ try {
       headers: authHeader(admin)
     });
     assertOk(enroll, 'Le second utilisateur doit pouvoir s inscrire pour signaler.');
+
+    const history = await api.get(`${apiUrl}/api/progress/history`, {
+      headers: authHeader(admin)
+    });
+    assertOk(history, 'L historique du second utilisateur doit etre accessible.');
+    assert(
+      (await history.json()).some((activity) => activity.courseId === courseId && activity.actionType === 'course_enrolled'),
+      'L endpoint legacy d inscription doit aussi journaliser l evenement.'
+    );
 
     const response = await api.post(`${apiUrl}/api/reviews/${reviewId}/report`, {
       headers: authHeader(admin),
