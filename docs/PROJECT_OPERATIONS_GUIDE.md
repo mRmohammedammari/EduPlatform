@@ -398,7 +398,7 @@ npm test
 Pop-Location
 ```
 
-`npm test` execute `smoke-tests.mjs` puis `publication-moderation.mjs`. Cette derniere suite cree des donnees SQL temporaires, les utilise, puis les nettoie en `finally`; verifier les logs `Nettoyage` apres un echec.
+`npm test` execute `smoke-tests.mjs` puis `publication-moderation.mjs`. Cette derniere suite cree des donnees SQL temporaires, ecrit/lit un resultat QCM dans Cassandra via analytics et certificat, puis nettoie le cours et les partitions Cassandra en `finally`; verifier les logs `Nettoyage` apres un echec.
 
 CI `.github/workflows/ci.yml` : build Release, tests avec Coverlet, rapport d'artefact, seuil de couverture `45 %`, validation Compose, build images, stack ephemere et E2E. Le rapport mesure precedemment environ 47.1 % global, avec couverture API faible et BigData non couvert; le seuil 45 % est un garde-fou, pas l'objectif de qualite.
 

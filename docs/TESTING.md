@@ -45,12 +45,14 @@ Etapes couvertes :
 6. Resoumission apres correction, motif de rejet efface
 7. Approbation interdite a l'instructeur (403), puis approbation admin (statut `Approved`, publie)
 8. Visibilite du cours publie dans le catalogue public anonyme **et** dans l'interface web
-9. Inscription d'un apprenant, depot d'un avis note
-10. Auto-signalement refuse (400), signalement par un second inscrit (204), doublon refuse (409)
-11. Remontee de l'avis et de son motif dans `/api/admin/reviews`
-12. Suppression de l'avis par l'admin (204), disparition cote moderation et cote cours
-13. Depublication : le cours sort du catalogue public
-14. Nettoyage garanti (bloc `finally`) : archivage puis suppression physique du cours
+9. Inscription d'un apprenant, lecture des questions et soumission d'un QCM avec reponse correcte
+10. Persistance du resultat dans Cassandra et lecture par les analytics instructeur
+11. Lecture du meilleur resultat depuis Cassandra pour emettre le certificat
+12. Depot d'un avis note, auto-signalement refuse (400), signalement par un second inscrit (204), doublon refuse (409)
+13. Remontee de l'avis et de son motif dans `/api/admin/reviews`
+14. Suppression de l'avis par l'admin (204), disparition cote moderation et cote cours
+15. Depublication : le cours sort du catalogue public
+16. Nettoyage garanti (bloc `finally`) du cours SQL et des partitions Cassandra `test_results` / `user_activities`
 
 Le test utilise les comptes de demonstration (`instructor@`, `admin@`, `student@`) et exige donc
 une stack demarree avec `SEED_DEMO_DATA=true`. Les identifiants crees sont suffixes par un
