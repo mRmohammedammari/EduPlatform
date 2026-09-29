@@ -15,7 +15,7 @@ locale, balises SEO/Open Graph, programme visible aux visiteurs, avis reposition
 des notes, HTML assaini contre le XSS, YouTube nocookie, reprise/progression video a 90 %, poster,
 vitesse, sauts, progression des modules et navigation vers le module suivant.
 
-Les ecarts encore ouverts a prioriser sont : pages legales, tests axe/Lighthouse, sous-titres video, objectifs/prerequis de cours,
+Les ecarts encore ouverts a prioriser sont : pages legales, extension des tests Axe aux pages authentifiees et Lighthouse, sous-titres video, objectifs/prerequis de cours,
 stockage objet/CDN/transcodage, decoupage de `app.css`, optimisation SQL et choix editorial pour
 les avis/témoignages. La roadmap d'exploitation reste la reference pour production, Cassandra et CI.
 

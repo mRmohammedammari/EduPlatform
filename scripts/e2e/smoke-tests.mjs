@@ -42,6 +42,7 @@ try {
   await search.fill('Blazor');
   await search.press('Enter');
   await page.waitForURL('**/explore?search=Blazor');
+  await page.getByText('1 cours disponibles').waitFor();
   await page.locator('.course-card').first().waitFor();
 
   assert(await page.locator('.course-card').count() === 1, 'La recherche Blazor doit retourner un seul cours.');

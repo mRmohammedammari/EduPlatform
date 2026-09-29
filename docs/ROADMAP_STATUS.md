@@ -14,7 +14,7 @@ Le document precedent, date du 2026-09-18, sous-estimait fortement l'avancement 
 | 2. Authentification client Blazor | 100 % | Terminee |
 | 3. Completion interface web | 100 % | Terminee |
 | 4. Fonctionnalites avancees | 70 % | En cours |
-| 5. Tests et qualite | 75 % | En cours |
+| 5. Tests et qualite | 80 % | En cours |
 | 6. DevOps et deploiement | 85 % | En cours |
 | 7. Monitoring et observabilite | 45 % | En cours |
 | 8. Monetisation | 10 % | Gelee (decision produit) |
@@ -86,7 +86,7 @@ Reste distinct : pages legales et tests accessibilite.
 
 ---
 
-## Phase 5 - Tests et qualite : 75 %
+## Phase 5 - Tests et qualite : 80 %
 
 ### Livre
 
@@ -100,6 +100,7 @@ Reste distinct : pages legales et tests accessibilite.
       -> publication -> inscription Free -> QCM/resultat Cassandra -> analytics/certificat
       -> avis/signalement/moderation -> depublication, avec nettoyage SQL et Cassandra
 - Les deux suites E2E tournent en CI contre une stack Docker ephemere
+- Audit Axe WCAG 2.1 A/AA automatise en CI sur accueil, catalogue et detail; bloque les violations serious/critical
 
 ### Etat de la couverture (2026-09-29)
 
@@ -119,7 +120,7 @@ Reste distinct : pages legales et tests accessibilite.
 - [ ] Tests d'integration avec `WebApplicationFactory` (aujourd'hui les tests controllers
       instancient les controllers directement)
 - [ ] Tests des repositories Cassandra et du `CacheService`
-- [ ] Tests d'accessibilite (axe/Lighthouse) dans la CI
+- [ ] Etendre Axe aux pages authentifiees/instructeur/admin et completer par Lighthouse
 
 ---
 

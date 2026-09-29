@@ -18,11 +18,12 @@ Pop-Location
 
 Le smoke verifie aussi `GET /api/courses/paged` : taille de page, total non pagine, pages adjacentes sans chevauchement et retour borne pour une page hors limites.
 
-`npm test` execute les deux suites. Pour n'en lancer qu'une :
+`npm test` execute les trois suites. L'audit Axe controle WCAG 2.1 A/AA et fait echouer le job sur les violations `serious` ou `critical` des pages publiques. Pour lancer un controle isole :
 
 ```powershell
 npm run test:smoke        # parcours public, etudiant, instructeur, admin
 npm run test:publication  # cycle publication + moderation
+npm run test:a11y         # accueil, catalogue, detail du cours
 ```
 
 La cible par d�faut est `http://localhost:5297`. Pour tester une autre instance :

@@ -3,11 +3,13 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node smoke-tests.mjs && node publication-moderation.mjs",
+    "test": "node smoke-tests.mjs && node publication-moderation.mjs && node accessibility.mjs",
     "test:smoke": "node smoke-tests.mjs",
-    "test:publication": "node publication-moderation.mjs"
+    "test:publication": "node publication-moderation.mjs",
+    "test:a11y": "node accessibility.mjs"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@playwright/test": "^1.49.1"
   }
 }

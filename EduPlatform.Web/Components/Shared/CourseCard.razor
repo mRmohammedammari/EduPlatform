@@ -68,11 +68,9 @@
             }
         </div>
 
-        @* tabindex -1 : le conteneur porte deja le focus, on evite un doublon au clavier. *@
-        <button class="btn-primary" tabindex="-1"
-                @onclick:stopPropagation="true" @onclick="HandleClick">
+        <span class="btn-primary course-card-action" aria-hidden="true">
             @(IsEnrolled ? "Reprendre le cours" : "Voir le cours") &rarr;
-        </button>
+        </span>
     </div>
 </article>
 

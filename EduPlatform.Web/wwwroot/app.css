@@ -1,6 +1,6 @@
 ﻿/* ===== VARIABLES ===== */
 :root {
-    --primary: #6366f1;
+    --primary: #585bcf;
     --primary-dark: #4f46e5;
     --success: #10b981;
     --danger: #ef4444;
@@ -1413,6 +1413,7 @@ a {
 .market-header { height: 72px; display: flex; align-items: center; gap: 24px; padding: 0 32px; border-bottom: 1px solid #e6e8ed; background: #fff; position: relative; z-index: 2; }
 .market-logo { color: #202938; font-size: 24px; font-weight: 800; letter-spacing: -.5px; text-decoration: none; white-space: nowrap; }
 .market-logo span { color: #6d28d9; }
+.market-footer .market-logo span { color: #c4b5fd; }
 .market-explore, .market-subscribe, .market-business { color: #3b4556; font-size: 13px; text-decoration: none; white-space: nowrap; }
 .market-explore:hover, .market-subscribe:hover, .market-business:hover { color: #6d28d9; }
 .market-search { flex: 1; max-width: 640px; height: 44px; border: 1px solid #9aa3b2; border-radius: 24px; display: flex; align-items: center; gap: 10px; padding: 0 16px; background: #fff; }
@@ -1466,7 +1467,7 @@ a {
 .course-card-copy h3 { color: #192335; font-size: 16px; line-height: 1.25; margin: 8px 0; }
 .course-card-copy p { font-size: 13px; line-height: 1.4; margin-bottom: 13px; }
 .course-card-meta { display: flex; gap: 8px; align-items: center; font-size: 12px; color: #6d28d9; }
-.course-card-meta small { color: #778091; margin-left: auto; }
+.course-card-meta small { color: #626b7a; margin-left: auto; }
 .market-pathways { background: #202536; max-width: 1180px; display: grid; grid-template-columns: 1fr 1fr; min-height: 360px; align-items: center; overflow: hidden; color: #fff; }
 .pathway-copy { padding: 52px; }
 .pathway-copy h2 { color: #fff; }
@@ -1627,7 +1628,7 @@ a {
 }
 
 .course-card-noreview {
-    color: #8b95a5;
+    color: #626b7a;
     font-style: italic;
     font-size: 12px;
 }
@@ -1662,7 +1663,7 @@ a {
 .course-card-facts {
     display: flex;
     gap: 12px;
-    color: #778091;
+    color: #626b7a;
     font-size: 12px;
 }
 

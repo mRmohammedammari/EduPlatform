@@ -20,8 +20,8 @@ Ce document decrit le comportement constate dans le depot. Pour les routes HTTP,
 | Kafka | Operationnel | Producteur et consumer d'activites; consumer actuellement surtout observabilite/log |
 | Nginx | Operationnel localement | Reverse proxy HTTP/HTTPS, certificat local auto-signe |
 | Kubernetes | Non configure | Aucun manifest, Helm chart, ingress ou StatefulSet dans le depot |
-| CI | Presente | Build, tests/couverture, Docker Compose et deux suites E2E |
-| Tests verifies | 44 tests .NET + 2 suites Playwright | Les tests unitaires n'exercent pas toutes les integrations Cassandra/API |
+| CI | Presente | Build, tests/couverture, Docker Compose, E2E et Axe public |
+| Tests verifies | 44 tests .NET + 2 E2E + audit Axe | Les tests unitaires n'exercent pas toutes les integrations Cassandra/API |
 
 Derniere validation locale documentee : build Release, 44/44 tests .NET, smoke E2E et workflow E2E publication/moderation passes; conteneurs Docker sains. Reexecuter les commandes de la section 6 apres toute modification.
 
@@ -401,7 +401,7 @@ npm test
 Pop-Location
 ```
 
-`npm test` execute `smoke-tests.mjs` puis `publication-moderation.mjs`. Cette derniere suite cree des donnees SQL temporaires, ecrit/lit un resultat QCM dans Cassandra via analytics et certificat, puis nettoie le cours et les partitions Cassandra en `finally`; verifier les logs `Nettoyage` apres un echec.
+`npm test` execute `smoke-tests.mjs`, `publication-moderation.mjs` et `accessibility.mjs`. La suite de publication cree des donnees SQL temporaires, ecrit/lit un resultat QCM dans Cassandra via analytics et certificat, puis nettoie le cours et les partitions Cassandra en `finally`; verifier les logs `Nettoyage` apres un echec. Axe controle les pages publiques et fait echouer sur les violations serious/critical.
 
 CI `.github/workflows/ci.yml` : build Release, tests avec Coverlet, rapport d'artefact, seuil de couverture `45 %`, validation Compose, build images, stack ephemere et E2E. Le rapport mesure precedemment environ 47.1 % global, avec couverture API faible et BigData non couvert; le seuil 45 % est un garde-fou, pas l'objectif de qualite.
 
