@@ -68,7 +68,15 @@ public class HealthController : ControllerBase
     {
         try
         {
-            await check();
+            if (!await check())
+            {
+                return new Dictionary<string, object>
+                {
+                    ["status"] = "unhealthy",
+                    ["error"] = "The dependency did not accept a connection."
+                };
+            }
+
             return new Dictionary<string, object>
             {
                 ["status"] = "healthy"

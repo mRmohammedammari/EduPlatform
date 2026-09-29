@@ -49,13 +49,15 @@ services:
     container_name: kafka_edu
     ports:
       - "9092:9092"
+    volumes:
+      - kafka_data:/var/lib/kafka/data
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_LISTENERS: INTERNAL://0.0.0.0:29092,EXTERNAL://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:29092,EXTERNAL://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
     depends_on:
       zookeeper:
@@ -91,7 +93,7 @@ services:
       Database__ApplyMigrations: "true"
       Cassandra__Host: cassandra
       Redis__ConnectionString: redis:6379
-      Kafka__BootstrapServers: kafka:9092
+      Kafka__BootstrapServers: kafka:29092
       Jwt__Key: "${JWT_SECRET_KEY:?Set JWT_SECRET_KEY before starting Docker}"
       OpenAI__ApiKey: "${OPENAI_API_KEY:-}"
       OpenAI__Model: "${OPENAI_MODEL:-gpt-4o-mini}"
@@ -112,7 +114,7 @@ services:
       kafka:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl --fail --silent http://localhost:8080/health >/dev/null || exit 1"]
+      test: ["CMD-SHELL", "curl --fail --silent http://localhost:8080/health/details >/dev/null || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 10
@@ -159,4 +161,5 @@ volumes:
   cassandra_data:
   api_keys:
   api_uploads:
+  kafka_data:
   web_keys:

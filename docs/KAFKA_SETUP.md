@@ -63,6 +63,14 @@ bin/kafka-server-start.sh config/server.properties
 }
 ```
 
+**Adresses du Compose EduPlatform (configuration actuelle):**
+
+- Depuis l'API ou tout autre conteneur du reseau Compose : `kafka:29092` (listener `INTERNAL`).
+- Depuis Windows ou un outil lance sur l'hote : `localhost:9092` (listener `EXTERNAL`).
+- `localhost:9092` dans la configuration API Compose est incorrect : le broker annoncerait localhost au client conteneurise et le consumer ne pourrait pas joindre le coordinator.
+- `KAFKA_ADVERTISED_LISTENERS` et `KAFKA_LISTENERS` sont definis dans `docker-compose.yml`; conserver les deux listeners lors des changements.
+- Le volume Compose `kafka_data` rend les topics/offsets persistants. En cas de migration depuis l'ancien conteneur sans volume nomme, copier `/var/lib/kafka/data` avant de le recreer.
+
 **Production:**
 ```json
 {

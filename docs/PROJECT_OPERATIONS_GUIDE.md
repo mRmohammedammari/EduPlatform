@@ -29,7 +29,7 @@ Derniere validation locale documentee : build Release, 44/44 tests .NET, smoke E
 
 1. Les bases Cassandra deja initialisees avec l'ancien `test_results` (`submitted_at`, `test_id`) ne sont pas converties par `CREATE TABLE IF NOT EXISTS`; elles necessitent une migration de donnees planifiee.
 2. `user_activities` a partition key `(user_id, course_id)`, mais `GetUserActivitiesAsync` lit seulement par `user_id` avec `ALLOW FILTERING`; acceptable pour petit volume de dev, pas une strategie de scale.
-3. Le healthcheck Docker de l'API cible `/health`, mappe via `AddHealthChecks()` sans checks enregistres. Les dependances sont controlees plus en detail par `/health/details`, mais Compose ne l'utilise pas.
+3. Le healthcheck Compose utilise `/health/details`, qui controle SQL Server et la connectivite TCP Cassandra/Redis/Kafka. Ces tests ne verifient pas les operations applicatives de lecture/ecriture.
 4. Paiement simule, TLS local auto-signe, ports API/Web publies directement par Compose. Ce n'est pas une configuration de production publique.
 5. Les fichiers `docs/ROADMAP_STATUS.md` et `docs/REMAINING_TASKS.md` ont des statuts qui ne refletent pas tous le code recent. Les pourcentages sont des estimations, pas une mesure automatique.
 
@@ -318,7 +318,7 @@ Cache best-effort: `CacheService` ignore actuellement les exceptions Get/Set/Del
 
 ### Kafka
 
-Compose fournit un broker unique, replication factor 1 et Zookeeper : configuration de developpement, sans HA. `scripts/kafka/init-topics.ps1` cree cinq topics (retention 1 a 90 jours). Producteur publie `user-activity-events` et `test-results-events`; consumer actif ecoute `user-activity-events`, log puis commit l'offset. Il ne fait pas de traitement analytique durable actuellement. Les autres topics ne sont pas tous consommes par le code actuel.
+Compose fournit un broker unique, replication factor 1 et Zookeeper : configuration de developpement, sans HA. Les clients dans le reseau Docker doivent utiliser `kafka:29092`; les outils lances sur l'hote utilisent `localhost:9092`. Ne pas annoncer `localhost` aux clients conteneurises : Kafka retourne l'adresse annoncee dans ses metadonnees. Les donnees broker persistent dans le volume nomme `eduplatform_kafka_data`. `scripts/kafka/init-topics.ps1` cree cinq topics (retention 1 a 90 jours). Producteur publie `user-activity-events` et `test-results-events`; consumer actif ecoute `user-activity-events`, log puis commit l'offset. Il ne fait pas de traitement analytique durable actuellement. Les autres topics ne sont pas tous consommes par le code actuel.
 
 Commandes :
 
@@ -363,8 +363,8 @@ Push-Location scripts/e2e; npm ci; npx playwright install chromium; npm test; Po
 
 ### Sante et observabilite
 
-- `GET /health` est actuellement le health endpoint mappe par ASP.NET; aucun `AddCheck(...)` n'est enregistre dans `Program.cs`. Il confirme surtout que le process repond, pas que SQL/Cassandra/Kafka sont utilisables.
-- `GET /health/details` teste SQL par `CanConnectAsync` et Cassandra/Redis/Kafka par TCP. Cela ne valide ni les tables CQL, ni la lecture/ecriture Kafka/Redis. Utiliser en complement les commandes propres a chaque service.
+- `GET /health` est le liveness endpoint mappe par ASP.NET; aucun `AddCheck(...)` n'est enregistre dans `Program.cs`. Il confirme que le process API repond.
+- `GET /health/details` est le readiness endpoint utilise par le healthcheck Compose. Il teste SQL par `CanConnectAsync` (un resultat `false` est unhealthy) et Cassandra/Redis/Kafka par TCP. Cela ne valide ni les tables CQL, ni les lectures/ecritures Kafka/Redis. Utiliser en complement les commandes propres a chaque service.
 - `RequestCorrelationMiddleware` ajoute le contexte de correlation; `SecurityAuditMiddleware` trace notamment acces refuses/5xx/latence.
 - Serilog, Prometheus, Grafana et OpenTelemetry ne sont pas installes au 2026-09-29.
 
@@ -410,7 +410,7 @@ CI `.github/workflows/ci.yml` : build Release, tests avec Coverlet, rapport d'ar
 
 - Tester l'initialisation CQL sur une base vide et definir un chemin de migration pour les installations qui ont l'ancienne cle primaire de `test_results`.
 - Reconcevoir les requetes Cassandra `ALLOW FILTERING` avant croissance des volumes.
-- Faire en sorte que le healthcheck API verifie reellement les dependances requises, ou separer liveness et readiness; aligner Compose sur le readiness.
+- Ajouter des probes separees liveness/readiness et des checks applicatifs CQL/Kafka/Redis au-dela d'une simple connexion TCP.
 
 ### P1 - Qualite et securite
 
